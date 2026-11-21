@@ -225,11 +225,16 @@ def aplicar_features(path: Path, sumideros: dict[str, Sumidero], avisos: list[st
     return n
 
 
-def leer_cadenas(paths: list[Path], sumideros: dict[str, Sumidero], avisos: list[str]) -> list[dict[str, Any]]:
+def leer_cadenas(paths: list[Path], sumideros: dict[str, Sumidero], avisos: list[str],
+                 presentes: set[str] | None = None) -> list[dict[str, Any]]:
+    """Cadenas válidas. En `presentes` deja TODOS los street_id del archivo, incluso los inválidos:
+    una cadena que sigue en el archivo con datos defectuosos no se retira de la base (revisión #76)."""
     cadenas: dict[str, dict[str, Any]] = {}
     for path in paths:
         for c in json.loads(path.read_text(encoding="utf-8")):
             sid, ids, dist = c.get("street_id"), list(c.get("sumidero_ids") or []), list(c.get("distancias_m") or [])
+            if presentes is not None and isinstance(sid, str) and sid:
+                presentes.add(sid)
             if not sid or len(ids) < 2 or len(ids) != len(dist) or len(set(ids)) != len(ids):
                 avisos.append(f"{path.name}: cadena {sid} mal formada (se ignora)")
                 continue
@@ -258,9 +263,10 @@ def preparar(data_dir: Path = DATA, rejillas: Path | None = None) -> dict[str, A
         resumen["features"][p.name] = aplicar_features(p, sumideros, avisos)
     paths_cadenas = sorted(data_dir.glob("street_chains_*.json"))
     resumen["cadenas_archivos"] = [p.name for p in paths_cadenas]
-    cadenas = leer_cadenas(paths_cadenas, sumideros, avisos)
+    presentes: set[str] = set()
+    cadenas = leer_cadenas(paths_cadenas, sumideros, avisos, presentes)
     return {"sumideros": sumideros, "intersecciones": inters, "cadenas": cadenas, "avisos": avisos,
-            "resumen": resumen}
+            "resumen": resumen, "cadenas_en_archivo": sorted(presentes)}
 
 
 # ---------------------------------------------------------------------------
@@ -327,7 +333,10 @@ def escribir(conn, datos: dict[str, Any]) -> dict[str, int]:
         # así una base actualizada calcula el mismo ranking que una instalación limpia.
         guardadas = [r["street_id"] if isinstance(r, dict) else r[0]
                      for r in cur.execute("select street_id from street_chains").fetchall()]
-        obsoletas = cadenas_obsoletas(guardadas, [c["street_id"] for c in datos["cadenas"]])
+        # Qué retirar se decide con los IDs PRESENTES en el archivo (aunque estén mal formados): una fila
+        # defectuosa conserva su última versión válida. Qué actualizar, con las filas válidas (arriba).
+        en_archivo = datos.get("cadenas_en_archivo", [c["street_id"] for c in datos["cadenas"]])
+        obsoletas = cadenas_obsoletas(guardadas, en_archivo)
         if obsoletas:
             cur.execute("update sumideros set street_id = null, orden_en_calle = null where street_id = any(%s)",
                         (obsoletas,))

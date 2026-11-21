@@ -136,6 +136,16 @@ def test_cadenas_obsoletas_solo_de_la_misma_fuente():
     assert cargar.prefijo_fuente("flujo:AL13SU010093") == "flujo:" and cargar.prefijo_fuente("sinprefijo") is None
 
 
+def test_cadena_invalida_sigue_presente_y_no_se_retira(tmp_path):
+    """Revisión #76: una cadena que sigue en el archivo con datos inválidos no es obsoleta."""
+    cadenas = [{"street_id": "flujo:OK", "sumidero_ids": ["A", "B"], "distancias_m": [0, 10]},
+               {"street_id": "flujo:ROTA", "sumidero_ids": ["A", "B"], "distancias_m": []}]
+    d = cargar.preparar(_datos(tmp_path, [_rejilla("A"), _rejilla("B")], cadenas=cadenas))
+    assert [c["street_id"] for c in d["cadenas"]] == ["flujo:OK"]  # solo la válida se actualiza
+    assert d["cadenas_en_archivo"] == ["flujo:OK", "flujo:ROTA"]
+    assert cargar.cadenas_obsoletas(["flujo:OK", "flujo:ROTA", "flujo:VIEJA"], d["cadenas_en_archivo"]) == ["flujo:VIEJA"]
+
+
 # --- Integración: carga real, idempotente, con IDs únicos -------------------------------------
 @pytest.mark.skipif(os.getenv("DRENA_TEST_INTEGRACION") != "1", reason="DRENA_TEST_INTEGRACION=1 para correrlo")
 def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
@@ -158,8 +168,16 @@ def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
             # Otro paso del pipeline agrega una feature directo en la base
             conn.execute("update sumideros set features = features || '{\"arboles\": 0.7}' where id = %s", (a,))
             r2 = cargar.escribir(conn, cargar.preparar(datos_dir))  # segunda corrida: idempotente
-            # La fuente deja de traer una cadena: la recarga la retira (y no toca las cadenas reales)
+            # La cadena sigue en el archivo pero con datos inválidos: conserva su última versión válida
             n_reales = conn.execute("select count(*) as n from street_chains where street_id like 'flujo:%'").fetchone()["n"]
+            (datos_dir / "street_chains_x.json").write_text(json.dumps(
+                [{"street_id": f"t{run}:c", "nombre": "test", "sumidero_ids": [a, b], "distancias_m": [0, 40]},
+                 {"street_id": f"t{run}:vieja", "nombre": "test", "sumidero_ids": [b, a], "distancias_m": []}]),
+                encoding="utf-8")
+            r_rota = cargar.escribir(conn, cargar.preparar(datos_dir))
+            rota = conn.execute("select distancias_m from street_chains where street_id = %s",
+                                (f"t{run}:vieja",)).fetchone()
+            # La fuente deja de traer la cadena: la recarga la retira (y no toca las cadenas reales)
             (datos_dir / "street_chains_x.json").write_text(json.dumps(
                 [{"street_id": f"t{run}:c", "nombre": "test", "sumidero_ids": [a, b], "distancias_m": [0, 40]}]),
                 encoding="utf-8")
@@ -189,6 +207,7 @@ def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
         assert filas[a]["intersection_id"] == filas[b]["intersection_id"] and n_inter == 1
         assert cadena["sumidero_ids"] == [a, b]
         assert r2["cadenas_obsoletas_borradas"] == 0 and r3["cadenas_obsoletas_borradas"] == 1 and vieja is None
+        assert r_rota["cadenas_obsoletas_borradas"] == 0 and rota["distancias_m"] == [0, 40]  # versión válida
         assert n_reales_despues == n_reales
     finally:
         with get_conn() as conn:
