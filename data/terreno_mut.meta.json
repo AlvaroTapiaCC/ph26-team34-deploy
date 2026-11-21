@@ -1,5 +1,5 @@
 {
-  "generado_utc": "2026-11-21T16:57:42+00:00",
+  "generado_utc": "2026-11-21T18:18:22+00:00",
   "metodo": "plan B: elevación por nodo (OSMnx) y flujo por el grafo de calles",
   "zona": {
     "centro_lonlat": [
@@ -13,7 +13,10 @@
     "fuente": "OpenStreetMap vía OSMnx",
     "network_type": "drive",
     "radio_m": 2500.0,
-    "osmnx": "2.2.0"
+    "osmnx": "2.2.0",
+    "graphml": "cache/osm/red_drive_mut_2500m.graphml",
+    "sha256": "4b9bc1db9b412b399fbb7dfc192411776362e7c1b21abdff33380b2d518bd667",
+    "descargada_utc": "2026-11-21T18:18:21+00:00"
   },
   "dem": {
     "fuente": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_S34_00_W071_00_DEM/Copernicus_DSM_COG_10_S34_00_W071_00_DEM.tif",
@@ -22,7 +25,8 @@
   },
   "parametros": {
     "ancho_aporte_m": 20.0,
-    "pendiente_ref": 0.05,
+    "pendiente_ref": 0.05634,
+    "pendiente_ref_regla": "percentil 90 de pendiente_tramo de las rejillas en_zona_mut",
     "snap_max_m": 30.0,
     "cadena_max_m": 3000.0
   },
@@ -33,7 +37,7 @@
     }
   },
   "salidas": {
-    "terreno_mut.csv": "c3f2646b2124aa5bf5d0811a59d77ce9a3ce483b7c25b2615b41dfb2e7d583a6",
+    "terreno_mut.csv": "a31ec39edbd0f34f9641789d2af3e4e6020c5cf03b4ace1298854cdd87763a92",
     "street_chains_mut.json": "29aa9fcb38a4d6b1ca05eb2f1384e2f351d21e3075de52a38656408d75c91d92"
   },
   "conteos": {
@@ -54,7 +58,7 @@
   },
   "script": {
     "ruta": "pipeline/03_terreno.py",
-    "version": "0.1.0",
-    "sha256": "21b160c5ce0385eb5750d83104cef18d3bdc3c92e812aa8355d9e208734cbf66"
+    "version": "0.2.0",
+    "sha256": "5702045c5f0469e17b40bc09c62fe527c66d47bca3f9f16f1a1b0395527c65d6"
   }
 }

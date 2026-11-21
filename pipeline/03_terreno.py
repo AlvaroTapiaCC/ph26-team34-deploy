@@ -2,7 +2,7 @@
 Terreno con el plan B: elevación por nodo de la red de calles (OSMnx) y flujo por el grafo.
 
 Uso (desde la raíz del repo, con data/rejillas.geojson ya generado por 02_rejillas.py):
-    pip install requests geopandas osmnx rasterio
+    pip install -r pipeline/requirements.txt
     python pipeline/03_terreno.py                 # zona de terreno: 700 m alrededor del MUT
     python pipeline/03_terreno.py --buffer 3000   # red de calles más amplia aguas arriba
 
@@ -25,7 +25,8 @@ Qué hace (issue #10, plan B de docs/plan-desarrollo.md):
      siguiendo el flujo. A una rejilla le llega lo acumulado en el nodo alto de su tramo (solo si
      ese nodo desagua por ese tramo) más la parte del tramo que queda aguas arriba de ella.
      Es un proxy: sirve para ordenar, no es un área hidrológica real.
-  5. Pendiente: la del tramo donde está la rejilla, normalizada a 0-1 con PENDIENTE_REF.
+  5. Pendiente: la del tramo donde está la rejilla, normalizada a 0-1 dividiendo por el
+     percentil 90 de las pendientes de las rejillas de la zona MUT (queda en la metadata).
   6. Cadenas: desde cada rejilla que no tiene otra aguas arriba, se sigue el flujo y se listan
      las rejillas que va encontrando, con la distancia acumulada. Es la entrada del paso 2 de la
      fórmula (efecto en cadena); la fórmula toma el mayor aporte si una rejilla está en varias.
@@ -46,7 +47,7 @@ from pathlib import Path
 
 import requests
 
-SCRIPT_VERSION = "0.1.0"
+SCRIPT_VERSION = "0.2.0"
 
 CENTRO = (-70.6010, -33.4178)  # MUT, aproximado: confirmar en el mapa (lon, lat)
 RADIO_ZONA_M = 700
@@ -56,7 +57,7 @@ DEM_TILE = "Copernicus_DSM_COG_10_S34_00_W071_00_DEM"
 DEM_URL = f"https://copernicus-dem-30m.s3.amazonaws.com/{DEM_TILE}/{DEM_TILE}.tif"
 
 ANCHO_APORTE_M = 20.0     # ancho de calle + veredas que escurre hacia la calzada (proxy)
-PENDIENTE_REF = 0.05      # 5 % o más de pendiente = 1 en la variable "pendiente"
+PENDIENTE_PERCENTIL = 90  # pendiente >= p90 de la zona MUT = 1 en la variable "pendiente"
 SNAP_MAX_M = 30.0         # rejillas más lejos que esto de una calle "drive" quedan fuera
 CADENA_MAX_M = 3000.0     # largo máximo de una cadena calle abajo
 
@@ -114,6 +115,7 @@ def main():
     ap.add_argument("--buffer", type=float, default=2500.0, help="radio de la red de calles (m)")
     ap.add_argument("--dem", default="cache/dem/" + DEM_TILE + ".tif")
     ap.add_argument("--salida", default="data/terreno_mut.csv")
+    ap.add_argument("--refrescar-red", action="store_true", help="vuelve a bajar la red de OSM")
     a = ap.parse_args()
 
     import geopandas as gpd
@@ -126,8 +128,18 @@ def main():
     salida.parent.mkdir(parents=True, exist_ok=True)
 
     # 1. Red de calles
-    print(f"Bajando red de calles 'drive' a {a.buffer:.0f} m del centro...")
-    G = ox.graph_from_point((CENTRO[1], CENTRO[0]), dist=a.buffer, network_type="drive", simplify=True)
+    # La red se guarda en cache/ la primera vez y después se reutiliza: OSM cambia con el tiempo,
+    # así que la metadata registra el sha256 y la fecha de descarga de la red usada.
+    ruta_red = Path(f"cache/osm/red_drive_mut_{a.buffer:.0f}m.graphml")
+    if ruta_red.exists() and not a.refrescar_red:
+        print(f"Usando la red guardada {ruta_red}")
+        G = ox.load_graphml(ruta_red)
+    else:
+        print(f"Bajando red de calles 'drive' a {a.buffer:.0f} m del centro...")
+        G = ox.graph_from_point((CENTRO[1], CENTRO[0]), dist=a.buffer, network_type="drive", simplify=True)
+        ruta_red.parent.mkdir(parents=True, exist_ok=True)
+        ox.save_graphml(G, ruta_red)
+    red_descargada = datetime.fromtimestamp(ruta_red.stat().st_mtime, timezone.utc).isoformat(timespec="seconds")
     Gu = ox.convert.to_undirected(G)
     print(f"  nodos: {Gu.number_of_nodes()}, tramos: {Gu.number_of_edges()}")
 
@@ -256,7 +268,6 @@ def main():
                 "nodo_bajo": bajo,
                 "elevacion_m": round(z_rej, 2),
                 "pendiente_tramo": round(grade, 4),
-                "pendiente": round(min(grade / PENDIENTE_REF, 1.0), 4),
                 "area_aporte_m2": round(llega, 1),
                 # Cuánto hubo que rellenar los nodos del tramo: > 0 indica una depresión en el DEM
                 "relleno_max_m": round(max(relleno[alto], relleno[bajo]), 2),
@@ -319,6 +330,14 @@ def main():
     df["en_zona_mut"] = df["dist_centro_m"] <= RADIO_ZONA_M
     df["street_id"] = df["ID_IDE"].map(lambda s: principal.get(s, (None, None))[0])
     df["orden_en_calle"] = df["ID_IDE"].map(lambda s: principal.get(s, (None, None))[1])
+    for col in ("nodo_alto", "nodo_bajo", "orden_en_calle"):
+        df[col] = df[col].astype("Int64")
+    import numpy as np
+
+    pend_zona = df.loc[df["en_zona_mut"] & ~df["fuera_de_red"], "pendiente_tramo"].astype(float)
+    pendiente_ref = float(np.percentile(pend_zona, PENDIENTE_PERCENTIL))
+    df["pendiente"] = (df["pendiente_tramo"].astype(float) / pendiente_ref).clip(0, 1).round(4)
+    print(f"Pendiente de referencia (p{PENDIENTE_PERCENTIL} de {len(pend_zona)} rejillas MUT): {pendiente_ref:.4f}")
     df = df.sort_values(["en_zona_mut", "ID_IDE"], ascending=[False, True])
     df.to_csv(salida, index=False)
     ruta_cad = salida.with_name("street_chains_mut.json")
@@ -349,9 +368,11 @@ def main():
         "metodo": "plan B: elevación por nodo (OSMnx) y flujo por el grafo de calles",
         "zona": {"centro_lonlat": list(CENTRO), "radio_m": RADIO_ZONA_M, "nota": "centro del MUT aproximado"},
         "red_calles": {"fuente": "OpenStreetMap vía OSMnx", "network_type": "drive", "radio_m": a.buffer,
-                       "osmnx": ox.__version__},
+                       "osmnx": ox.__version__, "graphml": str(ruta_red), "sha256": sha256(ruta_red),
+                       "descargada_utc": red_descargada},
         "dem": {"fuente": DEM_URL, "sha256": sha256(ruta_dem), "muestreo": "mínimo de 3×3 píxeles por nodo"},
-        "parametros": {"ancho_aporte_m": ANCHO_APORTE_M, "pendiente_ref": PENDIENTE_REF,
+        "parametros": {"ancho_aporte_m": ANCHO_APORTE_M, "pendiente_ref": round(pendiente_ref, 6),
+                       "pendiente_ref_regla": f"percentil {PENDIENTE_PERCENTIL} de pendiente_tramo de las rejillas en_zona_mut",
                        "snap_max_m": SNAP_MAX_M, "cadena_max_m": CADENA_MAX_M},
         "entradas": {"rejillas": {"ruta": a.rejillas, "sha256": sha256(a.rejillas)}},
         "salidas": {salida.name: sha256(salida), ruta_cad.name: sha256(ruta_cad)},
