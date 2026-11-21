@@ -36,6 +36,9 @@ const TIPO_TXT: Record<string, string> = {
   otro: "Otro",
 };
 
+// Prueba de campo: zona MUT, 47 rejillas (plan D4)
+const N_REJILLAS = 47;
+
 type Paso = "elegir" | "captura" | "enviando" | "resultado" | "urgencia" | "error";
 type Cercana = { id: string; d: number };
 
@@ -128,7 +131,7 @@ export default function Reportar() {
     setError("");
     setIdIde(null);
     setPaso("elegir");
-    if (siguiente) setRejillaNum((n) => Math.min(20, n + 1));
+    if (siguiente) setRejillaNum((n) => Math.min(N_REJILLAS, n + 1));
     buscarGps();
   }
 
@@ -219,9 +222,9 @@ export default function Reportar() {
           <h1 className="rp-h1">¿Qué quieres reportar?</h1>
           {campo && (
             <label className="rp-field">
-              <span>Número de rejilla (1–20)</span>
+              <span>Número de rejilla (1–{N_REJILLAS})</span>
               <select value={rejillaNum} onChange={(e) => setRejillaNum(Number(e.target.value))}>
-                {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+                {Array.from({ length: N_REJILLAS }, (_, i) => i + 1).map((n) => (
                   <option key={n} value={n}>
                     Rejilla {n}
                   </option>
