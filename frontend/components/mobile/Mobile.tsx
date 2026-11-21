@@ -80,8 +80,8 @@ function Estado({ kind }: { kind: "cargando" | "vacio" | "error" | "caido" }) {
     );
   return (
     <div className="mstate mstate--danger">
-      <h3>Sensor caído</h3>
-      <p>Sin señal del ESP32 hace 5 min. Usa “Simular reporte” en la sala.</p>
+      <h3>Cámara de la demo · sin señal</h3>
+      <p>Usa “Simular reporte” para seguir la demo.</p>
     </div>
   );
 }
@@ -396,10 +396,10 @@ function DuranteM() {
           ) : (
             <div className="alert" style={{ boxShadow: "inset 0 0 0 1.5px var(--line)" }}>
               <Kicker tone="accent">
-                <span className="sensor__dot" /> En vivo · sensor ESP32
+                <span className="sensor__dot" /> Reportes de la demo
               </Kicker>
               <h2>Sin anegamientos reportados</h2>
-              <p>Cuando el sensor marque un punto verás aquí qué revisar primero.</p>
+              <p>Simula un reporte para ver qué revisar aguas abajo.</p>
             </div>
           )}
           <Button size="lg" className="btn--block" onClick={() => flood("p2", "sensor")}>
@@ -415,9 +415,9 @@ function DuranteM() {
         <div className="mgap">
           <div className="alert">
             <Kicker tone="danger">
-              <span className="sensor__dot is-danger" /> Anegado · sensor ESP32
+              <span className="sensor__dot is-danger" /> {s.fuenteAnegamiento ?? "Anegado"}
             </Kicker>
-            <h2>{an.nombre}</h2>
+            <h2>Anegado en {an.nombre}</h2>
             <p>Revisa primero los puntos que reciben su agua.</p>
           </div>
           <div className="photo" style={{ height: 170, backgroundImage: "url(/img/sumidero-anegado.jpg)" }}>

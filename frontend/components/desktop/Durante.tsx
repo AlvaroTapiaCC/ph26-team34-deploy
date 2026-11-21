@@ -14,10 +14,10 @@ export function SensorCard() {
       <section className="sensor sensor--down">
         <div className="sensor__top">
           <span className="sensor__dot" />
-          <Kicker tone="danger">Sensor ESP32 · sin señal</Kicker>
+          <Kicker tone="danger">Cámara de la demo · sin señal</Kicker>
           <span className="sensor__ago">{s.sensorAgo || "hace 5 min"}</span>
         </div>
-        <h2 className="sensor__title">No llegan datos del sensor</h2>
+        <h2 className="sensor__title">Cámara no disponible</h2>
         <p className="sensor__body">“Simular reporte” solo cambia la pantalla; “Disparar reporte” pasa por el simulador del backend.</p>
         <div className="row-btns">
           <Button variant="danger" onClick={() => set({ markMode: !s.markMode })}>
@@ -35,12 +35,12 @@ export function SensorCard() {
     <section className={`sensor ${s.markMode ? "is-marking" : ""}`}>
       <div className="sensor__top">
         <span className={`sensor__dot ${anegado ? "is-live" : ""}`} />
-        <Kicker tone="accent">En vivo · sensor ESP32</Kicker>
-        <span className="sensor__ago">{anegado ? s.sensorAgo : "escuchando"}</span>
+        <Kicker tone="accent">Reportes de la demo</Kicker>
+        {anegado && <span className="sensor__ago">{s.sensorAgo}</span>}
       </div>
       <h2 className="sensor__title">{anegado ? `Anegado en ${anegado.nombre}` : "Sin anegamientos reportados"}</h2>
       <p className="sensor__body">
-        {anegado ? "El sensor marcó el punto. Se iluminan los puntos que reciben su agua." : "Marca un punto en el mapa o espera el sensor para ver qué viene aguas abajo."}
+        {anegado ? "El mapa destaca los puntos que reciben agua desde aquí." : "Marca un punto en el mapa o simula un reporte para ver qué revisar aguas abajo."}
       </p>
       <div className="row-btns">
         <Button variant="danger" onClick={() => set({ markMode: !s.markMode })}>
@@ -113,7 +113,7 @@ function Cadena() {
           <PrioChip prio={p.prio} />
         </div>
       ))}
-      <p className="chain__note">Muestra el orden del recorrido, no minutos de llegada: el modelo de 30 m no los calcula con precisión.</p>
+      <p className="chain__note">El orden se basa en la dirección del escurrimiento.</p>
       <Button variant="primary" className="btn--block" onClick={() => set({ toast: `Simulación: no se envió ningún aviso real · ${cadena.length} puntos` })}>
         Simular aviso a cuadrillas de estos {cadena.length} puntos
       </Button>
@@ -168,12 +168,12 @@ function DuranteMap() {
       attribution={`Base: Esri, HERE, Garmin, © OpenStreetMap${L.rayos ? " · rayos: NOAA GOES-19 GLM (ilustrativo)" : ""} · ubicaciones aproximadas`}
     >
       {s.markMode && <div className="marking-hint">Toca el punto anegado en el mapa</div>}
-      {an && L.feed && <Toast className="map-toast" text={`Reporte del sensor · ${an.nombre}`} />}
+      {an && L.feed && <Toast className="map-toast" text={`Anegamiento registrado · ${an.nombre}`} />}
       <div className="legend">
         <Kicker>Capas</Kicker>
         <Check on={L.prioridad} label="Puntos por prioridad" onClick={() => toggleLayer("prioridad")} />
         <Check on={L.cadena && !!an} label="Cadena aguas abajo" onClick={() => toggleLayer("cadena")} />
-        <Check on={L.rayos} label="Rayos GOES-19 (casi tiempo real)" onClick={() => toggleLayer("rayos")} />
+        <Check on={L.rayos} label="Rayos GOES-19 (ilustrativos)" onClick={() => toggleLayer("rayos")} />
         <Check on={L.feed} label="Reportes del feed" onClick={() => toggleLayer("feed")} />
       </div>
     </DrenaMap>

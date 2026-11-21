@@ -116,11 +116,11 @@ function SimularModal() {
   return (
     <Modal onClose={close} width={640} className="modal--sim">
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <Kicker tone="accent">Respaldo del sensor</Kicker>
+        <Kicker tone="accent">Modo demo</Kicker>
         <h2 className="modal__title" style={{ fontSize: 30, lineHeight: "38px" }}>
           Simular reporte
         </h2>
-        <p style={{ fontSize: 15, color: "var(--text-2)" }}>Elige el punto que se anegó. Hace lo mismo que el ESP32.</p>
+        <p style={{ fontSize: 15, color: "var(--text-2)" }}>Elige un punto para simular un reporte de anegamiento.</p>
         {SIMULABLES.map((id) => (
           <button key={id} className={`radio ${sel === id ? "is-on" : ""}`} onClick={() => setSel(id)} role="radio" aria-checked={sel === id}>
             <span className="radio__dot" />
