@@ -3,9 +3,13 @@ Descarga el catastro de sumideros SIALL (DOH) de una zona y lo deja versionado.
 
 Uso:
     pip install requests geopandas osmnx
-    python pipeline/02_rejillas.py                       # Providencia + Ñuñoa
+    python pipeline/00_comunas.py                        # una vez: límites comunales (data/comunas.geojson)
+    python pipeline/02_rejillas.py                       # Providencia + Ñuñoa + Las Condes (zona "oriente")
+    python pipeline/02_rejillas.py --zona provi_nunoa    # solo Providencia + Ñuñoa
     python pipeline/02_rejillas.py --anegados data/anegados_20261013.geojson
     python pipeline/02_rejillas.py --sin-recorte         # no recorta por comunas
+
+El comando sin argumentos es exactamente el que generó data/rejillas.geojson.
 
 Salidas (en data/):
     rejillas.geojson         rejillas dentro de la zona, ordenadas por OBJECTID
@@ -17,7 +21,9 @@ Qué hace:
   2. Cuenta cuántas rejillas hay en el rectángulo de la zona y pide sus IDs.
   3. Pide las coordenadas a /identify por baldosas: el servicio oculta la geometría en /query.
   4. Descarga los atributos en lotes por /query y los une con las coordenadas.
-  5. Recorta por los límites de las comunas (OSM) y guarda el GeoJSON y su metadata.
+  5. Recorta por los límites de las comunas (data/comunas.geojson, de 00_comunas.py) y guarda
+     el GeoJSON y su metadata. La columna "comuna" sale de ese recorte espacial y manda;
+     "COMUNA" (DOH) se conserva y "comuna_discrepa" marca las filas donde difieren.
   6. Cuenta las rejillas a 700 m del MUT y, si se entregan, las cercanas a cada punto anegado.
 
 Notas:
@@ -38,7 +44,7 @@ from pathlib import Path
 
 import requests
 
-SCRIPT_VERSION = "0.2.0"
+SCRIPT_VERSION = "0.3.0"
 
 CAPA = "https://rest-sit.mop.gob.cl/arcgis/rest/services/DOH/SIALL/MapServer/3"
 MAPSERVER = CAPA.rsplit("/", 1)[0]
@@ -88,7 +94,8 @@ def pedir(url, params, metodo="get"):
             return data
         except Exception as e:  # noqa: BLE001
             print(f"  intento {intento + 1} falló: {e}")
-            time.sleep(2 * (intento + 1))
+            if intento < 2:
+                time.sleep(2 * (intento + 1))
     sys.exit("No se pudo consultar el servicio. Prueben abrir la URL de la capa en el navegador.")
 
 
@@ -213,15 +220,22 @@ def en_radio(gdf, centro, radio_m):
     return gdf[gdf.to_crs(UTM).distance(c) <= radio_m].copy()
 
 
-def recortar(gdf, zona):
+def recortar(gdf, zona, ruta_comunas):
     import geopandas as gpd
 
     if zona.get("comunas"):
-        import osmnx as ox
-
-        limites = ox.geocode_to_gdf(zona["comunas"])[["display_name", "geometry"]]
-        limites["comuna"] = limites["display_name"].str.split(",").str[0]
-        return gpd.sjoin(gdf, limites[["comuna", "geometry"]], predicate="within").drop(columns="index_right")
+        if not Path(ruta_comunas).exists():
+            sys.exit(f"Falta {ruta_comunas}. Ejecuten primero: python pipeline/00_comunas.py")
+        nombres = [c.split(",")[0] for c in zona["comunas"]]
+        limites = gpd.read_file(ruta_comunas).to_crs(4326)
+        limites = limites[limites["comuna"].isin(nombres)]
+        faltan = set(nombres) - set(limites["comuna"])
+        if faltan:
+            sys.exit(f"{ruta_comunas} no tiene las comunas {sorted(faltan)}. Vuelvan a correr pipeline/00_comunas.py")
+        out = gpd.sjoin(gdf, limites[["comuna", "geometry"]], predicate="within").drop(columns="index_right")
+        # "comuna" (límites OSM) manda; "COMUNA" (DOH) se conserva como referencia.
+        out["comuna_discrepa"] = out["COMUNA"].str.upper() != out["comuna"].str.upper()
+        return out
     if zona.get("centro"):
         return en_radio(gdf, zona["centro"], zona["radio_m"])
     return gdf
@@ -252,7 +266,7 @@ def cargar_anegados(ruta):
 
 def rejillas_cerca(anegados, rejillas, radio_m, bbox):
     """Para cada punto anegado: cuántas rejillas hay a menos de radio_m y cuál es la más cercana."""
-    import geopandas as gpd
+    import pandas as pd
 
     a = anegados.to_crs(UTM)
     r = rejillas[["ID_IDE", "geometry"]].to_crs(UTM)
@@ -272,12 +286,13 @@ def rejillas_cerca(anegados, rejillas, radio_m, bbox):
                 "fuera_de_zona": not dentro_bbox(orig.x, orig.y, bbox),
             }
         )
-    return gpd.pd.DataFrame(filas)
+    return pd.DataFrame(filas)
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--zona", default="provi_nunoa", choices=ZONAS.keys())
+    ap.add_argument("--zona", default="oriente", choices=ZONAS.keys())
+    ap.add_argument("--comunas", default="data/comunas.geojson", help="límites comunales (los genera pipeline/00_comunas.py)")
     ap.add_argument("--sin-recorte", action="store_true")
     ap.add_argument("--salida", default="data/rejillas.geojson")
     ap.add_argument("--anegados", help="GeoJSON o CSV con los puntos anegados (p. ej. 13 de octubre)")
@@ -305,19 +320,21 @@ def main():
     coords = coords_identify(zona["bbox"])
     feats = descargar(campo_oid, lista, lote=min(maximo, 500), coords=coords)
     print("Rejillas descargadas:", len(feats))
-    if len(feats) < len(lista):
-        print("  OJO: faltan rejillas; revisar si hay geometrías vacías o errores de lote.")
+    con_coord = {f["properties"][campo_oid] for f in feats}
+    sin_coord = sorted(int(o) for o in set(lista) - con_coord)
+    if sin_coord:
+        print(f"  OJO: {len(sin_coord)} rejillas sin coordenada (se registran en la metadata): {sin_coord[:10]}...")
 
     todas = gpd.GeoDataFrame.from_features(feats, crs=4326).sort_values("OBJECTID")
-    # El catastro publica algunas rejillas dos veces (mismo ID_IDE, coordenada y atributos;
-    # solo cambia OBJECTID). Se conserva el OBJECTID menor para que ID_IDE sea único.
+    # El catastro publica algunas rejillas más de una vez con el mismo ID_IDE (solo se compara
+    # ese campo, no coordenadas ni atributos). Se conserva el OBJECTID menor para que ID_IDE sea único.
     rep = todas["ID_IDE"].duplicated(keep="first")
     descartados = [int(o) for o in todas.loc[rep, "OBJECTID"]]
     if descartados:
         print(f"Registros duplicados por ID_IDE descartados: {len(descartados)}")
     todas = todas[~rep]
 
-    gdf = todas if a.sin_recorte else recortar(todas, zona)
+    gdf = todas if a.sin_recorte else recortar(todas, zona, a.comunas)
     gdf = gdf.sort_values("OBJECTID").reset_index(drop=True)
     print("\nRejillas dentro de la zona:", len(gdf))
 
@@ -325,6 +342,13 @@ def main():
     if "comuna" in gdf.columns:
         conteos["por_comuna_osm"] = {k: int(v) for k, v in gdf["comuna"].value_counts().items()}
         print(gdf["comuna"].value_counts().to_string())
+        conteos["por_comuna_doh"] = {k: int(v) for k, v in gdf["COMUNA"].value_counts().items()}
+        disc = gdf[gdf["comuna_discrepa"]]
+        conteos["comuna_discrepa"] = {
+            "total": len(disc),
+            "detalle": [{"doh": d, "osm": o, "n": int(n)} for (d, o), n in disc.groupby(["COMUNA", "comuna"]).size().items()],
+        }
+        print(f"Rejillas con comuna OSM distinta de la DOH: {len(disc)}")
 
     conteos["duplicados_descartados_rectangulo"] = len(descartados)
 
@@ -351,6 +375,11 @@ def main():
         "bbox_lonlat": list(zona["bbox"]),
         "recorte": "ninguno" if a.sin_recorte else (zona.get("comunas") or f"{zona.get('radio_m')} m"),
         "n_rejillas": len(gdf),
+        "rejillas_sin_coordenada": sin_coord,
+        "limites_comunales": None
+        if a.sin_recorte or not zona.get("comunas")
+        else {"archivo": str(a.comunas), "sha256": sha256(a.comunas), "meta": Path(a.comunas).with_suffix(".meta.json").name},
+        "regla_comuna": "comuna = límites OSM (recorte espacial); COMUNA = DOH, solo referencia; comuna_discrepa marca las filas donde difieren",
         "id_estable": "ID_IDE",
         "objectid_duplicados_descartados": descartados,
         "valores_desconocidos": -99,

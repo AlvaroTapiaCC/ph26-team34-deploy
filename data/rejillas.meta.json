@@ -1,7 +1,7 @@
 {
   "archivo": "rejillas.geojson",
-  "sha256": "7b4d55908f115c00acc805f798a4a3c52f6f5f708d074fc6d36789749d254577",
-  "descargado_utc": "2026-11-21T14:24:59+00:00",
+  "sha256": "dde763af25b2afb38c8b17f9aa66c670c860fae797d1821c9191fd012c55de22",
+  "descargado_utc": "2026-11-21T15:01:42+00:00",
   "servicio": "https://rest-sit.mop.gob.cl/arcgis/rest/services/DOH/SIALL/MapServer/3",
   "operaciones": {
     "atributos": "query",
@@ -21,6 +21,13 @@
     "Las Condes, Chile"
   ],
   "n_rejillas": 3002,
+  "rejillas_sin_coordenada": [],
+  "limites_comunales": {
+    "archivo": "data/comunas.geojson",
+    "sha256": "ab7712c5772caae7076bf1c00ac7e5a9c09d33142c824897caf042626686521a",
+    "meta": "comunas.meta.json"
+  },
+  "regla_comuna": "comuna = límites OSM (recorte espacial); COMUNA = DOH, solo referencia; comuna_discrepa marca las filas donde difieren",
   "id_estable": "ID_IDE",
   "objectid_duplicados_descartados": [
     32049,
@@ -137,6 +144,48 @@
       "Ñuñoa": 1055,
       "Providencia": 746
     },
+    "por_comuna_doh": {
+      "LAS CONDES": 1204,
+      "ÑUÑOA": 1021,
+      "PROVIDENCIA": 765,
+      "LA REINA": 9,
+      "PEÑALOLÉN": 3
+    },
+    "comuna_discrepa": {
+      "total": 47,
+      "detalle": [
+        {
+          "doh": "LA REINA",
+          "osm": "Providencia",
+          "n": 2
+        },
+        {
+          "doh": "LA REINA",
+          "osm": "Ñuñoa",
+          "n": 7
+        },
+        {
+          "doh": "LAS CONDES",
+          "osm": "Providencia",
+          "n": 3
+        },
+        {
+          "doh": "PEÑALOLÉN",
+          "osm": "Ñuñoa",
+          "n": 3
+        },
+        {
+          "doh": "PROVIDENCIA",
+          "osm": "Ñuñoa",
+          "n": 28
+        },
+        {
+          "doh": "ÑUÑOA",
+          "osm": "Providencia",
+          "n": 4
+        }
+      ]
+    },
     "duplicados_descartados_rectangulo": 103,
     "mut_700m": {
       "centro_lonlat": [
@@ -149,8 +198,8 @@
   },
   "script": {
     "ruta": "pipeline/02_rejillas.py",
-    "version": "0.2.0",
-    "sha256": "9d1420e08bbeda092d66a592c0f8b133c27a252761e0032a2fc8e5ae5652e564"
+    "version": "0.3.0",
+    "sha256": "5ab27767d44db9ee7a14b2a5d43173e41fc470f5991a38b03d27b0c69838efdc"
   },
   "anegados": null
 }
