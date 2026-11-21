@@ -199,7 +199,8 @@
   "script": {
     "ruta": "pipeline/02_rejillas.py",
     "version": "0.3.0",
-    "sha256": "5ab27767d44db9ee7a14b2a5d43173e41fc470f5991a38b03d27b0c69838efdc"
+    "sha256": "f400f135b33dbec144df147467c168f6d5161b49d15b17e3832cefd47e1f56e0",
+    "sha256_nota": "sha256 sobre el archivo con fin de línea LF (el del repo). El valor original, 5ab27767d44db9ee7a14b2a5d43173e41fc470f5991a38b03d27b0c69838efdc, se calculó sobre una copia CRLF de Windows con el mismo contenido."
   },
   "anegados": null
 }
