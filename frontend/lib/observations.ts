@@ -16,6 +16,9 @@ export type ClasificacionRejilla = {
   nota: string;
 };
 
+/** /clasificar/camara (foto del agua): mismo esquema sin `rejilla`, más `basura_calzada`. */
+export type ClasificacionAgua = Omit<ClasificacionRejilla, "rejilla"> & { basura_calzada: "poca" | "mucha" };
+
 export type LecturaTexto = {
   tipo: string;
   gravedad: "baja" | "media" | "alta";
@@ -33,7 +36,7 @@ export type Observacion = {
   precision_m: number | null;
   sin_gps: boolean;
   hora: string; // ISO
-  clasificacion: ClasificacionRejilla | LecturaTexto | null;
+  clasificacion: ClasificacionRejilla | ClasificacionAgua | LecturaTexto | null;
   archivo: string | null;
   texto?: string;
   urgente?: boolean;
@@ -54,18 +57,21 @@ export function leerCola(): Observacion[] {
 }
 
 function guardarCola(lista: Observacion[]) {
-  localStorage.setItem(KEY, JSON.stringify(lista));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(lista));
+  } catch {
+    // Sin espacio o almacenamiento bloqueado: el envío al servidor sigue.
+  }
 }
 
 export function nuevoId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-/** Guarda en la cola local y luego intenta enviarlo al backend. Nunca lanza. */
+/** Guarda en la cola local y luego intenta enviarlo al backend. Nunca lanza.
+ *  Si la observación ya está en la cola (reintento), la reemplaza en vez de duplicarla. */
 export async function registrar(obs: Observacion, foto?: Blob | null): Promise<Observacion> {
-  const lista = leerCola();
-  lista.push(obs);
-  guardarCola(lista);
+  guardarCola([...leerCola().filter((o) => o.id !== obs.id), obs]);
   const enviado = await intentarEnviar(obs, foto);
   if (enviado) {
     guardarCola(leerCola().map((o) => (o.id === obs.id ? { ...o, enviado: true } : o)));
@@ -74,15 +80,21 @@ export async function registrar(obs: Observacion, foto?: Blob | null): Promise<O
   return obs;
 }
 
+const ESPERA_ENVIO_MS = 60_000; // Render puede tardar ~50 s en despertar
+
 async function intentarEnviar(obs: Observacion, foto?: Blob | null): Promise<boolean> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), ESPERA_ENVIO_MS);
   try {
     const fd = new FormData();
     fd.append("datos", JSON.stringify(obs));
     if (foto && obs.archivo) fd.append("foto", foto, obs.archivo);
-    const r = await fetch(`${API}/observations`, { method: "POST", body: fd });
+    const r = await fetch(`${API}/observations`, { method: "POST", body: fd, signal: ctl.signal });
     return r.ok; // 501 (aún no implementado) u otro error: queda en la cola local
   } catch {
-    return false;
+    return false; // sin red o tiempo de espera agotado
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -90,6 +102,11 @@ async function intentarEnviar(obs: Observacion, foto?: Blob | null): Promise<boo
 
 export function esDeHoy(o: Observacion): boolean {
   return new Date(o.hora).toDateString() === new Date().toDateString();
+}
+
+/** Solo las capturas hechas en modo prueba de campo (llevan número de rejilla). */
+export function esCapturaCampo(o: Observacion): boolean {
+  return o.rejilla_num !== undefined && o.rejilla_num !== null;
 }
 
 function clasifRejilla(o: Observacion): ClasificacionRejilla | null {

@@ -1,5 +1,5 @@
 // Utilidades de /reportar: compresión de foto, GPS y llamadas a /clasificar.
-import { API, type ClasificacionRejilla, type LecturaTexto } from "./observations";
+import { API, type ClasificacionAgua, type ClasificacionRejilla, type LecturaTexto } from "./observations";
 
 const MAX_LADO = 1600;
 
@@ -72,12 +72,20 @@ async function post<T>(ruta: string, init: RequestInit): Promise<T> {
 }
 
 export type RespRejilla = { clasificacion: ClasificacionRejilla; claude_disponible: boolean; fallo?: string | null };
+export type RespAgua = { clasificacion: ClasificacionAgua; senal_camara: number; claude_disponible: boolean; fallo?: string | null };
 export type RespTexto = { lectura: LecturaTexto; urgente: boolean; numeros_emergencia: unknown[]; claude_disponible: boolean; fallo?: string | null };
 
 export function clasificarRejilla(foto: Blob, nombre: string) {
   const fd = new FormData();
   fd.append("foto", foto, nombre);
   return post<RespRejilla>("/clasificar/rejilla", { method: "POST", body: fd });
+}
+
+/** Foto del agua: criterio de cuadro de calle (no exige ver una rejilla). */
+export function clasificarAgua(foto: Blob, nombre: string) {
+  const fd = new FormData();
+  fd.append("foto", foto, nombre);
+  return post<RespAgua>("/clasificar/camara", { method: "POST", body: fd });
 }
 
 export function clasificarTexto(texto: string) {

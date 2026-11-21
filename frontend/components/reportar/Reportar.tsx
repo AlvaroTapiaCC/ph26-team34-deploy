@@ -5,17 +5,19 @@ import { Button, Kicker, Logo } from "@/components/ui";
 import {
   aCsv,
   descargar,
+  esCapturaCampo,
   esDeHoy,
   exportarDia,
   leerCola,
   nuevoId,
   registrar,
+  type ClasificacionAgua,
   type ClasificacionRejilla,
   type LecturaTexto,
   type Observacion,
   type TipoReporte,
 } from "@/lib/observations";
-import { clasificarRejilla, clasificarTexto, comprimirFoto, distM, pedirGps, type Gps } from "@/lib/reportar";
+import { clasificarAgua, clasificarRejilla, clasificarTexto, comprimirFoto, distM, pedirGps, type Gps } from "@/lib/reportar";
 import "./reportar.css";
 
 const REJILLA_TXT = { limpia: "Limpia", parcial: "Parcialmente tapada", tapada: "Tapada", no_evaluable: "No se puede evaluar" } as const;
@@ -72,6 +74,7 @@ export default function Reportar() {
   const [lento, setLento] = useState(false);
   const [error, setError] = useState("");
   const [resultado, setResultado] = useState<Observacion | null>(null);
+  const [entrega, setEntrega] = useState<"enviando" | "enviado" | "fallo">("enviando");
   const [rejillaNum, setRejillaNum] = useState(1);
   const [idIde, setIdIde] = useState<string | null>(null);
   const [cercanas, setCercanas] = useState<Cercana[]>([]);
@@ -95,7 +98,7 @@ export default function Reportar() {
 
   useEffect(() => {
     setCampo(new URLSearchParams(window.location.search).get("campo") === "1");
-    setCapturas(leerCola().filter(esDeHoy));
+    setCapturas(leerCola().filter((o) => esDeHoy(o) && esCapturaCampo(o)));
     buscarGps();
   }, [buscarGps]);
 
@@ -179,20 +182,32 @@ export default function Reportar() {
       if (tipo === "texto") {
         const r = await clasificarTexto(texto.trim());
         obs = { ...base, clasificacion: r.lectura, texto: texto.trim(), urgente: r.urgente };
+      } else if (tipo === "agua") {
+        const r = await clasificarAgua(foto!, archivo);
+        obs = { ...base, clasificacion: r.clasificacion, archivo };
       } else {
         const r = await clasificarRejilla(foto!, archivo);
         obs = { ...base, clasificacion: r.clasificacion, archivo };
       }
-      const guardada = await registrar(obs, tipo === "texto" ? null : foto);
-      setResultado(guardada);
-      setCapturas(leerCola().filter(esDeHoy));
-      setPaso(guardada.urgente ? "urgencia" : "resultado");
+      // Mostrar el resultado (y los números de emergencia) apenas llega la clasificación;
+      // el guardado va por separado y no lo bloquea.
+      setResultado(obs);
+      setPaso(obs.urgente ? "urgencia" : "resultado");
+      void entregar(obs);
     } catch (e) {
       setError((e as Error).message);
       setPaso("error");
     } finally {
       clearTimeout(aviso);
     }
+  }
+
+  async function entregar(obs: Observacion) {
+    setEntrega("enviando");
+    const guardada = await registrar(obs, obs.tipo === "texto" ? null : foto);
+    setResultado((cur) => (cur?.id === guardada.id ? guardada : cur));
+    setEntrega(guardada.enviado ? "enviado" : "fallo");
+    setCapturas(leerCola().filter((o) => esDeHoy(o) && esCapturaCampo(o)));
   }
 
   const puedeEnviar = tipo === "texto" ? texto.trim().length >= 3 : !!foto;
@@ -251,7 +266,7 @@ export default function Reportar() {
           {campo && <div className="rp-chip">Rejilla {rejillaNum}</div>}
 
           {tipo === "texto" ? (
-            <textarea className="rp-text" rows={5} placeholder="Ej.: la calle está inundada en Irarrázaval con Los Jesuitas desde hace una hora" value={texto} onChange={(e) => setTexto(e.target.value)} />
+            <textarea className="rp-text" rows={5} placeholder="Ej.: la calle está inundada en Apoquindo con El Bosque desde hace una hora" value={texto} onChange={(e) => setTexto(e.target.value)} />
           ) : (
             <>
               <ul className="rp-guide">
@@ -341,14 +356,19 @@ export default function Reportar() {
         <section className="rp-sec rp-urg">
           <h1 className="rp-h1">Si hay personas en riesgo, llama ahora</h1>
           <Emergencia />
-          <p className="rp-p">Tu reporte quedó registrado. Llama primero; después puedes seguir.</p>
+          <p className="rp-p">Llama primero; después puedes seguir.</p>
+          <Entrega estado={entrega} onReintentar={() => entregar(resultado)} />
           <Button variant="secondary" className="rp-big" onClick={() => reiniciar()}>
             Nuevo reporte
           </Button>
         </section>
       )}
 
-      {paso === "resultado" && resultado && <Resultado obs={resultado} campo={campo} foto={foto} onOtra={() => setPaso("captura")} onNuevo={reiniciar} />}
+      {paso === "resultado" && resultado && (
+        <Resultado obs={resultado} campo={campo} foto={foto} onOtra={() => setPaso("captura")} onNuevo={reiniciar}>
+          <Entrega estado={entrega} onReintentar={() => entregar(resultado)} />
+        </Resultado>
+      )}
 
       {campo && capturas.length > 0 && paso !== "enviando" && (
         <section className="rp-sec rp-lista">
@@ -379,18 +399,47 @@ export default function Reportar() {
   );
 }
 
-function Resultado({ obs, campo, foto, onOtra, onNuevo }: { obs: Observacion; campo: boolean; foto: Blob | null; onOtra: () => void; onNuevo: (sig?: boolean) => void }) {
+function Entrega({ estado, onReintentar }: { estado: "enviando" | "enviado" | "fallo"; onReintentar: () => void }) {
+  if (estado === "enviando") return <p className="rp-p rp-small" role="status">Enviando al servidor…</p>;
+  if (estado === "enviado") return <p className="rp-p rp-small">Enviado al servidor.</p>;
+  return (
+    <p className="rp-p rp-small rp-warn" role="status">
+      No se pudo enviar. Reintenta con señal.{" "}
+      <button className="rp-link" onClick={onReintentar}>
+        Reintentar envío
+      </button>
+    </p>
+  );
+}
+
+function Resultado({
+  obs,
+  campo,
+  foto,
+  onOtra,
+  onNuevo,
+  children,
+}: {
+  obs: Observacion;
+  campo: boolean;
+  foto: Blob | null;
+  onOtra: () => void;
+  onNuevo: (sig?: boolean) => void;
+  children?: React.ReactNode;
+}) {
   const esTexto = obs.tipo === "texto";
-  const r = !esTexto ? (obs.clasificacion as ClasificacionRejilla) : null;
+  const r = !esTexto ? (obs.clasificacion as ClasificacionRejilla | ClasificacionAgua) : null;
   const t = esTexto ? (obs.clasificacion as LecturaTexto) : null;
-  const repetir = r && (!r.evaluable || r.rejilla === "no_evaluable" || r.confianza === "baja");
+  // Rejilla: hay que ver la rejilla. Agua: basta con que se vea el nivel del agua.
+  const repetir =
+    !!r && (!r.evaluable || r.confianza === "baja" || ("rejilla" in r ? r.rejilla === "no_evaluable" : r.nivel_agua === "no_evaluable"));
 
   return (
     <section className="rp-sec">
       <h1 className="rp-h1">{repetir ? "Necesitamos otra foto" : "Listo, esto vimos"}</h1>
       {r && (
         <dl className="rp-res">
-          {obs.tipo === "rejilla" && (
+          {"rejilla" in r && (
             <>
               <dt>Estado de la rejilla</dt>
               <dd className={`rp-est rp-est--${r.rejilla}`}>{REJILLA_TXT[r.rejilla]}</dd>
@@ -421,11 +470,15 @@ function Resultado({ obs, campo, foto, onOtra, onNuevo }: { obs: Observacion; ca
           )}
         </dl>
       )}
-      {repetir && <p className="rp-p rp-warn">La foto no se pudo evaluar bien. Sácala de nuevo desde arriba, a 1 m, con la rejilla completa y buena luz.</p>}
-      <p className="rp-p rp-small">
-        {obs.sin_gps ? "Sin GPS. " : `GPS ±${obs.precision_m} m. `}
-        {obs.enviado ? "Enviado al servidor." : "Guardado en este teléfono; se enviará cuando el servidor lo reciba."}
-      </p>
+      {repetir && (
+        <p className="rp-p rp-warn">
+          {obs.tipo === "agua"
+            ? "No se pudo ver bien el agua. Sácala de nuevo desde un lugar seguro, con el agua y la vereda a la vista y buena luz."
+            : "La foto no se pudo evaluar bien. Sácala de nuevo desde arriba, a 1 m, con la rejilla completa y buena luz."}
+        </p>
+      )}
+      <p className="rp-p rp-small">{obs.sin_gps ? "Sin GPS." : `GPS ±${obs.precision_m} m.`}</p>
+      {children}
       {campo && foto && obs.archivo && (
         <Button variant="secondary" className="rp-big" onClick={() => descargar(obs.archivo!, foto, "image/jpeg")}>
           Guardar foto en el teléfono
