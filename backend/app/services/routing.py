@@ -20,6 +20,7 @@ import threading
 from collections import OrderedDict
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from itertools import pairwise
 from typing import Any
 
 import httpx
@@ -144,7 +145,7 @@ def _tramo_recto(a: Punto, b: Punto) -> Tramo:
 
 
 def ruta_linea_recta(puntos: Sequence[Punto]) -> Ruta:
-    tramos = [_tramo_recto(a, b) for a, b in zip(puntos, puntos[1:])]
+    tramos = [_tramo_recto(a, b) for a, b in pairwise(puntos)]
     return Ruta(
         geojson={"type": "LineString", "coordinates": [[lon, lat] for lat, lon in puntos]},
         distancia_m=sum(t.distancia_m for t in tramos),
