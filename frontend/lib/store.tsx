@@ -120,6 +120,7 @@ interface Ctx {
   set: (patch: Partial<State>) => void;
   toggleLayer: (key: keyof Layers, value?: boolean) => void;
   flood: (id: string, fuente?: "sensor" | "manual") => void;
+  dispararReporte: () => Promise<void>;
   addRuta: (id: string) => void;
   reload: () => void;
   ranking: RankedPunto[];
@@ -195,6 +196,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     set,
     toggleLayer: (key, value) => dispatch({ type: "layer", key, value }),
     flood: (id, fuente = "sensor") => dispatch({ type: "flood", id, fuente }),
+    // Dispara un reporte en vivo en el simulador (POST /sim/trigger). El backend aún no procesa
+    // observaciones (#28), así que la reacción en pantalla es la del mock local `flood`.
+    dispararReporte: async () => {
+      const p = ranking.find((x) => x.id !== s.anegado);
+      if (!p) return;
+      const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+      let enviado = false;
+      try {
+        const r = await fetch(`${api}/sim/trigger`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sumidero_id: p.id, texto: `Reporte en vivo · ${p.nombre}` }),
+          signal: AbortSignal.timeout(2500),
+        });
+        enviado = r.ok;
+      } catch {
+        /* sin backend: sigue la demo con el mock local */
+      }
+      dispatch({ type: "flood", id: p.id, fuente: "manual" });
+      if (!enviado) dispatch({ type: "set", patch: { toast: "Simulador sin conexión: reporte simulado solo en pantalla" } });
+    },
     addRuta: (id) => {
       const p = ranking.find((x) => x.id === id);
       if (ruta.paradas.some((x) => x.id === id)) dispatch({ type: "set", patch: { toast: "Ya está en la ruta" } });

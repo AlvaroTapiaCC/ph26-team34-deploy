@@ -7,7 +7,7 @@ import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Button, Check, EstadoChip, Kicker, PrioChip, Toast } from "../ui";
 
 export function SensorCard() {
-  const { s, set } = useStore();
+  const { s, set, dispararReporte } = useStore();
   const anegado = s.sensor === "anegado" && s.anegado ? PUNTOS[s.anegado] : null;
   if (s.sensor === "caido") {
     return (
@@ -26,6 +26,7 @@ export function SensorCard() {
           <Button variant="primary" onClick={() => set({ modal: "simular" })}>
             Simular reporte
           </Button>
+          <Button onClick={() => void dispararReporte()}>Disparar reporte</Button>
         </div>
       </section>
     );
@@ -46,6 +47,9 @@ export function SensorCard() {
           {s.markMode ? "Toca un punto del mapa" : "Marcar anegado"}
         </Button>
         <Button onClick={() => set({ modal: "simular" })}>Simular reporte</Button>
+        <Button variant="primary" onClick={() => void dispararReporte()}>
+          Disparar reporte
+        </Button>
       </div>
     </section>
   );

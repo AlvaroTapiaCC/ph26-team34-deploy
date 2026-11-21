@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "nombre": "Demo Drena · tarde del 13 de octubre",
+  "duracion_s": 90,
+  "eventos": [
+    {"t": 0,  "tipo": "lluvia", "payload": {"intensidad": "inicio", "nota": "Entra la celda convectiva por el poniente"}},
+    {"t": 6,  "tipo": "reporte", "payload": {"fuente": "vecino", "tipo_obs": "texto", "sumidero_id": "p3", "texto": "Irarrázaval con Pedro de Valdivia se está juntando agua en la esquina"}},
+    {"t": 14, "tipo": "movimiento_cuadrilla", "payload": {"cuadrilla_id": "c1", "sumidero_id": "p1", "estado": "en_camino"}},
+    {"t": 22, "tipo": "reporte", "payload": {"fuente": "camara", "tipo_obs": "cuadro_camara", "sumidero_id": "p1", "media_url": "/img/sumidero-anegado.jpg", "texto": "Agua cubre la calzada frente a la rejilla"}},
+    {"t": 30, "tipo": "reporte", "payload": {"fuente": "vecino", "tipo_obs": "foto_rejilla", "sumidero_id": "p4", "media_url": "/img/sumidero-thumb.jpg", "texto": "Rejilla tapada con hojas"}},
+    {"t": 38, "tipo": "movimiento_cuadrilla", "payload": {"cuadrilla_id": "c1", "sumidero_id": "p1", "estado": "en_sitio"}},
+    {"t": 46, "tipo": "movimiento_cuadrilla", "payload": {"cuadrilla_id": "c2", "sumidero_id": "p4", "estado": "en_camino"}},
+    {"t": 58, "tipo": "movimiento_cuadrilla", "payload": {"cuadrilla_id": "c1", "sumidero_id": "p1", "estado": "limpio"}},
+    {"t": 70, "tipo": "reporte", "payload": {"fuente": "cuadrilla", "tipo_obs": "foto_rejilla", "sumidero_id": "p4", "media_url": "/img/sumidero-ficha.jpg", "texto": "Rejilla despejada"}},
+    {"t": 90, "tipo": "lluvia", "payload": {"intensidad": "fin", "nota": "La celda se aleja"}}
+  ]
+}
