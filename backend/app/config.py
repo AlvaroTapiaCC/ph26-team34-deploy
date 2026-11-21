@@ -37,6 +37,9 @@ class Settings:
     # Clasificar y extraer son tareas acotadas: 'low' basta y responde más rápido.
     claude_effort: str = field(default_factory=lambda: os.getenv("CLAUDE_EFFORT", "low"))
     storage_bucket: str = field(default_factory=lambda: os.getenv("SUPABASE_STORAGE_BUCKET", "photos"))
+    # Si se define, los endpoints administrativos (p. ej. /formula/recompute) exigen el
+    # header X-Admin-Token. Vacío = abiertos (desarrollo / demo).
+    admin_token: str = field(default_factory=lambda: os.getenv("ADMIN_TOKEN", ""))
     cors_origins: list[str] = field(default_factory=lambda: _csv(os.getenv("CORS_ORIGINS", "*")))
 
 

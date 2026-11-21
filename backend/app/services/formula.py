@@ -15,10 +15,13 @@ Si falta una feature, cuenta como 0.
 """
 from __future__ import annotations
 
+import logging
 import math
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
+
+log = logging.getLogger(__name__)
 
 # Feature del sumidero que corresponde a cada peso de p_pred
 PESO_A_FEATURE = {
@@ -70,12 +73,20 @@ class Score:
 
 
 def clamp(x: float, lo: float = 0.0, hi: float = 1.0) -> float:
+    """Acota a [lo, hi]. Un NaN cuenta como `lo` (dato inválido = sin aporte), no como máximo."""
+    if x != x:  # NaN
+        return lo
     return max(lo, min(hi, x))
 
 
 def _f(features: Mapping[str, float], key: str) -> float:
+    """Feature numérica; si falta, no es número o es NaN/infinito, cuenta como 0."""
     v = features.get(key)
-    return 0.0 if v is None else float(v)
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return 0.0
+    return v if math.isfinite(v) else 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -117,6 +128,18 @@ def p_final(s: SumideroInput, cfg: Mapping[str, Any]) -> tuple[float, float, flo
 # ---------------------------------------------------------------------------
 # Paso 2: efecto en cadena (§6.2)
 # ---------------------------------------------------------------------------
+def cadena_valida(ch: StreetChain) -> bool:
+    """Mismo largo de ids y distancias, distancias finitas y no decrecientes (de arriba a abajo)."""
+    ids, dist = list(ch.sumidero_ids), list(ch.distancias_m)
+    if len(ids) != len(dist):
+        return False
+    try:
+        d = [float(x) for x in dist]
+    except (TypeError, ValueError):
+        return False
+    return all(math.isfinite(x) for x in d) and all(b >= a for a, b in zip(d, d[1:]))
+
+
 def efecto_cadena(
     p: Mapping[str, float],
     chains: Iterable[StreetChain],
@@ -135,11 +158,17 @@ def efecto_cadena(
     aporte: dict[str, float] = {}
     for ch in chains:
         ids, dist = list(ch.sumidero_ids), list(ch.distancias_m)
+        if not cadena_valida(ch):
+            # Datos mal cargados: se ignora esta calle (sin efecto en cadena) en vez de romper
+            # el recálculo. Se registra para corregir el pipeline.
+            log.warning("street_chain %s inválida (largos %d/%d o distancias no crecientes); se ignora",
+                        ch.street_id, len(ids), len(dist))
+            continue
         for i, sid in enumerate(ids):
             if sid not in p:
                 continue
             acc = sum(
-                p[ids[j]] * math.exp(-abs(dist[i] - dist[j]) / lam)
+                p[ids[j]] * math.exp(-(dist[i] - dist[j]) / lam)
                 for j in range(i)
                 if ids[j] in p
             )
@@ -176,8 +205,15 @@ def consecuencia(
     nivel_agua: str | None = None,
     modo: str = "antes",
 ) -> float:
-    """C = norm(área) · (1 + w_crit · criticidad). En Durante: C · (1 + w_agua · nivel_agua)."""
-    c = clamp(area_norm) * (1 + cfg["consecuencia"]["w_crit"] * clamp(criticidad))
+    """C = área_efectiva · (1 + w_crit · criticidad). En Durante: C · (1 + w_agua · nivel_agua).
+
+    área_efectiva = piso + (1 - piso) · norm(área). El piso evita que un sumidero sin área
+    de aporte (dato faltante o 0) quede con C = 0 y, por lo tanto, con prioridad 0 aunque
+    tenga una rejilla tapada confirmada o infraestructura crítica al lado.
+    """
+    piso = clamp(cfg["consecuencia"].get("piso_area", 0.0))
+    area_ef = piso + (1 - piso) * clamp(area_norm)
+    c = area_ef * (1 + cfg["consecuencia"]["w_crit"] * clamp(criticidad))
     if modo == "durante" and nivel_agua:
         nivel = cfg["durante"]["nivel_agua"].get(nivel_agua, 0.0)
         c *= 1 + cfg["durante"]["w_agua"] * nivel
@@ -220,6 +256,8 @@ def calcular_ranking(
         c = consecuencia(area_norm[s.id], _f(s.features, "criticidad"), cfg, s.nivel_agua, modo)
         det = {**det, "aporte_cadena": aporte_cadena.get(s.id, 0.0), "area_norm": area_norm[s.id],
                "criticidad": _f(s.features, "criticidad")}
+        if _f(s.features, "area_aporte") <= 0:
+            det["area_faltante"] = True  # C usa solo el piso: revisar el dato en el pipeline
         if modo == "durante" and s.nivel_agua:
             det["nivel_agua"] = s.nivel_agua
         urgente = modo == "durante" and s.urgente
