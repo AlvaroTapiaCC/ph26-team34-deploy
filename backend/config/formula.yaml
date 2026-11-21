@@ -30,6 +30,8 @@ normalizacion:
 features_simuladas: [dias_sin_limpieza]
 
 # Lo confirmado manda: una foto reciente con rejilla evaluable fija P.
+confianza: {alta: 1.0, media: 0.7, baja: 0.4}
+
 observado:
   tapada: 0.95
   parcial: 0.6
