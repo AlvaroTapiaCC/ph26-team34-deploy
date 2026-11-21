@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { areaAporte, ESCURRIMIENTO, fmt, instruccion, LIMITES, MAP_BOUNDS, pad2, TOTAL_INTERSECCIONES, type LngLat } from "@/lib/data";
+import { areaAporte, ESCURRIMIENTO, fmt, instruccion, LIMITES, MAP_BOUNDS, pad2, PRIO_LABEL, TOTAL_INTERSECCIONES, type LngLat } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Button, Kicker, Stat } from "../ui";
@@ -70,7 +70,7 @@ export default function Ficha() {
           </div>
           <div className="stats3">
             <Stat inset="soft" value={`${fmt(p.area)} km²`} label="área de aporte" />
-            <Stat inset="soft" value={fmt(p.score)} label="puntaje" accent />
+            <Stat inset="soft" value={PRIO_LABEL[p.prio]} label="prioridad" accent />
             <Stat inset="soft" value={`#${p.rank}`} label={`de ${TOTAL_INTERSECCIONES.toLocaleString("es-CL")}`} />
           </div>
           <div>

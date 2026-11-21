@@ -881,9 +881,6 @@ p {
 .rrow__pct {
   width: 72px;
 }
-.rrow__score {
-  width: 64px;
-}
 .cutline {
   display: flex;
   align-items: center;
@@ -1671,8 +1668,8 @@ p {
 .formula__eq {
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 34px;
-  line-height: 44px;
+  font-size: 22px;
+  line-height: 30px;
   color: var(--lime);
 }
 .formula__term {
@@ -1681,8 +1678,14 @@ p {
   font-size: 15px;
   line-height: 22px;
 }
+.formula__term em {
+  display: block;
+  font-style: normal;
+  font-size: 13px;
+  color: var(--surface-3);
+}
 .formula__term b {
-  width: 80px;
+  width: 170px;
   flex: none;
   font-family: var(--font-mono);
   font-weight: 700;

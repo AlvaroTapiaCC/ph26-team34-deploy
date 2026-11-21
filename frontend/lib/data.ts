@@ -165,6 +165,22 @@ export function instruccion(p: RankedPunto) {
   return `Prioridad ${p.rank}. Recibe el agua de ${fmt(p.area)} km², el ${p.pctExterno} % desde ${p.origen ?? p.comuna}, ${p.cerca.toLowerCase().startsWith("metro a") ? `a ${p.cerca.slice(8)} de la estación de metro` : p.cerca.toLowerCase()}. Limpiar los sumideros de la esquina antes de las 14:00.`;
 }
 
+// "Qué hay cerca" para el héroe: la infraestructura más crítica de `criticidad` ("Ⓜ Metro X · 80 m", "Colegio · 140 m").
+export function cercaResumen(p: Punto): { valor: string; etiqueta: string } {
+  const orden = ["metro", "paso bajo nivel", "hospital", "colegio"];
+  const items = p.criticidad.map((c) => {
+    const [nombre, dist] = c.replace(/^Ⓜ\s*/, "").split(" · ");
+    const tipo = orden.find((t) => nombre.toLowerCase().startsWith(t)) ?? nombre.toLowerCase();
+    return { tipo, nombre, dist };
+  });
+  items.sort((a, b) => (orden.indexOf(a.tipo) + 1 || 9) - (orden.indexOf(b.tipo) + 1 || 9));
+  const it = items[0];
+  if (!it) return { valor: "Nada", etiqueta: "crítico a menos de 200 m" };
+  const valor = it.tipo.charAt(0).toUpperCase() + it.tipo.slice(1);
+  const resto = it.nombre.slice(it.tipo.length).trim();
+  return { valor, etiqueta: [it.dist ? `a ${it.dist}` : null, resto || null].filter(Boolean).join(" · ") };
+}
+
 export const PRIO_LABEL: Record<Prioridad, string> = { alta: "▲ Alta", media: "◆ Media", baja: "● Baja" };
 
 // Ruta de cuadrilla: derivada del escenario, la comuna, las cuadrillas y los puntos agregados.

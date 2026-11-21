@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
-import { cita, ESCURRIMIENTO, fmt, GORE, MAP_BOUNDS, motivo, pad2, SCENARIOS, TOTAL_INTERSECCIONES, type RankedPunto } from "@/lib/data";
+import { cercaResumen, cita, ESCURRIMIENTO, fmt, GORE, MAP_BOUNDS, motivo, pad2, SCENARIOS, TOTAL_INTERSECCIONES, type RankedPunto } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Button, Check, Kicker, PrioChip, Stat } from "../ui";
 
 export function Hero({ p }: { p: RankedPunto }) {
   const { set, addRuta, scenarioLabel } = useStore();
+  const cerca = cercaResumen(p);
   return (
     <section className="card hero">
       <div className="hero__head">
@@ -23,7 +24,7 @@ export function Hero({ p }: { p: RankedPunto }) {
       <div className="stats3">
         <Stat value={`${p.pctExterno} %`} label={`del agua viene de ${p.origen ?? p.comuna}`} accent />
         <Stat value={`${fmt(p.area)} km²`} label="área de aporte" />
-        <Stat value={fmt(p.score)} label="puntaje" />
+        <Stat value={cerca.valor} label={cerca.etiqueta} />
       </div>
       <p className="hero__quote">{cita(p)}</p>
       <div className="row-btns">
@@ -47,10 +48,6 @@ export function RankRow({ p, onClick }: { p: RankedPunto; onClick: () => void })
       <span className="rrow__num rrow__pct">
         <b>{p.pctExterno} %</b>
         <small>externo</small>
-      </span>
-      <span className="rrow__num rrow__score">
-        <b className="is-accent">{fmt(p.score)}</b>
-        <small>puntaje</small>
       </span>
       <PrioChip prio={p.prio} />
     </button>

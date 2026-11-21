@@ -99,18 +99,27 @@ export function Metodologia() {
     <main className="method">
       <div className="method__row method__row--a">
         <section className="formula">
-          <Kicker tone="accent">Puntaje de prioridad</Kicker>
-          <div className="formula__eq">puntaje = Q̂rel · (1 + d̂) · w crit</div>
-          <div className="formula__term">
-            <b>Q̂rel</b>Caudal relativo: suma de C · lluvia · área de las celdas aguas arriba, normalizado 0–1.
+          <Kicker tone="accent">Cómo se decide la prioridad</Kicker>
+          <div className="formula__eq">
+            de dónde viene el agua · cuánta área drena · qué hay cerca · si la rejilla está tapada → prioridad
           </div>
           <div className="formula__term">
-            <b>d̂</b>Profundidad de la depresión rellenada en ese punto: dónde queda atrapada el agua.
+            <b>Si la rejilla está tapada</b>
+            Lo confirmado manda: una foto reciente fija el estado y se recalcula todo lo que está aguas abajo. <em>Más importante.</em>
           </div>
           <div className="formula__term">
-            <b>w crit</b>1 + 0,5 paso bajo nivel + 0,3 metro + 0,2 hospital o colegio a &lt; 150 m.
+            <b>Cuánta área drena</b>
+            El agua que le llega al sumidero según las calles y la pendiente. <em>Más importante.</em>
           </div>
-          <p className="formula__ia">La IA solo traduce el resultado a instrucciones; no cambia el orden.</p>
+          <div className="formula__term">
+            <b>De dónde viene el agua</b>
+            Qué parte baja desde otras comunas o desde más arriba en la misma calle. <em>Importante.</em>
+          </div>
+          <div className="formula__term">
+            <b>Qué hay cerca</b>
+            Metro, pasos bajo nivel, hospitales y colegios: pesan más si fallan. <em>Menos importante.</em>
+          </div>
+          <p className="formula__ia">La fórmula decide; Claude ve, lee y explica. Claude convierte fotos y textos en datos y redacta la explicación, pero no cambia el orden.</p>
         </section>
         <section className="nots">
           <Kicker tone="ink">Lo que no hace, a propósito</Kicker>
