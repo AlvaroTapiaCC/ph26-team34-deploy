@@ -107,29 +107,37 @@ def _paradas(conn: Connection, crew_id: str) -> list[dict[str, Any]]:
     ).fetchall()
 
 
-def ruta(conn: Connection, crew_id: str) -> dict[str, Any]:
+def ruta(conn: Connection, crew_id: str, ver_privado: bool = False) -> dict[str, Any]:
     """Ruta vigente: la última versión guardada por el despacho (#32) o, si no hay, una calculada
-    al vuelo desde la posición de la cuadrilla por sus misiones activas (sin guardarla)."""
-    crew = conn.execute("select id, st_y(geom_actual) as lat, st_x(geom_actual) as lon from crews where id = %s",
-                        (crew_id,)).fetchone()
+    al vuelo desde la posición de la cuadrilla por sus misiones activas (sin guardarla).
+
+    Privacidad (misma regla que `listar`): para una cuadrilla REAL sin permiso de admin no se usa
+    su posición ni la ruta guardada (puede partir en su posición); se calcula desde la primera
+    parada y se marca `posicion_oculta: true`."""
+    crew = conn.execute("select id, is_simulated, st_y(geom_actual) as lat, st_x(geom_actual) as lon"
+                        " from crews where id = %s", (crew_id,)).fetchone()
     if crew is None:
         raise NoEncontrado(f"Cuadrilla {crew_id} no existe")
+    oculta = not (crew["is_simulated"] or ver_privado)
+    extra = {"posicion_oculta": True} if oculta else {}
     paradas = _paradas(conn, crew_id)
-    guardada = conn.execute(
-        "select version, geojson, paradas, computed_at from routes where crew_id = %s order by version desc limit 1",
-        (crew_id,),
-    ).fetchone()
-    if guardada:
-        return {"crew_id": crew_id, "origen": "despacho", **guardada, "misiones": paradas}
+    if not oculta:
+        guardada = conn.execute(
+            "select version, geojson, paradas, computed_at from routes where crew_id = %s"
+            " order by version desc limit 1",
+            (crew_id,),
+        ).fetchone()
+        if guardada:
+            return {"crew_id": crew_id, "origen": "despacho", **guardada, "misiones": paradas}
 
     puntos = [(p["lat"], p["lon"]) for p in paradas if p["lat"] is not None]
-    if crew["lat"] is not None:
+    if crew["lat"] is not None and not oculta:
         puntos = [(crew["lat"], crew["lon"]), *puntos]
     if not puntos:
         return {"crew_id": crew_id, "origen": "sin_misiones", "version": None, "geojson": None,
-                "paradas": [], "misiones": []}
+                "paradas": [], "misiones": [], **extra}
     r = routing.ruta(puntos).to_dict()
-    return {"crew_id": crew_id, "origen": "calculada", "version": None, **r, "misiones": paradas}
+    return {"crew_id": crew_id, "origen": "calculada", "version": None, **r, "misiones": paradas, **extra}
 
 
 # ---------------------------------------------------------------------------

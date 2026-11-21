@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
+from psycopg.types.json import Jsonb
 
 from app.main import app
 from app.services import cuadrillas, routing, storage
@@ -76,7 +77,7 @@ def escena(monkeypatch):
     yield e
     with get_conn() as conn:
         conn.execute("delete from events where payload->>'crew_id' = any(%s)", ([e.crew, e.real],))
-        conn.execute("delete from missions where crew_id = %s", (e.crew,))
+        conn.execute("delete from missions where crew_id = any(%s)", ([e.crew, e.real],))
         conn.execute("delete from crews where id = any(%s)", ([e.crew, e.real],))
         conn.execute("delete from sumideros where id = any(%s)", ([e.s1, e.s2],))
 
@@ -109,7 +110,42 @@ def test_ruta_calculada_con_paradas_en_orden(escena):
     assert r["origen"] == "calculada" and r["geojson"]["type"] == "LineString"
     assert [m["sumidero_id"] for m in r["misiones"]] == [escena.s1, escena.s2, escena.s1]
     assert len(r["tramos"]) == 3  # posición de la cuadrilla + 3 paradas
+    assert r["geojson"]["coordinates"][0] == pytest.approx([-70.60, -33.45])  # simulada: parte en su posición
+    assert "posicion_oculta" not in r
     assert client.get("/crews/no-existe/route").status_code == 404
+
+
+@INTEGRACION
+def test_ruta_publica_de_cuadrilla_real_no_revela_su_posicion(escena, monkeypatch):
+    from app.db import get_conn
+
+    pos = "-70.61"  # longitud de la cuadrilla real (-33.44, -70.61); ninguna parada la comparte
+    monkeypatch.setattr("app.seguridad.get_settings", lambda: SimpleNamespace(admin_token="adm", crew_token=""))
+
+    # (a) Sin misiones: no hay geometría ni coordenadas de la cuadrilla
+    r = client.get(f"/crews/{escena.real}/route")
+    assert r.status_code == 200
+    j = r.json()
+    assert j["origen"] == "sin_misiones" and j["geojson"] is None and j["posicion_oculta"] is True
+    assert pos not in r.text and "-33.44" not in r.text
+
+    # (b) Con misiones y una ruta guardada que parte en su posición: se ignora y se calcula
+    #     desde la primera parada
+    with get_conn() as conn:
+        for s, o in ((escena.s1, 1), (escena.s2, 2)):
+            conn.execute("insert into missions (crew_id, sumidero_id, orden) values (%s, %s, %s)", (escena.real, s, o))
+        conn.execute("insert into routes (crew_id, version, geojson) values (%s, 1, %s)",
+                     (escena.real, Jsonb({"type": "LineString", "coordinates": [[-70.61, -33.44], [-70.601, -33.451]]})))
+    r = client.get(f"/crews/{escena.real}/route")
+    j = r.json()
+    assert j["origen"] == "calculada" and j["posicion_oculta"] is True and j["version"] is None
+    assert j["geojson"]["coordinates"][0] == pytest.approx([-70.601, -33.451])  # primera parada
+    assert len(j["tramos"]) == 1
+    assert pos not in r.text and "-33.44" not in r.text
+
+    # Con token de admin se entrega la ruta guardada
+    j = client.get(f"/crews/{escena.real}/route", headers={"X-Admin-Token": "adm"}).json()
+    assert j["origen"] == "despacho" and j["geojson"]["coordinates"][0] == [-70.61, -33.44]
 
 
 @INTEGRACION

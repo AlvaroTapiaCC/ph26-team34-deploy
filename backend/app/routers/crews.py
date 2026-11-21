@@ -38,14 +38,16 @@ def update_position(crew_id: str, body: PosicionIn):
 
 
 @router.get("/{crew_id}/route")
-def get_route(crew_id: str):
+def get_route(crew_id: str, x_admin_token: str | None = Header(default=None)):
     """Ruta vigente: la última guardada por el despacho o, si no hay, calculada con las misiones activas.
 
-    `origen` indica cuál: `despacho`, `calculada` o `sin_misiones`.
+    `origen` indica cuál: `despacho`, `calculada` o `sin_misiones`. Para una cuadrilla real sin
+    `X-Admin-Token` la ruta parte en la primera parada (nunca en su posición) y viene
+    `posicion_oculta: true`; las simuladas parten siempre en su posición.
     """
     try:
         with get_conn() as conn:
-            return cuadrillas.ruta(conn, crew_id)
+            return cuadrillas.ruta(conn, crew_id, ver_privado=es_admin(x_admin_token))
     except cuadrillas.NoEncontrado as e:
         raise HTTPException(404, str(e)) from None
 
