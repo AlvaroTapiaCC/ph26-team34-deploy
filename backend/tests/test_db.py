@@ -77,3 +77,82 @@ def test_un_solo_pool_con_requests_simultaneos(pool_limpio):
     assert all(r is resultados[0] for r in resultados)
     db.close_pool()
     assert PoolLento.creados[0].cerrado and db._pool is None
+
+
+# --- La base deja de responder después de entregar la conexión ----------------------
+class ConnColgada:
+    """Conexión cuya consulta se cuelga hasta que la cancelan (simula red caída)."""
+
+    def __init__(self):
+        self.cancelada = threading.Event()
+        self.closed = False
+        self.rollbacks = 0
+
+    def execute(self, *a, **k):
+        self.cancelada.wait(30)
+        raise AssertionError("no debió llegar aquí sin cancelación")
+
+    def cancel_safe(self, timeout=None):
+        self.cancelada.set()
+
+    def close(self):
+        self.closed = True
+
+    def rollback(self):
+        self.rollbacks += 1
+
+    def commit(self):
+        pass
+
+
+class PoolFalso:
+    def __init__(self, conn):
+        self.conn, self.devueltas = conn, []
+
+    def getconn(self, timeout=None):
+        return self.conn
+
+    def putconn(self, conn):
+        self.devueltas.append(conn)
+
+    def close(self):
+        pass
+
+
+def test_health_db_503_si_la_consulta_se_cuelga(pool_limpio):
+    conn = ConnColgada()
+    pool = PoolFalso(conn)
+    pool_limpio.setattr(db, "get_pool", lambda: pool)
+    t = time.perf_counter()
+    r = client.get("/health/db")
+    dur = time.perf_counter() - t
+    assert r.status_code == 503 and "consulta" in r.json()["detail"]
+    assert dur < 5, f"tardó {dur:.1f} s"
+    assert conn.cancelada.is_set()                 # se pidió cancelar al servidor
+    assert conn.closed and conn.rollbacks == 0     # se descartó sin bloquear en rollback
+    assert pool.devueltas == [conn]                # volvió al pool (que la reemplaza por estar cerrada)
+
+
+def test_ejecutar_con_timeout_devuelve_resultado():
+    class C:
+        def execute(self, *a):
+            return self
+
+        def fetchone(self):
+            return {"ok": 1}
+
+    assert db.ejecutar_con_timeout(C(), lambda c: c.execute("x").fetchone(), 1) == {"ok": 1}
+
+
+def test_conexiones_nuevas_fijan_statement_timeout():
+    llamadas = []
+
+    class C:
+        def execute(self, sql):
+            llamadas.append(sql)
+
+        def commit(self):
+            llamadas.append("commit")
+
+    db._configurar(C())
+    assert llamadas[0] == f"set statement_timeout = '{db.STATEMENT_TIMEOUT}'" and llamadas[1] == "commit"
