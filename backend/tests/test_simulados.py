@@ -53,31 +53,40 @@ def test_integracion_solo_toca_lo_simulado_de_sus_sumideros():
     run = uuid.uuid4().hex[:10]
     a, b, otro = f"test-sim-a-{run}", f"test-sim-b-{run}", f"test-sim-otro-{run}"
     crew = sim.Cuadrilla(f"sim-test-{run}", "test", ("basica",), -70.6, -33.45)
+    real = sim.Cuadrilla(f"real-test-{run}", "simulada?", ("hidrojet",), -70.7, -33.5)
     try:
         with get_conn() as conn:
             for sid in (a, b, otro):
                 conn.execute("insert into sumideros (id, geom, fuente) values (%s, st_point(-70.6,-33.45,4326), 'manual')",
                              (sid,))
+            # Una cuadrilla REAL con el id que el generador intentará usar: no debe tocarse
+            conn.execute("insert into crews (id, nombre, equipamiento, is_simulated)"
+                         " values (%s, 'Real', '{basica}', false)", (real.id,))
             # Un registro real (no simulado) en `a` y uno simulado en `otro`: ninguno debe tocarse
             conn.execute("insert into cleaning_history (sumidero_id, fecha, is_simulated) values (%s, '2026-01-01', false)",
                          (a,))
             conn.execute("insert into cleaning_history (sumidero_id, fecha, is_simulated) values (%s, '2026-02-02', true)",
                          (otro,))
-            hist = [(a, date(2026, 11, 1)), (b, date(2026, 10, 1))]
-            sim.escribir(conn, [crew], hist, [a, b])
-            r2 = sim.escribir(conn, [crew], hist, [a, b])  # idempotente
+            # Simulado previo en `a`, que tiene historial real: debe desaparecer
+            conn.execute("insert into cleaning_history (sumidero_id, fecha, is_simulated)"
+                         " values (%s, '2026-11-20', true)", (a,))
+            hist = [(b, date(2026, 10, 1))]  # solo `b` (sin historial real) recibe simulado
+            sim.escribir(conn, [crew, real], hist, [a, b])
+            r2 = sim.escribir(conn, [crew, real], hist, [a, b])  # idempotente
             filas = conn.execute("select sumidero_id, fecha, is_simulated from cleaning_history"
                                  " where sumidero_id = any(%s) order by sumidero_id, fecha", ([a, b, otro],)).fetchall()
             c = conn.execute("select is_simulated, equipamiento from crews where id = %s", (crew.id,)).fetchone()
-        assert r2["historial_reemplazado"] == 2
+            cr = conn.execute("select is_simulated, nombre, equipamiento from crews where id = %s",
+                              (real.id,)).fetchone()
+        assert r2["historial_reemplazado"] == 1
         assert [(f["sumidero_id"], str(f["fecha"]), f["is_simulated"]) for f in filas] == [
-            (a, "2026-01-01", False),   # el real sigue
-            (a, "2026-11-01", True),
+            (a, "2026-01-01", False),   # el real sigue y su simulado previo se borró
             (b, "2026-10-01", True),
             (otro, "2026-02-02", True),  # fuera del alcance: intacto
         ]
         assert c["is_simulated"] is True and c["equipamiento"] == ["basica"]
+        assert cr["is_simulated"] is False and cr["nombre"] == "Real" and cr["equipamiento"] == ["basica"]
     finally:
         with get_conn() as conn:
-            conn.execute("delete from crews where id = %s", (crew.id,))
+            conn.execute("delete from crews where id = any(%s)", ([crew.id, real.id],))
             conn.execute("delete from sumideros where id = any(%s)", ([a, b, otro],))

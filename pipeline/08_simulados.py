@@ -12,8 +12,10 @@ Uso (desde la raíz, con el venv del backend; requiere sumideros ya cargados con
 Garantías:
   - Determinista: la fecha de última limpieza sale de un hash del id del sumidero contra una
     FECHA_REFERENCIA fija, así correrlo dos veces (o en otra máquina) da exactamente lo mismo.
-  - Solo toca filas simuladas: las cuadrillas `sim-*` y el historial con `is_simulated = true`
-    de los sumideros que procesa. Nunca borra ni cambia datos reales.
+  - Solo toca filas simuladas: nunca convierte ni modifica una cuadrilla real (aunque comparta
+    id) y nunca borra ni cambia historial real.
+  - Lo real manda: solo se simula historial para sumideros SIN limpiezas reales; si un sumidero
+    pasa a tener historial real, se le borra el simulado.
   - Una transacción.
 """
 from __future__ import annotations
@@ -86,8 +88,14 @@ def generar_cuadrillas(centros: dict[str, tuple[float, float]]) -> list[Cuadrill
     return out
 
 
-def leer_base(conn) -> tuple[list[str], dict[str, tuple[float, float]]]:
-    ids = [r["id"] for r in conn.execute("select id from sumideros where not is_simulated order by id")]
+def leer_base(conn) -> tuple[list[str], list[str], dict[str, tuple[float, float]]]:
+    """(sumideros sin historial real, sumideros con historial real, centro por comuna)."""
+    filas = conn.execute(
+        "select s.id, exists (select 1 from cleaning_history h where h.sumidero_id = s.id and not h.is_simulated)"
+        " as con_real from sumideros s where not s.is_simulated order by s.id"
+    ).fetchall()
+    sin_real = [r["id"] for r in filas if not r["con_real"]]
+    con_real = [r["id"] for r in filas if r["con_real"]]
     centros = {
         r["comuna"]: (r["lon"], r["lat"])
         for r in conn.execute(
@@ -95,19 +103,24 @@ def leer_base(conn) -> tuple[list[str], dict[str, tuple[float, float]]]:
             " where comuna is not null and not is_simulated group by comuna"
         )
     }
-    return ids, centros
+    return sin_real, con_real, centros
 
 
 def escribir(conn, cuadrillas: list[Cuadrilla], historial: list[tuple[str, date]],
              sumidero_ids: list[str]) -> dict[str, int]:
-    """Upsert de cuadrillas y reemplazo del historial SIMULADO de `sumidero_ids` (nada más)."""
+    """Upsert de cuadrillas simuladas y reemplazo del historial SIMULADO de `sumidero_ids`.
+
+    `sumidero_ids` incluye también los sumideros con historial real: así se les borra el
+    simulado que tuvieran de antes; `historial` solo trae los que no tienen real.
+    """
     with conn.transaction(), conn.cursor() as cur:
         cur.executemany(
             """
             insert into crews (id, nombre, equipamiento, estado, geom_actual, is_simulated)
             values (%s, %s, %s, 'disponible', st_setsrid(st_point(%s, %s), 4326), true)
             on conflict (id) do update set nombre = excluded.nombre, equipamiento = excluded.equipamiento,
-              geom_actual = excluded.geom_actual, is_simulated = true
+              geom_actual = excluded.geom_actual
+            where crews.is_simulated   -- una cuadrilla real con el mismo id no se toca
             """,
             [(c.id, c.nombre, list(c.equipamiento), c.lon, c.lat) for c in cuadrillas],
         )
@@ -129,16 +142,18 @@ def main(argv: list[str] | None = None) -> int:
     from app.db import get_conn
 
     with get_conn(timeout=30) as conn:
-        ids, centros = leer_base(conn)
+        sin_real, con_real, centros = leer_base(conn)
+        ids = sin_real + con_real
         if not ids:
             print("✗ No hay sumideros reales cargados. Corre antes pipeline/07_cargar.py")
             return 1
         cuadrillas = generar_cuadrillas(centros)
-        historial = generar_historial(ids)
+        historial = generar_historial(sin_real)
         dias = sorted((FECHA_REFERENCIA - f).days for _, f in historial)
+        rango = f"mín {dias[0]}, mediana {dias[len(dias) // 2]}, máx {dias[-1]}" if dias else "sin fechas"
         print(f"Cuadrillas: {[c.id for c in cuadrillas]}")
-        print(f"Historial: {len(historial)} de {len(ids)} sumideros | días sin limpieza: "
-              f"mín {dias[0]}, mediana {dias[len(dias) // 2]}, máx {dias[-1]}")
+        print(f"Historial simulado: {len(historial)} de {len(sin_real)} sumideros sin limpiezas reales "
+              f"({len(con_real)} con historial real no se simulan) | días sin limpieza: {rango}")
         if args.dry_run:
             print("Dry run: no se escribió nada.")
             return 0
