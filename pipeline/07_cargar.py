@@ -42,6 +42,8 @@ RAIZ = Path(__file__).resolve().parents[1]
 DATA = RAIZ / "data"
 sys.path.insert(0, str(RAIZ / "backend"))
 
+RADIO_ESQUINA_M = 60   # sumideros con el mismo par de calles a más de esto son esquinas distintas
+
 FEATURES_FORMULA = {"arboles", "feria", "obras", "suelo", "pendiente", "clima", "camara", "criticidad",
                     "area_aporte", "dias_sin_limpieza"}
 
@@ -59,6 +61,7 @@ class Sumidero:
     street_id: str | None = None
     orden_en_calle: int | None = None
     etiquetas: set[str] = field(default_factory=set)
+    quitar: set[str] = field(default_factory=set)   # etiquetas que una fuente desmiente explícitamente
 
 
 @dataclass
@@ -102,6 +105,13 @@ def _titulo(calle: str) -> str:
     return " ".join(palabras)
 
 
+def _distancia_m(a: tuple[float, float], b: tuple[float, float]) -> float:
+    """Distancia aproximada en metros entre (lon, lat); suficiente para escalas de una cuadra."""
+    dx = (a[0] - b[0]) * 111_320 * math.cos(math.radians((a[1] + b[1]) / 2))
+    dy = (a[1] - b[1]) * 110_540
+    return math.hypot(dx, dy)
+
+
 def _num(v: Any) -> float | None:
     """Número finito o None ('' / 'nan' / None / texto no numérico)."""
     if v is None or (isinstance(v, str) and v.strip() == ""):
@@ -135,9 +145,17 @@ def leer_rejillas(path: Path) -> tuple[dict[str, Sumidero], dict[str, Intersecci
         calle_p, calle_i = (p.get("CALLE_P") or "").strip(), (p.get("CALLE_I") or "").strip()
         iid = None
         if calle_p:
-            # La misma esquina aparece como (A, B) o (B, A): se ordena para agruparlas.
+            # La misma esquina aparece como (A, B) o (B, A): se ordena para agruparlas. Pero el
+            # nombre no basta (dos calles pueden cruzarse más de una vez o el catastro repetir
+            # nombres): solo se agrupa con un sumidero a menos de RADIO_ESQUINA_M; si no, es
+            # otra esquina con sufijo -2, -3...
             par = sorted(x for x in (calle_p, calle_i) if x)
-            iid = _slug(f"{comuna or ''} {' / '.join(par)}")
+            base = _slug(f"{comuna or ''} {' / '.join(par)}")
+            n = 1
+            iid = base
+            while iid in inters and _distancia_m(inters[iid].puntos[0], (lon, lat)) > RADIO_ESQUINA_M:
+                n += 1
+                iid = f"{base}-{n}"
             if iid not in inters:
                 inters[iid] = Interseccion(iid, " / ".join(_titulo(x) for x in par), comuna or "")
             inters[iid].puntos.append((lon, lat))
@@ -166,8 +184,13 @@ def aplicar_terreno(path: Path, sumideros: dict[str, Sumidero], avisos: list[str
                 s.street_id = fila["street_id"]
             if (orden := _num(fila.get("orden_en_calle"))) is not None:
                 s.orden_en_calle = int(orden)
-            if str(fila.get("en_zona_mut", "")).strip().lower() == "true":
+            zona = str(fila.get("en_zona_mut", "")).strip().lower()
+            if zona == "true":
                 s.etiquetas.add("zona_mut")
+                s.quitar.discard("zona_mut")
+            elif zona == "false":  # un False explícito desmiente una carga anterior; vacío = sin dato
+                s.quitar.add("zona_mut")
+                s.etiquetas.discard("zona_mut")
             n += 1
     return n
 
@@ -197,7 +220,7 @@ def leer_cadenas(paths: list[Path], sumideros: dict[str, Sumidero], avisos: list
     for path in paths:
         for c in json.loads(path.read_text(encoding="utf-8")):
             sid, ids, dist = c.get("street_id"), list(c.get("sumidero_ids") or []), list(c.get("distancias_m") or [])
-            if not sid or len(ids) < 2 or len(ids) != len(dist):
+            if not sid or len(ids) < 2 or len(ids) != len(dist) or len(set(ids)) != len(ids):
                 avisos.append(f"{path.name}: cadena {sid} mal formada (se ignora)")
                 continue
             d = [_num(x) for x in dist]
@@ -259,10 +282,13 @@ def escribir(conn, datos: dict[str, Any]) -> dict[str, int]:
               elevacion = coalesce(excluded.elevacion, sumideros.elevacion),
               features = sumideros.features || excluded.features,
               comuna = excluded.comuna, calle = excluded.calle,
-              etiquetas = (select array(select distinct unnest(sumideros.etiquetas || excluded.etiquetas)))
+              etiquetas = (select coalesce(array_agg(distinct e order by e), '{}')
+                             from unnest(sumideros.etiquetas || excluded.etiquetas) as e
+                            where e <> all(%s::text[]))
             """,
             [(s.id, s.lon, s.lat, s.intersection_id, s.street_id, s.orden_en_calle, s.elevacion,
-              Jsonb(s.features), s.comuna, s.calle, sorted(s.etiquetas)) for s in sumideros.values()],
+              Jsonb(s.features), s.comuna, s.calle, sorted(s.etiquetas), sorted(s.quitar))
+             for s in sumideros.values()],
         )
         cur.executemany(
             """

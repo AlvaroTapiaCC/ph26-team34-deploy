@@ -49,10 +49,20 @@ def test_geometria_invalida(tmp_path, geom):
 
 def test_esquina_en_ambos_ordenes_es_una_interseccion(tmp_path):
     d = cargar.preparar(_datos(tmp_path, [_rejilla("A", calle_p="X", calle_i="Y"),
-                                          _rejilla("B", -70.61, calle_p="Y", calle_i="X")]))
+                                          _rejilla("B", -70.6003, calle_p="Y", calle_i="X")]))
     assert len(d["intersecciones"]) == 1
     i = next(iter(d["intersecciones"].values()))
     assert len(i.puntos) == 2 and d["sumideros"]["A"].intersection_id == d["sumideros"]["B"].intersection_id
+
+
+def test_mismo_par_de_calles_lejos_son_esquinas_distintas(tmp_path):
+    """Revisión #76: antes se agrupaban por nombre aunque estuvieran a 444 m."""
+    d = cargar.preparar(_datos(tmp_path, [_rejilla("A", -70.600, calle_p="X", calle_i="Y"),
+                                          _rejilla("B", -70.6003, calle_p="Y", calle_i="X"),   # ~28 m
+                                          _rejilla("C", -70.605, calle_p="X", calle_i="Y")]))  # ~460 m
+    s = d["sumideros"]
+    assert s["A"].intersection_id == s["B"].intersection_id != s["C"].intersection_id
+    assert len(d["intersecciones"]) == 2
 
 
 # --- Terreno y features -----------------------------------------------------------------
@@ -88,10 +98,11 @@ def test_cadenas_invalidas_se_ignoran(tmp_path):
         {"street_id": "desorden", "sumidero_ids": ["A", "B"], "distancias_m": [10, 0]},
         {"street_id": "fantasma", "sumidero_ids": ["A", "NO"], "distancias_m": [0, 5]},
         {"street_id": "texto", "sumidero_ids": ["A", "B"], "distancias_m": ["0", "x"]},
+        {"street_id": "repetido", "sumidero_ids": ["A", "A", "B"], "distancias_m": [0, 0, 10]},
     ]
     d = cargar.preparar(_datos(tmp_path, [_rejilla("A"), _rejilla("B")], cadenas=cadenas))
     assert [c["street_id"] for c in d["cadenas"]] == ["ok"]
-    assert len(d["avisos"]) == 4
+    assert len(d["avisos"]) == 5
 
 
 def test_dry_run_no_toca_la_base(tmp_path, monkeypatch, capsys):
@@ -114,7 +125,7 @@ def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
     a, b = f"test-carga-a-{run}", f"test-carga-b-{run}"
     calle = f"CALLE TEST {run}"
     datos_dir = _datos(
-        tmp_path, [_rejilla(a, calle_p=calle, calle_i="X"), _rejilla(b, -70.601, calle_p="X", calle_i=calle)],
+        tmp_path, [_rejilla(a, calle_p=calle, calle_i="X"), _rejilla(b, -70.6003, calle_p="X", calle_i=calle)],
         terreno=f"ID_IDE,elevacion_m,pendiente,area_aporte_m2,street_id,orden_en_calle,en_zona_mut\n"
                 f"{a},630,0.3,800,flujo:{run},0,True\n",
         cadenas=[{"street_id": f"flujo:{run}", "nombre": "test", "sumidero_ids": [a, b], "distancias_m": [0, 40]}],
@@ -126,6 +137,13 @@ def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
             # Otro paso del pipeline agrega una feature directo en la base
             conn.execute("update sumideros set features = features || '{\"arboles\": 0.7}' where id = %s", (a,))
             r2 = cargar.escribir(conn, cargar.preparar(datos_dir))  # segunda corrida: idempotente
+            etiquetas_antes = conn.execute("select etiquetas from sumideros where id = %s", (a,)).fetchone()["etiquetas"]
+            # Una corrección posterior con en_zona_mut=False quita la etiqueta (vacío la conservaría)
+            (datos_dir / "terreno_x.csv").write_text(
+                "ID_IDE,elevacion_m,pendiente,area_aporte_m2,street_id,orden_en_calle,en_zona_mut\n"
+                f"{a},630,0.3,800,flujo:{run},0,False\n", encoding="utf-8")
+            cargar.escribir(conn, cargar.preparar(datos_dir))
+            etiquetas_despues = conn.execute("select etiquetas from sumideros where id = %s", (a,)).fetchone()["etiquetas"]
             filas = {x["id"]: x for x in conn.execute(
                 "select id, intersection_id, street_id, orden_en_calle, elevacion, features, comuna, calle, etiquetas"
                 " from sumideros where id = any(%s)", ([a, b],))}
@@ -135,16 +153,17 @@ def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
                                   (f"flujo:{run}",)).fetchone()
         assert r1["sumideros"] == r2["sumideros"] == 2
         assert filas[a]["features"] == {"pendiente": 0.3, "area_aporte": 800.0, "arboles": 0.7}  # fusionadas
-        assert filas[a]["elevacion"] == 630 and filas[a]["etiquetas"] == ["zona_mut"]
+        assert filas[a]["elevacion"] == 630
+        assert etiquetas_antes == ["zona_mut"] and etiquetas_despues == []
         assert filas[a]["comuna"] == "Providencia" and filas[a]["calle"].startswith("Calle Test")
         assert filas[a]["intersection_id"] == filas[b]["intersection_id"] and n_inter == 1
         assert cadena["sumidero_ids"] == [a, b]
     finally:
         with get_conn() as conn:
+            # Todas las intersecciones de esta ejecución (sus nombres llevan `run`), no solo la de `a`
             conn.execute("delete from street_chains where street_id = %s", (f"flujo:{run}",))
             conn.execute("delete from sumideros where id = any(%s)", ([a, b],))
-            if iid:
-                conn.execute("delete from intersections where id = %s", (iid,))
+            conn.execute("delete from intersections where id like %s", (f"%{run}%",))
 
 
 @pytest.mark.parametrize("entrada,salida", [
