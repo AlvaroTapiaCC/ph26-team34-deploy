@@ -81,11 +81,12 @@ export function Validacion() {
 export function Metodologia() {
   const datos = [
     ["Catastro de sumideros", "DOH · SIALL"],
-    ["Elevación y calles", "DEM de 12,5 m · OpenStreetMap y OSMnx"],
+    ["Elevación y calles", "DEM Copernicus de 30 m · OpenStreetMap y OSMnx"],
     ["Infraestructura crítica", "OpenStreetMap · Gobierno de Santiago"],
-    ["Cobertura de suelo", "Sentinel-2 · ESA WorldCover"],
-    ["Lluvia y viento", "Open-Meteo (pronóstico) · DMC (lluvia observada)"],
-    ["Ferias de Ñuñoa", "Calendario de ferias"],
+    ["Árboles y suelo", "ESA WorldCover"],
+    ["Lluvia y viento", "Open-Meteo"],
+    ["Ferias, mercados y obras", "OpenStreetMap"],
+    ["Paraderos y recorridos de buses", "GTFS de DTPM"],
     ["Anegamientos de octubre de 2026", "Prensa y @TTISantiago · validación histórica"],
   ];
   return (
@@ -95,13 +96,13 @@ export function Metodologia() {
           <Kicker tone="accent">Puntaje de prioridad</Kicker>
           <div className="formula__eq">Prioridad = P<sub>ef</sub> × C</div>
           <div className="formula__term">
-            <b>P<sub>ef</sub></b>Probabilidad efectiva de obstrucción. Considera las observaciones y el arrastre desde aguas arriba.
+            <b>P<sub>ef</sub></b>Puntaje de obstrucción, entre 0 y 1 (no es una probabilidad). Considera las observaciones y el arrastre desde aguas arriba.
           </div>
           <div className="formula__term">
             <b>C</b>Consecuencia estimada según el área que aporta agua al sumidero y la infraestructura crítica cercana.
           </div>
           <p className="formula__ia">
-            <strong>La fórmula decide. Claude ve, lee y explica.</strong>{" "}
+            <strong>Claude describe; la fórmula decide; la central aprueba.</strong>{" "}
             Claude interpreta fotos de vecinos y cuadrillas, reportes escritos e imágenes de la cámara de la demo. Con esa evidencia explica por qué se prioriza cada sumidero.
           </p>
         </section>
