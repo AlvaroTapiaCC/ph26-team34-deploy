@@ -68,7 +68,10 @@ class Ruta:
 class Matriz:
     duraciones_s: list[list[float]]   # [origen][destino]
     distancias_m: list[list[float]]
-    fuente: str = "osrm"
+    # True en las celdas que NO calculó OSRM (estimación en línea recta). El despacho debe
+    # tratarlas como menos confiables que un tiempo por calle.
+    estimadas: list[list[bool]] = field(default_factory=list)
+    fuente: str = "osrm"              # "osrm" | "mixta" (algunas celdas estimadas) | "linea_recta"
 
 
 class _LRU:
@@ -160,21 +163,35 @@ def matriz_linea_recta(origenes: Sequence[Punto], destinos: Sequence[Punto]) -> 
     return Matriz(
         duraciones_s=[[t.duracion_s for t in fila] for fila in tramos],
         distancias_m=[[t.distancia_m for t in fila] for fila in tramos],
+        estimadas=[[True] * len(destinos) for _ in origenes],
         fuente="linea_recta",
     )
+
+
+def _dimensiones_ok(filas: Any, n_filas: int, n_cols: int) -> bool:
+    return (isinstance(filas, list) and len(filas) == n_filas
+            and all(isinstance(f, list) and len(f) == n_cols for f in filas))
 
 
 # ---------------------------------------------------------------------------
 # OSRM
 # ---------------------------------------------------------------------------
 def ruta(puntos: Sequence[Punto]) -> Ruta:
-    """Ruta por calle que pasa por los puntos en el orden dado."""
+    """Ruta por calle que pasa por los puntos en el orden dado.
+
+    - 0 puntos: ValueError.
+    - 1 punto (despacho con una sola parada): geometría Point, sin tramos y distancia 0
+      (un LineString necesita al menos dos posiciones, RFC 7946 §3.1.4).
+    - 2 o más: LineString de OSRM, o plan B en línea recta si OSRM falla o responde algo
+      inconsistente (tramos que no calzan con las paradas o geometría inválida).
+    """
     puntos = list(puntos)
+    if not puntos:
+        raise ValueError("La ruta necesita al menos un punto")
     _validar(puntos)
-    if len(puntos) < 2:
-        p = puntos[0] if puntos else None
-        coords = [[p[1], p[0]]] if p else []
-        return Ruta({"type": "LineString", "coordinates": coords}, 0.0, 0.0, [], "osrm")
+    if len(puntos) == 1:
+        lat, lon = puntos[0]
+        return Ruta({"type": "Point", "coordinates": [lon, lat]}, 0.0, 0.0, [], "una_parada")
     if len(puntos) > MAX_PUNTOS_RUTA:
         raise ValueError(f"Máximo {MAX_PUNTOS_RUTA} puntos por ruta")
 
@@ -191,6 +208,11 @@ def ruta(puntos: Sequence[Punto]) -> Ruta:
         if data.get("code") != "Ok" or not data.get("routes"):
             raise ValueError(f"OSRM respondió {data.get('code')}")
         best = data["routes"][0]
+        geom = best.get("geometry") or {}
+        if len(best.get("legs") or []) != len(puntos) - 1:
+            raise ValueError("OSRM devolvió una cantidad de tramos que no calza con las paradas")
+        if geom.get("type") != "LineString" or len(geom.get("coordinates") or []) < 2:
+            raise ValueError("OSRM devolvió una geometría inválida")
         resultado = Ruta(
             geojson=best["geometry"],
             distancia_m=float(best["distance"]),
@@ -230,15 +252,33 @@ def matriz(origenes: Sequence[Punto], destinos: Sequence[Punto]) -> Matriz:
         data = r.json()
         if data.get("code") != "Ok":
             raise ValueError(f"OSRM respondió {data.get('code')}")
+        no, nd = len(origenes), len(destinos)
+        if not (_dimensiones_ok(data.get("durations"), no, nd) and _dimensiones_ok(data.get("distances"), no, nd)):
+            raise ValueError("OSRM devolvió una matriz con dimensiones distintas a las pedidas")
         plan_b = matriz_linea_recta(origenes, destinos)
-        # OSRM devuelve null cuando un par no tiene ruta: se completa con línea recta
-        dur = [[float(v) if v is not None else plan_b.duraciones_s[i][j] for j, v in enumerate(fila)]
-               for i, fila in enumerate(data["durations"])]
-        dist = [[float(v) if v is not None else plan_b.distancias_m[i][j] for j, v in enumerate(fila)]
-                for i, fila in enumerate(data["distances"])]
-        resultado = Matriz(dur, dist)
+        dur, dist, est = [], [], []
+        for i in range(no):
+            fd, fm, fe = [], [], []
+            for j in range(nd):
+                d, m = data["durations"][i][j], data["distances"][i][j]
+                if d is None or m is None:
+                    # OSRM no encontró ruta para este par: estimación marcada como tal
+                    fd.append(plan_b.duraciones_s[i][j])
+                    fm.append(plan_b.distancias_m[i][j])
+                    fe.append(True)
+                else:
+                    fd.append(float(d))
+                    fm.append(float(m))
+                    fe.append(False)
+            dur.append(fd)
+            dist.append(fm)
+            est.append(fe)
+        hay_estimadas = any(any(f) for f in est)
+        resultado = Matriz(dur, dist, est, "mixta" if hay_estimadas else "osrm")
     except (httpx.HTTPError, ValueError, KeyError, TypeError) as e:
         log.warning("OSRM falló en matriz (%s); uso línea recta", type(e).__name__)
         return matriz_linea_recta(origenes, destinos)
-    _cache.put(clave, resultado)
+    if not hay_estimadas:
+        # Solo se cachean resultados completos de OSRM; una matriz parcial se vuelve a pedir
+        _cache.put(clave, resultado)
     return resultado
