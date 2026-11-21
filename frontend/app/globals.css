@@ -1644,9 +1644,10 @@ p {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: repeat(2, minmax(min-content, 1fr));
   gap: 16px;
   padding: 16px;
+  overflow-y: auto;
 }
 .method__row {
   display: grid;

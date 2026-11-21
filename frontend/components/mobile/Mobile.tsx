@@ -415,7 +415,7 @@ function DuranteM() {
         <div className="mgap">
           <div className="alert">
             <Kicker tone="danger">
-              <span className="sensor__dot is-danger" /> {s.reportes[0]?.fuente}
+              <span className="sensor__dot is-danger" /> {s.fuenteAnegamiento ?? "Anegado"}
             </Kicker>
             <h2>Anegado en {an.nombre}</h2>
             <p>Revisa primero los puntos que reciben su agua.</p>

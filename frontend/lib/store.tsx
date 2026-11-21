@@ -45,6 +45,7 @@ export interface State {
   layers: Layers;
   sensor: Sensor;
   anegado: string | null;
+  fuenteAnegamiento: string | null;
   sensorAgo: string;
   markMode: boolean;
   reportes: Reporte[];
@@ -71,6 +72,7 @@ export const initialState: State = {
   layers: { prioridad: true, escurrimiento: true, limites: false, gore: false, rejillas: false, cadena: false, rayos: false, feed: true, reales: true },
   sensor: "escuchando",
   anegado: null,
+  fuenteAnegamiento: null,
   sensorAgo: "",
   markMode: false,
   reportes: [REPORTE_BASE],
@@ -95,17 +97,19 @@ function reducer(s: State, a: Action): State {
       return { ...s, layers: { ...s.layers, [a.key]: a.value ?? !s.layers[a.key] } };
     case "flood": {
       const nombre = rankingFor(s.scenario).find((p) => p.id === a.id)!.nombre;
+      const fuente = a.fuente === "sensor" ? "Reporte simulado · 17:44" : "Marcado en sala · 17:44";
       return {
         ...s,
         sensor: "anegado",
         anegado: a.id,
+        fuenteAnegamiento: fuente,
         sensorAgo: "hace 40 s",
         markMode: false,
         modal: null,
         layers: { ...s.layers, cadena: true },
         toast: null,
         reportes: [
-          { id: "r3", nombre, fuente: a.fuente === "sensor" ? "Reporte simulado · 17:44" : "Marcado en sala · 17:44", estado: "anegado", foto: true },
+          { id: "r3", nombre, fuente, estado: "anegado", foto: true },
           { id: "r2", nombre: "Irarrázaval / P. de Valdivia", fuente: "Llamada vecinal · 17:31", estado: "pendiente" },
           REPORTE_BASE,
         ],

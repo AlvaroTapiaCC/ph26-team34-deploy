@@ -14,7 +14,7 @@ export function Validacion() {
     <main className="bento">
       <div className="col col--l is-narrow">
         <section className="result">
-          <Kicker tone="accent">Validación · 13 de octubre de 2026</Kicker>
+          <Kicker tone="accent">Validación · Temporal de octubre de 2026</Kicker>
           <div className="result__big">
             <span className="result__x">[X]</span>
             <span className="result__y">de [Y]</span>
@@ -40,11 +40,11 @@ export function Validacion() {
         <section className="card sources">
           <Kicker>Anegamientos reales · fuentes</Kicker>
           <ul>
-            <li>· Prensa del 13 y 14 de octubre</li>
+            <li>· Prensa de octubre de 2026</li>
             <li>· @TTISantiago</li>
             <li>· 175 puntos críticos · Gobierno de Santiago (secundaria)</li>
           </ul>
-          <p className="risk">Riesgo: si son menos de 10 puntos ubicables, la validación pierde fuerza. Se muestra igual, con el límite del DEM de 30 m.</p>
+          <p className="risk">La comparación es preliminar y depende de cuántos reportes se puedan ubicar.</p>
         </section>
       </div>
       <div className="col col--r">
@@ -79,17 +79,14 @@ export function Validacion() {
 }
 
 export function Metodologia() {
-  const fases = [
-    ["Antes", "Priorizar los sumideros que conviene limpiar y preparar las rutas de las cuadrillas."],
-    ["Durante", "Recalcular prioridades y rutas con fotos, reportes escritos e imágenes de la cámara."],
-    ["Después", "Verificar los cierres con fotos y resumir qué funcionó durante el evento."],
-  ];
   const datos = [
     ["Catastro de sumideros", "DOH · SIALL"],
     ["Elevación y calles", "DEM de 12,5 m · OpenStreetMap y OSMnx"],
     ["Infraestructura crítica", "OpenStreetMap · Gobierno de Santiago"],
     ["Cobertura de suelo", "Sentinel-2 · ESA WorldCover"],
-    ["Lluvia y viento", "Open-Meteo"],
+    ["Lluvia y viento", "Open-Meteo (pronóstico) · DMC (lluvia observada)"],
+    ["Ferias de Ñuñoa", "Calendario de ferias"],
+    ["Anegamientos de octubre de 2026", "Prensa y @TTISantiago · validación histórica"],
   ];
   return (
     <main className="method">
@@ -105,23 +102,33 @@ export function Metodologia() {
           </div>
           <p className="formula__ia">
             <strong>La fórmula decide. Claude ve, lee y explica.</strong>{" "}
-            Claude clasifica fotos, imágenes de cámara y reportes escritos, y explica por qué se prioriza cada sumidero.
+            Claude interpreta fotos de vecinos y cuadrillas, reportes escritos e imágenes de la cámara de la demo. Con esa evidencia explica por qué se prioriza cada sumidero.
           </p>
         </section>
         <section className="nots">
-          <Kicker tone="ink">Nivel de agua observado</Kicker>
-          <p className="nots__item">Sin agua · En la cuneta · Hasta la vereda · Sobre la vereda · No evaluable</p>
-          <p className="nots__item">Durante la lluvia, el nivel observado ajusta la consecuencia estimada.</p>
+          <Kicker tone="ink">Lo que no hace, a propósito</Kicker>
+          <p className="nots__item"><span aria-hidden="true">✕</span>No recomienda cerrar calles ni mantenerlas abiertas.</p>
+          <p className="nots__item"><span aria-hidden="true">✕</span>No recomienda desviar agua.</p>
         </section>
       </div>
       <div className="method__row method__row--b">
         <section className="card pipeline">
           <Kicker>Fases del evento</Kicker>
-          {fases.map(([fase, descripcion]) => (
-            <p key={fase} className="step">
-              <span><strong>{fase}.</strong> {descripcion}</span>
-            </p>
-          ))}
+          <p className="step">
+            <span><strong>Antes.</strong> Priorizar los sumideros que conviene limpiar y preparar las rutas de las cuadrillas.</span>
+          </p>
+          <p className="step">
+            <span><strong>Durante.</strong> Recalcular prioridades y rutas a partir de las observaciones.</span>
+          </p>
+          <p className="step">
+            <span>
+              <strong>Nivel de agua observado.</strong> Ajusta la consecuencia estimada. Las categorías son sin agua,
+              en la cuneta, hasta la vereda, sobre la vereda y no evaluable.
+            </span>
+          </p>
+          <p className="step">
+            <span><strong>Después.</strong> Verificar los cierres con fotos y resumir qué funcionó durante el evento.</span>
+          </p>
         </section>
         <section className="card datos">
           <Kicker>Datos públicos</Kicker>
