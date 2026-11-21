@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.db import close_pool, get_conn
-from app.routers import crews, events, formula, missions, observations, scenarios, sim, sumideros
+from app.routers import clasificar, crews, events, formula, missions, observations, scenarios, sim, sumideros
 
 
 @asynccontextmanager
@@ -24,7 +24,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (scenarios, sumideros, observations, formula, crews, missions, events, sim):
+for r in (scenarios, sumideros, observations, formula, crews, missions, events, sim, clasificar):
     app.include_router(r.router)
 
 
