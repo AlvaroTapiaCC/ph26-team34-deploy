@@ -44,10 +44,6 @@ export const FLUJO_CONFIG = {
   /** Una rejilla "se desborda" desde este nivel: lo que no traga ya no cabe en la calzada y sube a la vereda. */
   nivelDesborde: "hasta_vereda" as NivelAgua,
 
-  // --- Efecto en la prioridad (mismos valores que backend/config/formula.yaml, sección durante) ---
-  wAgua: 1.0,
-  valorNivelAgua: { sobre_vereda: 1, hasta_vereda: 0.6, cuneta: 0.3, sin_agua: 0, no_evaluable: 0 } as Record<NivelAgua, number>,
-
   // --- Reloj ---
   velocidades: [1, 10, 60] as const,
   /** Paso máximo de simulación por cuadro (s simulados): evita saltos bruscos a 60×. */
@@ -82,8 +78,14 @@ export const LLUVIA_ESCENARIO: Record<ScenarioId, LluviaEscenario> = {
   pareja: { perfilMmH: [16, 24, 22, 14, 6, 0] },
 };
 
+/** Escenario de ejemplo cuyo perfil se usa cuando el id no tiene uno (p. ej. los escenarios reales del backend, "base"). */
+export const ESCENARIO_POR_DEFECTO: ScenarioId = "pareja";
+
+/** Lluvia supuesta del escenario; si el id no tiene perfil (escenario real), la del escenario por defecto. */
+export const lluviaDe = (id: ScenarioId): LluviaEscenario => LLUVIA_ESCENARIO[id] ?? LLUVIA_ESCENARIO[ESCENARIO_POR_DEFECTO];
+
 /** Intensidad máxima del perfil del escenario: punto de partida del slider de lluvia. */
-export const picoEscenario = (id: ScenarioId) => Math.max(...LLUVIA_ESCENARIO[id].perfilMmH);
+export const picoEscenario = (id: ScenarioId) => Math.max(...lluviaDe(id).perfilMmH);
 
 /** Estado supuesto de las rejillas cercanas a cada punto del ranking, por escenario. Supuesto de la demo, no observación. */
 export const ESTADOS_ESCENARIO: Record<ScenarioId, Record<string, EstadoRejilla>> = {
@@ -92,8 +94,13 @@ export const ESTADOS_ESCENARIO: Record<ScenarioId, Record<string, EstadoRejilla>
   pareja: { p1: "tapada", p5: "parcial", p2: "parcial", p10: "parcial" },
 };
 
+/** Estado supuesto de las rejillas del escenario; un escenario real no supone ninguno. */
+export const estadosDe = (id: ScenarioId): Record<string, EstadoRejilla> => ESTADOS_ESCENARIO[id] ?? {};
+
 /** Radio (m) para asociar un punto del ranking con las rejillas del catastro que lo rodean. */
 export const RADIO_PUNTO_M = 90;
 
-/** Aviso visible junto al mapa. La pendiente sale del DEM Copernicus GLO-30 de 30 m (pipeline/flujo/pendientes.py). */
-export const AVISO_MODELO = "Modelo simplificado (método racional + pendiente del DEM de 30 m, Copernicus GLO-30). Simulación, no medición.";
+/** Aviso visible junto al mapa (revisión de #99: no se presenta como simulación hidráulica). */
+export const AVISO_MODELO =
+  "Flujo estimado por las calles según la pendiente; no es una simulación hidráulica ni una medición. Lluvia y estado de las rejillas: supuestos de la demo.";
+export const AVISO_NO_HACE = "No recomienda cerrar calles ni desviar agua, ni muestra profundidades o minutos de llegada.";

@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
 import { getEscenarios, getFicha, getRanking } from "./api";
 import { buildRuta, COMUNAS, PUNTOS, rankingFor, SCENARIOS, TOTAL_INTERSECCIONES, type Comuna, type RankedPunto, type RutaCuadrilla, type Scenario, type ScenarioId } from "./data";
-import type { EstadoRejilla, NivelAgua } from "./flujo/config";
+import type { EstadoRejilla } from "./flujo/config";
 import { aEscenario, aFichaReal, aRankingReal, type FichaReal, type RankingReal } from "./real";
 
 // De dónde salen los datos: servidor real o respaldo de ejemplo (lib/data.ts)
@@ -35,7 +35,6 @@ export interface State {
   status: Status;
   layers: Layers;
   enRuta: string[];
-  agua: Record<string, NivelAgua>; // nivel de agua por punto del ranking, de la simulación del flujo o de los reportes
   /** Estado de rejilla que marcó el operador (clic en el mapa o botones del panel); la simulación lo usa al instante. */
   rejillas: Record<string, EstadoRejilla>;
   hechos: string[]; // ids de paradas ya limpias (el avance se guarda por parada, no por posición)
@@ -55,7 +54,6 @@ export const initialState: State = {
   status: "loading",
   layers: { prioridad: true, escurrimiento: true, limites: true, gore: false, rejillas: false },
   enRuta: [],
-  agua: {},
   rejillas: {},
   hechos: [],
   copied: false,
@@ -231,7 +229,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [s.toast]);
 
   const real = fuente === "api" ? (rankings[s.scenario] ?? null) : null;
-  const ranking = useMemo(() => (real ? real.puntos : rankingFor(s.scenario, s.agua)), [real, s.scenario, s.agua]);
+  const ranking = useMemo(() => (real ? real.puntos : rankingFor(s.scenario)), [real, s.scenario]);
   const filtered = useMemo(() => (s.comuna === "Todas" ? ranking : ranking.filter((p) => p.comuna === s.comuna)), [ranking, s.comuna]);
   const ruta = useMemo(() => buildRuta(ranking, s.comuna, s.cuadrillas, s.enRuta), [ranking, s.comuna, s.cuadrillas, s.enRuta]);
   const scenarioLabel = (escenarios.find((x) => x.id === s.scenario) ?? SCENARIOS.find((x) => x.id === s.scenario) ?? SCENARIOS[0]).label;

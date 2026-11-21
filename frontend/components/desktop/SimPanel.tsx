@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { AVISO_MODELO, FLUJO_CONFIG } from "@/lib/flujo/config";
+import { AVISO_MODELO, AVISO_NO_HACE, FLUJO_CONFIG } from "@/lib/flujo/config";
 import type { Flujo, UiFlujo, Velocidad } from "@/lib/flujo/useFlujo";
 import { useStore } from "@/lib/store";
 import { Kicker, Segmented } from "../ui";
@@ -90,9 +90,9 @@ export default function SimPanel({ flujo }: { flujo: Flujo }) {
   const ui: UiFlujo = flujo.ui;
   const l = ui.lecturas;
   return (
-    <section className="sim" aria-label="Simulación">
+    <section className="sim" aria-label="Flujo estimado">
       <div className="sim__head">
-        <Kicker>Simulación</Kicker>
+        <Kicker>Flujo estimado</Kicker>
         <span className="sim__reloj" title="Tiempo simulado desde el inicio de la lluvia">
           {formatoReloj(ui.t)}
         </span>
@@ -138,7 +138,7 @@ export default function SimPanel({ flujo }: { flujo: Flujo }) {
       </label>
       <div className="sim__lecs">
         <Lectura v={ls(l.caudalTransito)} l="caudal en tránsito" />
-        <Lectura v={String(l.desbordados)} l="rejillas desbordadas" accent={l.desbordados > 0} />
+        <Lectura v={String(l.desbordados)} l="puntos con agua (estimado)" accent={l.desbordados > 0} />
         <Lectura v={metros(l.metrosSobreCuneta)} l="de calle sobre la cuneta" />
         <Lectura v={ls(l.maxCaudal)} l="en el punto con más caudal" />
       </div>
@@ -165,5 +165,9 @@ export default function SimPanel({ flujo }: { flujo: Flujo }) {
 }
 
 export function SimAviso() {
-  return <div className="flujo-aviso">{AVISO_MODELO}</div>;
+  return (
+    <div className="flujo-aviso">
+      {AVISO_MODELO} {AVISO_NO_HACE}
+    </div>
+  );
 }

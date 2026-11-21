@@ -17,12 +17,12 @@ export function CriticidadPill({ text }: { text: string }) {
   );
 }
 
-/** Variables de la fórmula de un punto real (GET /sumideros/{id}): qué pesa en el puntaje. */
+/** Variables de la fórmula de un punto real (GET /sumideros/{id}): qué pesa en la prioridad. */
 export function VariablesReales() {
   const { fichaReal, fichaEstado } = useStore();
   return (
     <div>
-      <Kicker>Qué pesa en el puntaje</Kicker>
+      <Kicker>Qué pesa en la prioridad</Kicker>
       {fichaEstado === "cargando" && <p className="downstream">Cargando variables…</p>}
       {fichaEstado === "error" && <p className="downstream">No se pudo cargar el detalle de este punto.</p>}
       {fichaReal && fichaReal.variables.length === 0 && <p className="downstream">Sin variables cargadas para este sumidero todavía.</p>}
@@ -60,7 +60,7 @@ export default function Ficha() {
         faded: x.id !== p.id,
         onClick: () => set({ ficha: x.id }),
       })),
-    [ranking, p.id, set],
+    [ranking, p, set],
   );
   const areaCallout: LngLat = useMemo(() => {
     if (area.length === 0) return p.coord;

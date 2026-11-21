@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LngLat, ScenarioId } from "../data";
 import type { MapLibre } from "../../components/map/maplibre";
 import { montarCapaFlujo, type CapaFlujo } from "./capaMapa";
-import { FLUJO_CONFIG, picoEscenario, type EstadoRejilla, type NivelAgua } from "./config";
+import { FLUJO_CONFIG, picoEscenario, type EstadoRejilla } from "./config";
 import { fuenteSimulada, type FuenteObservaciones } from "./fuentes";
 import { construirGrafo, distM, type Grafo } from "./grafo";
 import { MotorFlujo, type Lecturas } from "./motor";
@@ -61,13 +61,11 @@ export function useFlujo(opts: {
   estados: Record<string, EstadoRejilla>;
   /** Clic en una rejilla del mapa. */
   onClickRejilla: (id: string) => void;
-  /** Nivel de agua por punto del ranking cada vez que cambia (alimenta la tabla y el héroe). */
-  onNiveles: (n: Record<string, NivelAgua>) => void;
   fuente?: FuenteObservaciones;
   /** Muestra u oculta las capas del flujo en el mapa. */
   visible?: boolean;
 }) {
-  const { scenario, puntos, estados, onNiveles } = opts;
+  const { scenario, puntos, estados } = opts;
   const visible = opts.visible ?? true;
   const visibleRef = useRef(visible);
   visibleRef.current = visible;
@@ -91,9 +89,6 @@ export function useFlujo(opts: {
   const motor = useRef<MotorFlujo | null>(null);
   const capa = useRef<CapaFlujo | null>(null);
   const mapa = useRef<MapLibre>(null);
-  const niveles = useRef("");
-  const onNivelesRef = useRef(onNiveles);
-  onNivelesRef.current = onNiveles;
   const onClickRef = useRef(opts.onClickRejilla);
   onClickRef.current = opts.onClickRejilla;
   const estadosRef = useRef(estados);
@@ -204,8 +199,6 @@ export function useFlujo(opts: {
     m.asociarPuntos(JSON.parse(puntosKey).map(([id, coord]: [string, LngLat]) => ({ id, coord })));
     m.setEscenario(scenario);
     m.factorLluvia = 1;
-    niveles.current = "";
-    onNivelesRef.current({});
     serie.current = { id: null, puntos: [] };
     capa.current?.actualizarEstado();
     leerMotor({ terminado: false, lluviaPico: picoEscenario(scenario) });
@@ -256,12 +249,6 @@ export function useFlujo(opts: {
       if (ahora - ultimoUi > 250) {
         ultimoUi = ahora;
         c.actualizarEstado();
-        const n = m.nivelesPorPunto();
-        const clave = JSON.stringify(n);
-        if (clave !== niveles.current) {
-          niveles.current = clave;
-          onNivelesRef.current(n);
-        }
         const fin = m.t >= m.duracionS() + 1800;
         leerMotor(fin ? { corriendo: false, terminado: true } : {});
       }
@@ -299,8 +286,6 @@ export function useFlujo(opts: {
 
   const reiniciar = useCallback(() => {
     motor.current?.reiniciar();
-    niveles.current = "";
-    onNivelesRef.current({});
     serie.current = { id: null, puntos: [] };
     capa.current?.actualizarEstado();
     capa.current?.cuadro(0, 0);

@@ -127,7 +127,6 @@ function Bottom({ flujo }: { flujo: Flujo }) {
   const top = filtered.slice(0, TOP);
   const aguaExterna = top.length ? Math.round(top.reduce((a, p) => a + p.pctExterno, 0) / top.length) : 0;
   const criticos = top.filter((p) => p.criticidad.some((c) => CRITICA.test(c)));
-  const conAgua = criticos.filter((p) => s.agua[p.id] === "hasta_vereda" || s.agua[p.id] === "sobre_vereda").length;
   const { tapadas, total, lecturas } = flujo.ui;
   const c = s.comuna;
   const nTap = tapadas[c] ?? 0;
@@ -150,7 +149,7 @@ function Bottom({ flujo }: { flujo: Flujo }) {
           <Tile tone="accent" titulo="Agua de otra comuna" cifra={String(aguaExterna)} unidad="%">
             promedio del top {TOP}
           </Tile>
-          <Tile tone="dark" titulo="Puntos críticos" cifra={String(criticos.length)} accion={conAgua > 0 ? <span className="tile__badge">{conAgua} con agua</span> : undefined}>
+          <Tile tone="dark" titulo="Puntos críticos" cifra={String(criticos.length)} >
             con metro, paso bajo nivel, hospital o colegio cerca
           </Tile>
         </>
@@ -158,7 +157,7 @@ function Bottom({ flujo }: { flujo: Flujo }) {
       <Tile tone="plain" titulo="Rejillas tapadas" cifra={nTot ? String(nTap) : "—"}>
         {nTot ? (
           <>
-            de {nTot.toLocaleString("es-CL")} · <b className={nDesb ? "is-accent" : ""}>{nDesb} se desbordan ahora</b>
+            de {nTot.toLocaleString("es-CL")} · <b className={nDesb ? "is-accent" : ""}>{nDesb} con agua ahora (estimado)</b>
           </>
         ) : (
           `sin rejillas simuladas en ${c}`
@@ -230,7 +229,7 @@ function Capas() {
       {abierta && (
         <>
           <Check on={L.prioridad} label="Puntos por prioridad" onClick={() => toggleLayer("prioridad")} />
-          <Check on={L.escurrimiento} label="Simulación del agua" onClick={() => toggleLayer("escurrimiento")} />
+          <Check on={L.escurrimiento} label="Flujo de agua (estimado)" onClick={() => toggleLayer("escurrimiento")} />
           <Check on={L.limites} label="Límites comunales" onClick={() => toggleLayer("limites")} />
           {!real && <Check on={L.gore} label="175 puntos críticos GORE" onClick={() => toggleLayer("gore")} />}
           <Check on={L.rejillas} label="Catastro MOP completo" onClick={() => toggleLayer("rejillas")} />
@@ -274,16 +273,18 @@ function MainMap({ flujo }: { flujo: Flujo }) {
   );
 }
 
-// Puntos del ranking con su nombre y posición, para asociarlos con las rejillas de la red de flujo
-const PUNTOS_FLUJO = Object.values(PUNTOS).map((p) => ({ id: p.id, nombre: p.nombre, coord: p.coord }));
+// Puntos de ejemplo con su nombre y posición, para asociarlos con las rejillas de la red de flujo
+const PUNTOS_EJEMPLO = Object.values(PUNTOS).map((p) => ({ id: p.id, nombre: p.nombre, coord: p.coord }));
+const PUNTOS_FLUJO_MAX = 200; // intersecciones reales que se asocian con la red (las más prioritarias)
 
 export default function Principal({ vacio }: { vacio: React.ReactNode }) {
-  const { s, setRejillas, filtered } = useStore();
+  const { s, setRejillas, filtered, ranking } = useStore();
+  const real = !!ranking[0]?.real;
+  const puntosFlujo = useMemo(() => (real ? ranking.slice(0, PUNTOS_FLUJO_MAX).map((p) => ({ id: p.id, nombre: p.nombre, coord: p.coord })) : PUNTOS_EJEMPLO), [real, ranking]);
   const flujo = useFlujo({
     scenario: s.scenario,
-    puntos: PUNTOS_FLUJO,
+    puntos: puntosFlujo,
     estados: s.rejillas,
-    onNiveles: () => {} /* la lluvia supuesta no cambia el orden: lo mueve la evidencia */,
     visible: s.layers.escurrimiento,
     // Clic en una rejilla: limpia → parcial → tapada → limpia
     onClickRejilla: (id) => {

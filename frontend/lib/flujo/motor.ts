@@ -12,7 +12,7 @@
 // Modelo simplificado; es una simulación, no una medición. Módulo puro: no toca el DOM ni el mapa.
 import type { LngLat, ScenarioId } from "../data";
 import { capacidadCalzada, capacidadCuneta, distM, type Grafo } from "./grafo";
-import { ESTADOS_ESCENARIO, FLUJO_CONFIG, LLUVIA_ESCENARIO, RADIO_PUNTO_M, type EstadoRejilla, type NivelAgua } from "./config";
+import { estadosDe, FLUJO_CONFIG, lluviaDe, RADIO_PUNTO_M, type EstadoRejilla, type NivelAgua } from "./config";
 import type { ObservacionPunto } from "./fuentes";
 
 export const NIVELES: NivelAgua[] = ["sin_agua", "cuneta", "hasta_vereda", "sobre_vereda"];
@@ -97,7 +97,7 @@ export class MotorFlujo {
   }
 
   get estadosEscenario(): Record<string, EstadoRejilla> {
-    return ESTADOS_ESCENARIO[this.scenario];
+    return estadosDe(this.scenario);
   }
 
   setEscenario(id: ScenarioId) {
@@ -132,12 +132,12 @@ export class MotorFlujo {
 
   // ---- Lluvia ----
   duracionS(): number {
-    return LLUVIA_ESCENARIO[this.scenario].perfilMmH.length * 3600;
+    return lluviaDe(this.scenario).perfilMmH.length * 3600;
   }
 
   /** Intensidad de lluvia (mm/h) del escenario, sin celda, en el instante `t` y con el factor del slider. */
   lluviaBaseMmH(t = this.t): number {
-    const l = LLUVIA_ESCENARIO[this.scenario];
+    const l = lluviaDe(this.scenario);
     const h = t / 3600;
     const i = Math.floor(h);
     if (i < 0 || i >= l.perfilMmH.length) return 0;
@@ -149,7 +149,7 @@ export class MotorFlujo {
   /** Intensidad de lluvia (mm/h) en un punto y en el instante `t`. */
   lluviaMmH(coord: LngLat, t = this.t): number {
     const base = this.lluviaBaseMmH(t);
-    const c = LLUVIA_ESCENARIO[this.scenario].celda;
+    const c = lluviaDe(this.scenario).celda;
     if (!c) return base;
     return base * (distM(coord, c.centro) <= c.radioM ? c.dentro : c.fuera);
   }
@@ -257,20 +257,6 @@ export class MotorFlujo {
   }
 
   // ---- Resumen para la interfaz ----
-  /** Peor nivel de agua entre las rejillas que rodean a cada punto del ranking (solo los que tienen alguna). */
-  nivelesPorPunto(): Record<string, NivelAgua> {
-    const out: Record<string, NivelAgua> = {};
-    for (const [punto, ids] of Object.entries(this.sumideroIdsPorPunto)) {
-      let peor: NivelAgua = "sin_agua";
-      for (const id of ids) {
-        const n = this.nivelMostrado(this.idx.get(id)!);
-        if (rango(n) > rango(peor)) peor = n;
-      }
-      out[punto] = peor;
-    }
-    return out;
-  }
-
   lecturas(): Lecturas {
     const { tramos, sumideros } = this.grafo;
     const coef = this.cfg.coefEscorrentia / 3600;
