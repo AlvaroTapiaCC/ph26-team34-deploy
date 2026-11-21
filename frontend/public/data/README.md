@@ -6,9 +6,12 @@ Estos archivos son una copia generada de `data/` (en la raíz del repo). No se e
 |---|---|
 | `comunas.geojson` | `data/comunas.geojson` (`pipeline/00_comunas.py`, límites de OpenStreetMap) |
 | `comunas_rm.geojson` | `pipeline/00b_comunas_rm.py`: límites de las 32 comunas de la Provincia de Santiago más Puente Alto, San Bernardo y Pirque (OpenStreetMap, `admin_level=8`, consultado por Nominatim el 21-nov-2026), simplificados a 10 m y 5 decimales. Solo contexto visual del mapa. Propiedades: `comuna`, `en_proyecto`, `lon`/`lat` (punto de la etiqueta). Fuente, fecha y sha256 en `data/comunas.meta.json` (clave `comunas_rm`) |
+| `flujo.geojson` | `pipeline/04_flujo.py`: red de escurrimiento del plan B de #75 (calles de OSM, elevación Copernicus GLO-30, flujo D8 sobre el grafo). 1.606 tramos dirigidos de aguas arriba a aguas abajo (caudal de área acumulada, pendiente, tramo siguiente) y 544 sumideros del catastro con el tramo, la posición y el siguiente sumidero aguas abajo. Los tramos sin dirección no se exportan. Detalle de las propiedades en el docstring del script. Fuente y sha256 en `data/flujo.meta.json` |
 | `rejillas.geojson` | `data/rejillas.geojson` (`pipeline/02_rejillas.py`, catastro SIALL de la DOH), solo `id` y `comuna` |
 
-Para regenerarlos cuando cambie `data/`:
+`comunas_rm.geojson` y `flujo.geojson` los escriben directamente `pipeline/00b_comunas_rm.py` y `pipeline/04_flujo.py` (no pasan por `publicar_front.py`). Si Overpass no responde, `pipeline/04a_red_osm_api.py` baja la red de calles por la API 0.6 de OSM antes de correr `04_flujo.py`.
+
+Para regenerar los demás cuando cambie `data/`:
 
 ```
 python pipeline/publicar_front.py

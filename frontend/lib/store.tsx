@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
+import type { NivelAgua } from "./flujo/config";
 import { buildRuta, CADENA, PUNTOS, rankingFor, SCENARIOS, type Comuna, type RankedPunto, type RutaCuadrilla, type ScenarioId } from "./data";
 
 export type Modo = "antes" | "durante";
@@ -49,6 +50,7 @@ export interface State {
   markMode: boolean;
   reportes: Reporte[];
   enRuta: string[];
+  agua: Record<string, NivelAgua>; // nivel de agua por punto del ranking, de la simulación del flujo o de los reportes
   hechos: string[]; // ids de paradas ya limpias (el avance se guarda por parada, no por posición)
   copied: boolean;
   mobileTab: MobileTab;
@@ -75,6 +77,7 @@ export const initialState: State = {
   markMode: false,
   reportes: [REPORTE_BASE],
   enRuta: [],
+  agua: {},
   hechos: [],
   copied: false,
   mobileTab: "prioridades",
@@ -210,7 +213,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(t);
   }, [s.modo]);
 
-  const ranking = useMemo(() => rankingFor(s.scenario), [s.scenario]);
+  const ranking = useMemo(() => rankingFor(s.scenario, s.agua), [s.scenario, s.agua]);
   const filtered = useMemo(() => (s.comuna === "Todas" ? ranking : ranking.filter((p) => p.comuna === s.comuna)), [ranking, s.comuna]);
   const cadena = useMemo(() => (s.anegado ? (CADENA[s.anegado] ?? []).map((id) => ranking.find((p) => p.id === id)!).filter(Boolean) : []), [s.anegado, ranking]);
   const ruta = useMemo(() => buildRuta(ranking, s.comuna, s.cuadrillas, s.enRuta), [ranking, s.comuna, s.cuadrillas, s.enRuta]);

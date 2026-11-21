@@ -44,6 +44,7 @@ import heapq
 import importlib.util
 import json
 import math
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -79,6 +80,8 @@ def main():
     import pandas as pd
     from shapely.geometry import LineString, Point
 
+    if os.environ.get("OVERPASS_URL"):  # el servidor público por defecto se cae seguido: se puede apuntar a otro espejo
+        ox.settings.overpass_url = os.environ["OVERPASS_URL"]
     T = cargar_terreno()
     UTM, CENTRO, ANCHO = T.UTM, T.CENTRO, T.ANCHO_APORTE_M
     dem = a.dem or "cache/dem/" + T.DEM_TILE + ".tif"

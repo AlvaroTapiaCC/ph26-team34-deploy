@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { cercaResumen, cita, ESCURRIMIENTO, fmt, GORE, MAP_BOUNDS, motivo, pad2, SCENARIOS, TOTAL_INTERSECCIONES, type RankedPunto } from "@/lib/data";
+import { cercaResumen, cita, fmt, GORE, MAP_BOUNDS, motivo, pad2, PUNTOS, SCENARIOS, TOTAL_INTERSECCIONES, type RankedPunto } from "@/lib/data";
+import { useFlujo } from "@/lib/flujo/useFlujo";
 import { useStore } from "@/lib/store";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Button, Check, Kicker, PrioChip, Stat } from "../ui";
+import FlujoControles, { FlujoAviso } from "./FlujoControles";
 
 export function Hero({ p }: { p: RankedPunto }) {
   const { set, addRuta, scenarioLabel } = useStore();
@@ -139,10 +141,14 @@ export function usePins(opts: { labelsTop?: number; ring?: boolean; onPin?: (id:
   }, [ranking, s.comuna, opts.labelsTop, opts.ring]);
 }
 
+// Puntos del ranking con su posición, para asociarlos con las rejillas de la red de flujo
+const PUNTOS_FLUJO = Object.values(PUNTOS).map((p) => ({ id: p.id, coord: p.coord }));
+
 function MainMap() {
-  const { s, toggleLayer } = useStore();
+  const { s, set, toggleLayer } = useStore();
   const { pins, labels } = usePins();
   const L = s.layers;
+  const flujo = useFlujo({ scenario: s.scenario, puntos: PUNTOS_FLUJO, onNiveles: (agua) => set({ agua }), visible: L.escurrimiento });
   return (
     <DrenaMap
       className="map--main"
@@ -150,16 +156,18 @@ function MainMap() {
       padding={{ top: 30, bottom: 30, left: 60, right: 60 }}
       pins={L.prioridad ? pins : []}
       labels={L.prioridad ? labels : []}
-      lines={L.escurrimiento ? ESCURRIMIENTO : []}
       comunas={L.limites}
       rejillas={L.rejillas}
       gore={L.gore ? GORE : null}
       attribution="Base: Esri, HERE, Garmin, © OpenStreetMap · ubicaciones aproximadas"
+      onMapReady={flujo.alMapaListo}
     >
+      <FlujoControles ui={flujo.ui} onAlternar={flujo.alternar} onVelocidad={flujo.setVelocidad} onModo={flujo.setModo} onReiniciar={flujo.reiniciar} />
+      <FlujoAviso desbordados={flujo.ui.desbordados} corriendo={flujo.ui.corriendo} />
       <div className="legend">
         <Kicker>Capas</Kicker>
         <Check on={L.prioridad} label="Puntos por prioridad" onClick={() => toggleLayer("prioridad")} />
-        <Check on={L.escurrimiento} label="Líneas de escurrimiento" onClick={() => toggleLayer("escurrimiento")} />
+        <Check on={L.escurrimiento} label="Flujo de agua" onClick={() => toggleLayer("escurrimiento")} />
         <Check on={L.limites} label="Límites comunales" onClick={() => toggleLayer("limites")} />
         <Check on={L.gore} label="175 puntos críticos GORE" onClick={() => toggleLayer("gore")} />
         <Check on={L.rejillas} label="Rejillas (catastro MOP)" onClick={() => toggleLayer("rejillas")} />

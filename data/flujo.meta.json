@@ -1,0 +1,36 @@
+{
+  "generado_utc": "2026-11-21T20:36:23+00:00",
+  "metodo": "mismo que 03_terreno.py: elevación por nodo, relleno de depresiones y D8 sobre el grafo de calles",
+  "red_calles": {
+    "graphml": "cache\\osm\\red_drive_mut_2500m.graphml",
+    "sha256": "4cf78a8be6ad98591aac8fed9d6d11b3e53013360b99ba05dcbf893475fee661",
+    "radio_m": 2500.0,
+    "osmnx": "2.2.0"
+  },
+  "dem": {
+    "sha256": "a27fc1c1b4ef86047f3d7523c222fdbb322a3e3aff09bb6a7d5d30b6fe2c91c1"
+  },
+  "parametros": {
+    "ancho_aporte_m": 20.0,
+    "radio_export_m": 2300.0,
+    "snap_max_m": 30.0
+  },
+  "conteos": {
+    "tramos": 1606,
+    "sumideros": 544,
+    "comprobacion_terreno": {
+      "calzan": 539,
+      "de": 541
+    }
+  },
+  "salida": {
+    "archivo": "frontend\\public\\data\\flujo.geojson",
+    "sha256": "bd60ad6746c0df18b91c3e33422162a615d5a14c2c5245fadf01b6b0c2bce1b0",
+    "bytes": 636378
+  },
+  "script": {
+    "ruta": "pipeline/04_flujo.py",
+    "version": "0.1.0",
+    "sha256": "cb1d9d414b2336f18f9e573871d8289d1790846e6407cc172d48c5df7479c643"
+  }
+}

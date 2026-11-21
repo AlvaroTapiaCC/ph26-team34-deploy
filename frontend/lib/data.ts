@@ -5,6 +5,7 @@ export type Comuna = "Providencia" | "Ñuñoa" | "Las Condes";
 export type Prioridad = "alta" | "media" | "baja";
 export type ScenarioId = "13oct" | "poniente" | "pareja";
 export type LngLat = [number, number];
+import { FLUJO_CONFIG, type NivelAgua } from "./flujo/config";
 
 export interface Punto {
   id: string;
@@ -144,9 +145,13 @@ export function prioFromRank(rank: number): Prioridad {
   return rank <= 4 ? "alta" : rank <= 8 ? "media" : "baja";
 }
 
-export function rankingFor(sc: ScenarioId): RankedPunto[] {
+export function rankingFor(sc: ScenarioId, agua: Record<string, NivelAgua> = {}): RankedPunto[] {
   const s = SCENARIOS.find((x) => x.id === sc)!;
-  return s.ranking.map(([id, score], i) => ({ ...PUNTOS[id], rank: i + 1, score, prio: prioFromRank(i + 1) }));
+  // Fase Durante (plan §6.5): C_durante = C · (1 + w_agua · nivel de agua). Con agua observada o simulada el orden se
+  // recalcula; sin agua es el orden del escenario. El puntaje no se muestra, pero sí ordena.
+  const ajustado = s.ranking.map(([id, score]) => ({ id, score: score * (1 + FLUJO_CONFIG.wAgua * (FLUJO_CONFIG.valorNivelAgua[agua[id] ?? "sin_agua"] ?? 0)) }));
+  ajustado.sort((a, b) => b.score - a.score);
+  return ajustado.map(({ id, score }, i) => ({ ...PUNTOS[id], rank: i + 1, score, prio: prioFromRank(i + 1) }));
 }
 
 export const fmt = (n: number, d = 2) => n.toFixed(d).replace(".", ",");
