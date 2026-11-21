@@ -44,6 +44,9 @@ def get_route(crew_id: str, x_admin_token: str | None = Header(default=None)):
     `origen` indica cuál: `despacho`, `calculada` o `sin_misiones`. Para una cuadrilla real sin
     `X-Admin-Token` la ruta parte en la primera parada (nunca en su posición) y viene
     `posicion_oculta: true`; las simuladas parten siempre en su posición.
+
+    `ultimo_cambio` es el último re-planeo del despacho (motivo, hora, siguiente parada antes y
+    después, y la clasificación de la observación que lo causó, sin su texto ni su foto) o `null`.
     """
     try:
         with get_conn() as conn:
