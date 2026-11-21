@@ -313,7 +313,7 @@ Foto / texto / cámara ──► POST /observations ──► Claude (JSON fijo,
 /frontend
   app/central/  app/cuadrilla/  app/reportar/
   components/  lib/
-/pipeline            01_sumideros.py, 02_dem_calles.py, 03_satelite.py,
+/pipeline            00_comunas.py, 02_rejillas.py (catastro; 01_sumideros.py obsoleto), 03_terreno.py, 03_satelite.py,
                      04_osm_features.py, 05_ferias_clima.py, 06_formula_base.py, 07_cargar.py
 /data                geojson generados, fotos de la demo, demo_timeline.json,
                      validacion/ (ranking guardado, etiquetas humanas, resultados)
