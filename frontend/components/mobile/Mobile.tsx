@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { COMUNAS, ESCURRIMIENTO, fmt, googleMapsUrl, pad2, PUNTOS, SCENARIOS, textoWhatsApp, type LngLat, type ScenarioId } from "@/lib/data";
+import { COMUNAS, ESCURRIMIENTO, fmt, googleMapsTramos, MAX_WAYPOINTS_MOVIL, pad2, PUNTOS, SCENARIOS, textoWhatsApp, type LngLat, type ScenarioId } from "@/lib/data";
 import { useStore, type MobileTab } from "@/lib/store";
 import { copy } from "../desktop/Modals";
 import { CriticidadPill } from "../desktop/Ficha";
@@ -287,7 +287,10 @@ function Filtros() {
 function Ruta() {
   const { s, set, scenarioLabel, ruta } = useStore();
   const paradas = ruta.paradas;
-  const done = Math.min(s.hechos, paradas.length);
+  const hechos = new Set(s.hechos);
+  const done = paradas.filter((p) => hechos.has(p.id)).length;
+  const nextIdx = paradas.findIndex((p) => !hechos.has(p.id));
+  const tramos = googleMapsTramos(paradas, MAX_WAYPOINTS_MOVIL);
   return (
     <>
       <div className="mob__body">
@@ -308,7 +311,7 @@ function Ruta() {
         </div>
         <div className="mlist" style={{ paddingTop: 8 }}>
           {paradas.map((r, i) => {
-            const st = i < done ? "done" : i === done ? "next" : "todo";
+            const st = hechos.has(r.id) ? "done" : i === nextIdx ? "next" : "todo";
             return (
               <div key={r.id} className={`stop is-${st}`}>
                 <span className="stop__n">{st === "done" ? "✓" : i + 1}</span>
@@ -323,15 +326,17 @@ function Ruta() {
         </div>
       </div>
       <div className="mob__cta--stack">
-        <Button variant="primary" size="lg" className="btn--block" onClick={() => window.open(googleMapsUrl(paradas), "_blank", "noopener")}>
-          Abrir en Google Maps
-        </Button>
-        {done < paradas.length ? (
-          <Button size="lg" className="btn--block" onClick={() => set({ hechos: done + 1 })}>
-            Marcar punto {done + 1} como limpio
+        {tramos.map((t, i) => (
+          <Button key={t.url} variant={i === 0 ? "primary" : "secondary"} size="lg" className="btn--block" onClick={() => window.open(t.url, "_blank", "noopener")}>
+            {tramos.length === 1 ? "Abrir en Google Maps" : `Abrir tramo ${i + 1} en Maps · paradas ${t.desde}–${t.hasta}`}
+          </Button>
+        ))}
+        {nextIdx >= 0 ? (
+          <Button size="lg" className="btn--block" onClick={() => set({ hechos: [...s.hechos, paradas[nextIdx].id] })}>
+            Marcar punto {nextIdx + 1} de {paradas.length} como limpio
           </Button>
         ) : (
-          <Button size="lg" className="btn--block" onClick={() => set({ hechos: 0 })}>
+          <Button size="lg" className="btn--block" onClick={() => set({ hechos: s.hechos.filter((id) => !paradas.some((p) => p.id === id)) })}>
             Reiniciar ruta
           </Button>
         )}

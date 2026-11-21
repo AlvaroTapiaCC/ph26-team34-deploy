@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { googleMapsUrl, PUNTOS, SIMULABLES, textoWhatsApp } from "@/lib/data";
+import { googleMapsTramos, MAX_WAYPOINTS_WEB, PUNTOS, SIMULABLES, textoWhatsApp } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { Button, CloseBtn, FakeQR, Kicker, Modal, PrioChip, Stat } from "../ui";
 
@@ -56,9 +56,11 @@ function RutaModal() {
             <p>Escanea para abrir en Google Maps</p>
             <small>QR ilustrativo · se genera con qrcode</small>
           </div>
-          <Button variant="primary" className="btn--block" onClick={() => window.open(googleMapsUrl(ruta.paradas), "_blank", "noopener")}>
-            Abrir en Google Maps
-          </Button>
+          {googleMapsTramos(ruta.paradas, MAX_WAYPOINTS_WEB).map((t, i, all) => (
+            <Button key={t.url} variant={i === 0 ? "primary" : "secondary"} className="btn--block" onClick={() => window.open(t.url, "_blank", "noopener")}>
+              {all.length === 1 ? "Abrir en Google Maps" : `Abrir tramo ${i + 1} en Maps · paradas ${t.desde}–${t.hasta}`}
+            </Button>
+          ))}
           <Button
             className="btn--block"
             onClick={async () => {

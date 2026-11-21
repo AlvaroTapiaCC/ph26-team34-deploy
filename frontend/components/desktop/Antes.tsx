@@ -106,7 +106,7 @@ function Bottom() {
         <Kicker>Ruta de cuadrilla</Kicker>
         <p className="tile__body">{ruta.paradas.length} {ruta.paradas.length === 1 ? "punto" : "puntos"} de {s.comuna === "Todas" ? "todas las comunas" : s.comuna} ({s.cuadrillas} {s.cuadrillas === 1 ? "cuadrilla" : "cuadrillas"}), en orden.</p>
         <Button variant="primary" className="btn--block" onClick={() => set({ modal: "ruta" })}>
-          Generar ruta
+          Generar ruta · {ruta.paradas.length} {ruta.paradas.length === 1 ? "punto" : "puntos"}
         </Button>
       </div>
     </div>

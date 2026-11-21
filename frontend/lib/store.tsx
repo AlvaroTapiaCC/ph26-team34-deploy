@@ -48,7 +48,7 @@ export interface State {
   markMode: boolean;
   reportes: Reporte[];
   enRuta: string[];
-  hechos: number;
+  hechos: string[]; // ids de paradas ya limpias (el avance se guarda por parada, no por posición)
   copied: boolean;
   mobileTab: MobileTab;
   mobileView: MobileView;
@@ -74,7 +74,7 @@ export const initialState: State = {
   markMode: false,
   reportes: [REPORTE_BASE],
   enRuta: [],
-  hechos: 3,
+  hechos: [],
   copied: false,
   mobileTab: "prioridades",
   mobileView: "lista",
@@ -195,7 +195,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     set,
     toggleLayer: (key, value) => dispatch({ type: "layer", key, value }),
     flood: (id, fuente = "sensor") => dispatch({ type: "flood", id, fuente }),
-    addRuta: (id) => (ruta.paradas.some((p) => p.id === id) ? dispatch({ type: "set", patch: { toast: "Ya está en la ruta" } }) : dispatch({ type: "addRuta", id })),
+    addRuta: (id) => {
+      const p = ranking.find((x) => x.id === id);
+      if (ruta.paradas.some((x) => x.id === id)) dispatch({ type: "set", patch: { toast: "Ya está en la ruta" } });
+      else if (p && s.comuna !== "Todas" && p.comuna !== s.comuna) dispatch({ type: "set", patch: { toast: `${p.nombre} es de ${p.comuna}, fuera de ${s.comuna}` } });
+      else dispatch({ type: "addRuta", id });
+    },
     reload: simulateLoad,
     ranking,
     filtered,

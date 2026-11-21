@@ -192,7 +192,10 @@ function kmEntre(a: LngLat, b: LngLat) {
 export function buildRuta(ranking: RankedPunto[], comuna: "Todas" | Comuna, cuadrillas: number, enRuta: string[]): RutaCuadrilla {
   const base = (comuna === "Todas" ? ranking : ranking.filter((p) => p.comuna === comuna)).slice(0, cuadrillas * 2);
   const ids = new Set(base.map((p) => p.id));
-  const extra = enRuta.filter((id) => !ids.has(id)).map((id) => ranking.find((p) => p.id === id)).filter((p): p is RankedPunto => !!p);
+  const extra = enRuta
+    .filter((id) => !ids.has(id))
+    .map((id) => ranking.find((p) => p.id === id))
+    .filter((p): p is RankedPunto => !!p && (comuna === "Todas" || p.comuna === comuna));
   const puntos = [...base, ...extra].sort((a, b) => a.rank - b.rank);
   let total = 0;
   const paradas = puntos.map((p, i) => {
@@ -203,7 +206,18 @@ export function buildRuta(ranking: RankedPunto[], comuna: "Todas" | Comuna, cuad
   return { paradas, km: `${fmt(total, 1)} km` };
 }
 
-export function googleMapsUrl(paradas: Parada[]) {
+// Google Maps URLs admite 3 waypoints en navegadores móviles y 9 en el resto
+// (https://developers.google.com/maps/documentation/urls/get-started).
+export const MAX_WAYPOINTS_MOVIL = 3;
+export const MAX_WAYPOINTS_WEB = 9;
+
+export interface Tramo {
+  url: string;
+  desde: number; // número de parada (1-based)
+  hasta: number;
+}
+
+function urlTramo(paradas: Parada[]) {
   const pts = paradas.map((r) => `${r.coord[1]},${r.coord[0]}`);
   if (pts.length === 0) return "https://www.google.com/maps";
   const base = "https://www.google.com/maps/dir/?api=1&travelmode=driving";
@@ -212,11 +226,25 @@ export function googleMapsUrl(paradas: Parada[]) {
   return `${base}&origin=${pts[0]}&destination=${pts[pts.length - 1]}${way ? `&waypoints=${encodeURIComponent(way)}` : ""}`;
 }
 
-// Mismo texto para copiar y para enviar: siempre lleva el enlace real.
+// Divide la ruta en tramos que respetan el límite de waypoints. La última parada de un tramo es el origen del siguiente.
+export function googleMapsTramos(paradas: Parada[], maxWaypoints: number): Tramo[] {
+  const size = maxWaypoints + 2; // origen + waypoints + destino
+  if (paradas.length <= size) return [{ url: urlTramo(paradas), desde: 1, hasta: paradas.length }];
+  const tramos: Tramo[] = [];
+  for (let i = 0; i < paradas.length - 1; i += size - 1) {
+    const slice = paradas.slice(i, i + size);
+    tramos.push({ url: urlTramo(slice), desde: i + 1, hasta: i + slice.length });
+  }
+  return tramos;
+}
+
+// Mismo texto para copiar y para enviar: lleva los enlaces reales. Se lee en el teléfono, así que usa el límite móvil.
 export function textoWhatsApp(paradas: Parada[], scenarioLabel: string, comuna: string, opts: { prio?: boolean } = {}) {
   const head = `*Drena · Ruta Cuadrilla 1 · ${comuna === "Todas" ? "Todas las comunas" : comuna}*`;
   const lines = paradas.map((r, i) => `${i + 1}. ${r.nombre}${opts.prio ? ` (${r.prio})` : ""}`);
-  return [head, `Escenario: ${scenarioLabel}`, "", ...lines, "", `Google Maps: ${googleMapsUrl(paradas)}`].join("\n");
+  const tramos = googleMapsTramos(paradas, MAX_WAYPOINTS_MOVIL);
+  const links = tramos.length === 1 ? [`Google Maps: ${tramos[0].url}`] : tramos.map((t, i) => `Tramo ${i + 1} (paradas ${t.desde}–${t.hasta}): ${t.url}`);
+  return [head, `Escenario: ${scenarioLabel}`, "", ...lines, "", ...links].join("\n");
 }
 
 // Modo Durante: cadena aguas abajo por punto anegado (ids de PUNTOS)
