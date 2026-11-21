@@ -2,28 +2,17 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
 import { getEscenarios, getFicha, getRanking } from "./api";
-import { buildRuta, CADENA, COMUNAS, PUNTOS, rankingFor, SCENARIOS, TOTAL_INTERSECCIONES, type Comuna, type RankedPunto, type RutaCuadrilla, type Scenario, type ScenarioId } from "./data";
-import type { NivelAgua } from "./flujo/config";
+import { buildRuta, COMUNAS, PUNTOS, rankingFor, SCENARIOS, TOTAL_INTERSECCIONES, type Comuna, type RankedPunto, type RutaCuadrilla, type Scenario, type ScenarioId } from "./data";
+import type { EstadoRejilla, NivelAgua } from "./flujo/config";
 import { aEscenario, aFichaReal, aRankingReal, type FichaReal, type RankingReal } from "./real";
 
-// De dónde salen los datos del modo Antes: servidor real o respaldo de ejemplo (lib/data.ts)
+// De dónde salen los datos: servidor real o respaldo de ejemplo (lib/data.ts)
 export type Fuente = "cargando" | "api" | "ejemplo";
 
-export type Modo = "antes" | "durante";
-export type Vista = "main" | "validacion" | "metodologia";
 export type Status = "ok" | "loading" | "error";
-export type Modal = null | "ruta" | "whatsapp" | "simular";
-export type Sensor = "escuchando" | "anegado" | "caido";
-export type MobileTab = "prioridades" | "ruta" | "durante";
+export type Modal = null | "ruta" | "whatsapp";
+export type MobileTab = "prioridades" | "ruta";
 export type MobileView = "lista" | "mapa" | "ficha" | "filtros" | "compartir" | "estados";
-
-export interface Reporte {
-  id: string;
-  nombre: string;
-  fuente: string;
-  estado: "anegado" | "pendiente" | "limpio";
-  foto?: boolean;
-}
 
 export interface Layers {
   prioridad: boolean;
@@ -31,16 +20,12 @@ export interface Layers {
   limites: boolean;
   gore: boolean;
   rejillas: boolean;
-  cadena: boolean;
-  rayos: boolean;
-  feed: boolean;
-  reales: boolean;
 }
+
+export const CUADRILLAS_MAX = 6;
 
 export interface State {
   scenario: ScenarioId;
-  modo: Modo;
-  vista: Vista;
   comuna: "Todas" | Comuna;
   cuadrillas: number;
   ficha: string | null;
@@ -49,26 +34,18 @@ export interface State {
   toast: string | null;
   status: Status;
   layers: Layers;
-  sensor: Sensor;
-  anegado: string | null;
-  fuenteAnegamiento: string | null;
-  sensorAgo: string;
-  markMode: boolean;
-  reportes: Reporte[];
   enRuta: string[];
   agua: Record<string, NivelAgua>; // nivel de agua por punto del ranking, de la simulación del flujo o de los reportes
+  /** Estado de rejilla que marcó el operador (clic en el mapa o botones del panel); la simulación lo usa al instante. */
+  rejillas: Record<string, EstadoRejilla>;
   hechos: string[]; // ids de paradas ya limpias (el avance se guarda por parada, no por posición)
   copied: boolean;
   mobileTab: MobileTab;
   mobileView: MobileView;
 }
 
-const REPORTE_BASE: Reporte = { id: "r1", nombre: "Grecia / Ossa", fuente: "Cuadrilla 2 · 17:20", estado: "limpio" };
-
 export const initialState: State = {
   scenario: "13oct",
-  modo: "antes",
-  vista: "main",
   comuna: "Todas",
   cuadrillas: 3,
   ficha: null,
@@ -76,15 +53,10 @@ export const initialState: State = {
   modal: null,
   toast: null,
   status: "loading",
-  layers: { prioridad: true, escurrimiento: true, limites: true, gore: false, rejillas: false, cadena: false, rayos: false, feed: true, reales: true },
-  sensor: "escuchando",
-  anegado: null,
-  fuenteAnegamiento: null,
-  sensorAgo: "",
-  markMode: false,
-  reportes: [REPORTE_BASE],
+  layers: { prioridad: true, escurrimiento: true, limites: true, gore: false, rejillas: false },
   enRuta: [],
   agua: {},
+  rejillas: {},
   hechos: [],
   copied: false,
   mobileTab: "prioridades",
@@ -94,9 +66,8 @@ export const initialState: State = {
 type Action =
   | { type: "set"; patch: Partial<State> }
   | { type: "layer"; key: keyof Layers; value?: boolean }
-  | { type: "flood"; id: string; fuente: "sensor" | "manual" }
   | { type: "addRuta"; id: string }
-  | { type: "resetSim" };
+  | { type: "rejillas"; estados: Record<string, EstadoRejilla>; toast?: string };
 
 function reducer(s: State, a: Action): State {
   switch (a.type) {
@@ -104,30 +75,10 @@ function reducer(s: State, a: Action): State {
       return { ...s, ...a.patch };
     case "layer":
       return { ...s, layers: { ...s.layers, [a.key]: a.value ?? !s.layers[a.key] } };
-    case "flood": {
-      const nombre = rankingFor(s.scenario).find((p) => p.id === a.id)!.nombre;
-      const fuente = a.fuente === "sensor" ? "Reporte simulado · 17:44" : "Marcado en sala · 17:44";
-      return {
-        ...s,
-        sensor: "anegado",
-        anegado: a.id,
-        fuenteAnegamiento: fuente,
-        sensorAgo: "hace 40 s",
-        markMode: false,
-        modal: null,
-        layers: { ...s.layers, cadena: true },
-        toast: null,
-        reportes: [
-          { id: "r3", nombre, fuente, estado: "anegado", foto: true },
-          { id: "r2", nombre: "Irarrázaval / P. de Valdivia", fuente: "Llamada vecinal · 17:31", estado: "pendiente" },
-          REPORTE_BASE,
-        ],
-      };
-    }
-    case "resetSim":
-      return { ...s, sensor: "escuchando", anegado: null, sensorAgo: "", markMode: false, reportes: [REPORTE_BASE], layers: { ...s.layers, cadena: false }, toast: "Simulación reiniciada" };
     case "addRuta":
       return { ...s, enRuta: s.enRuta.includes(a.id) ? s.enRuta : [...s.enRuta, a.id], toast: "Agregado a la ruta de la cuadrilla" };
+    case "rejillas":
+      return { ...s, rejillas: { ...s.rejillas, ...a.estados }, toast: a.toast ?? s.toast };
   }
 }
 
@@ -135,16 +86,15 @@ interface Ctx {
   s: State;
   set: (patch: Partial<State>) => void;
   toggleLayer: (key: keyof Layers, value?: boolean) => void;
-  flood: (id: string, fuente?: "sensor" | "manual") => void;
-  dispararReporte: () => Promise<void>;
   addRuta: (id: string) => void;
+  /** Cambia el estado de varias rejillas a la vez (botones del panel o clic en el mapa). */
+  setRejillas: (estados: Record<string, EstadoRejilla>, toast?: string) => void;
   reload: () => void;
   ranking: RankedPunto[];
   filtered: RankedPunto[];
-  cadena: RankedPunto[];
   ruta: RutaCuadrilla;
   scenarioLabel: string;
-  // Datos del servidor (modo Antes)
+  // Datos del servidor
   fuente: Fuente;
   despertando: boolean; // el servidor tarda: probablemente Render está despertando (~50 s)
   escenarios: Scenario[];
@@ -162,17 +112,10 @@ function initFromUrl(): State {
   const s: State = { ...initialState };
   const esc = q.get("escenario");
   if (esc && SCENARIOS.some((x) => x.id === esc)) s.scenario = esc as ScenarioId;
-  if (q.get("modo") === "durante") s.modo = "durante";
-  const v = q.get("vista");
-  if (v === "validacion" || v === "metodologia") s.vista = v;
   const c = q.get("comuna");
   if (c === "Providencia" || c === "Ñuñoa" || c === "Las Condes") s.comuna = c;
   const cu = Number(q.get("cuadrillas"));
-  if (cu >= 1 && cu <= 6) s.cuadrillas = cu;
-  if (q.get("sensor") === "caido") {
-    s.sensor = "caido";
-    s.sensorAgo = "hace 5 min";
-  }
+  if (cu >= 1 && cu <= CUADRILLAS_MAX) s.cuadrillas = cu;
   if (q.get("estado") === "error") s.status = "error";
   const f = q.get("ficha");
   if (f && Object.prototype.hasOwnProperty.call(PUNTOS, f)) s.ficha = f;
@@ -182,9 +125,10 @@ function initFromUrl(): State {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [s, dispatch] = useReducer(reducer, undefined, initFromUrl);
   const set = useCallback((patch: Partial<State>) => dispatch({ type: "set", patch }), []);
+  const setRejillas = useCallback((estados: Record<string, EstadoRejilla>, toast?: string) => dispatch({ type: "rejillas", estados, toast }), []);
   const loadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // --- Datos reales del modo Antes (GET /scenarios, /scenarios/{id}/ranking, /sumideros/{id}) ---
+  // --- Datos reales (GET /scenarios, /scenarios/{id}/ranking, /sumideros/{id}) ---
   const [fuente, setFuente] = useState<Fuente>("cargando");
   const [despertando, setDespertando] = useState(false);
   const [escenarios, setEscenarios] = useState<Scenario[]>(SCENARIOS);
@@ -286,32 +230,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, [s.toast]);
 
-  // Si el simulador se reinicia (/sim/reset), la vista Durante vuelve a su estado inicial
-  const simVisto = useRef(0);
-  useEffect(() => {
-    if (s.modo !== "durante") return;
-    const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-    const t = setInterval(async () => {
-      try {
-        const r = await fetch(`${api}/sim/status`, { signal: AbortSignal.timeout(2000) });
-        if (!r.ok) return;
-        const n = Number((await r.json()).eventos_aplicados) || 0;
-        if (n === 0 && simVisto.current > 0) {
-          dispatch({ type: "resetSim" });
-        }
-        simVisto.current = n;
-      } catch {
-        /* sin backend: no hay nada que sincronizar */
-      }
-    }, 2500);
-    return () => clearInterval(t);
-  }, [s.modo]);
-
-  // Modo Antes con datos del servidor; Durante (#36) sigue con los datos de ejemplo
-  const real = fuente === "api" && s.modo === "antes" ? (rankings[s.scenario] ?? null) : null;
+  const real = fuente === "api" ? (rankings[s.scenario] ?? null) : null;
   const ranking = useMemo(() => (real ? real.puntos : rankingFor(s.scenario, s.agua)), [real, s.scenario, s.agua]);
   const filtered = useMemo(() => (s.comuna === "Todas" ? ranking : ranking.filter((p) => p.comuna === s.comuna)), [ranking, s.comuna]);
-  const cadena = useMemo(() => (s.anegado ? (CADENA[s.anegado] ?? []).map((id) => ranking.find((p) => p.id === id)!).filter(Boolean) : []), [s.anegado, ranking]);
   const ruta = useMemo(() => buildRuta(ranking, s.comuna, s.cuadrillas, s.enRuta), [ranking, s.comuna, s.cuadrillas, s.enRuta]);
   const scenarioLabel = (escenarios.find((x) => x.id === s.scenario) ?? SCENARIOS.find((x) => x.id === s.scenario) ?? SCENARIOS[0]).label;
   const comunas = useMemo(() => {
@@ -348,42 +269,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     s,
     set,
     toggleLayer: (key, value) => dispatch({ type: "layer", key, value }),
-    flood: (id, fuente = "sensor") => dispatch({ type: "flood", id, fuente }),
-    // Dispara un reporte en vivo en el simulador (POST /sim/trigger). El backend aún no procesa
-    // observaciones (#28), así que la reacción en pantalla es la del mock local `flood`.
-    dispararReporte: async () => {
-      const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      const token = process.env.NEXT_PUBLIC_SIM_TOKEN;
-      let enviado = false;
-      let n = 0; // N° de reporte en vivo de esta corrida: elige el punto, así la demo se repite igual
-      try {
-        const r = await fetch(`${api}/sim/trigger`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...(token ? { "X-Sim-Token": token } : {}) },
-          body: JSON.stringify({ texto: "Reporte en vivo desde la sala" }),
-          signal: AbortSignal.timeout(2500),
-        });
-        enviado = r.ok;
-        if (r.ok) n = Number((await r.json())?.payload?.id_en_vivo) || 0;
-      } catch {
-        /* sin backend: sigue la demo con el mock local */
-      }
-      const p = n > 0 ? ranking[(n - 1) % ranking.length] : ranking.find((x) => x.id !== s.anegado);
-      if (!p) return;
-      simVisto.current = Math.max(simVisto.current, 1);
-      dispatch({ type: "flood", id: p.id, fuente: "manual" });
-      if (!enviado) dispatch({ type: "set", patch: { toast: "Simulador sin conexión: reporte simulado solo en pantalla" } });
-    },
     addRuta: (id) => {
       const p = ranking.find((x) => x.id === id);
       if (ruta.paradas.some((x) => x.id === id)) dispatch({ type: "set", patch: { toast: "Ya está en la ruta" } });
       else if (p && s.comuna !== "Todas" && p.comuna !== s.comuna) dispatch({ type: "set", patch: { toast: `${p.nombre} es de ${p.comuna}, fuera de ${s.comuna}` } });
       else dispatch({ type: "addRuta", id });
     },
+    setRejillas,
     reload: simulateLoad,
     ranking,
     filtered,
-    cadena,
     ruta,
     scenarioLabel,
     fuente,

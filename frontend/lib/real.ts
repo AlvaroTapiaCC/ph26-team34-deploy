@@ -41,7 +41,7 @@ export function boundsDe(puntos: { coord: LngLat }[]): [LngLat, LngLat] {
 const acortar = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 export function aEscenario(e: ApiEscenario): Scenario {
-  return { id: e.id, label: e.nombre, short: acortar(e.nombre, 22), ranking: [], aguaExterna: 0, criticosTop30: 0, real: true };
+  return { id: e.id, label: e.nombre, short: acortar(e.nombre, 22), ranking: [], real: true };
 }
 
 export interface RankingReal {

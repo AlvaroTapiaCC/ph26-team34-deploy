@@ -10,8 +10,7 @@ export interface MapPin {
   rank: number | string;
   prio: Prioridad | "anegado";
   faded?: boolean;
-  ring?: "dashed" | "flood";
-  realRing?: "ok" | "miss";
+  ring?: "dashed";
   onClick?: () => void;
 }
 
@@ -28,14 +27,11 @@ export interface DrenaMapProps {
   pins?: MapPin[];
   labels?: MapLabel[];
   lines?: LngLat[][];
-  chain?: LngLat[] | null;
   limites?: LngLat[][] | null;
   area?: LngLat[] | null;
-  celda?: { poly: LngLat[]; rayos: LngLat[]; link: [LngLat, LngLat] } | null;
   gore?: LngLat[] | null;
   comunas?: boolean; // límites de todas las comunas de la RM con su nombre (public/data/comunas_rm.geojson). Por defecto, sí
   rejillas?: boolean; // catastro de rejillas MOP, agrupadas en zoom bajo (public/data/rejillas.geojson)
-  reales?: { coord: LngLat; conTop: boolean }[] | null;
   bounds: [LngLat, LngLat];
   padding?: number | { top: number; bottom: number; left: number; right: number };
   attribution?: string;
@@ -70,14 +66,6 @@ function pinEl(p: MapPin, size: number): HTMLElement {
   if (p.ring === "dashed") {
     const r = document.createElement("span");
     r.className = "pin__ring";
-    el.appendChild(r);
-  }
-  if (p.ring === "flood") {
-    el.insertAdjacentHTML("afterbegin", `<span class="pin__flood pin__flood--1"></span><span class="pin__flood pin__flood--2"></span><span class="pin__flood pin__flood--3"></span>`);
-  }
-  if (p.realRing) {
-    const r = document.createElement("span");
-    r.className = "pin__real";
     el.appendChild(r);
   }
   if (p.onClick) {
@@ -174,14 +162,11 @@ export default function DrenaMap(props: DrenaMapProps) {
         mapRef.current = map;
         map.once("style.load", () => {
           const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]) });
-          ["esc", "chain", "lim", "area", "celda", "celda-link", "gore"].forEach(add);
+          ["esc", "lim", "area", "gore"].forEach(add);
           map.addSource("comunas-rm", { type: "geojson", data: "/data/comunas_rm.geojson" });
           map.addSource("rejillas", { type: "geojson", data: "/data/rejillas.geojson", cluster: true, clusterMaxZoom: 15, clusterRadius: 40 });
           map.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-color": "#FF3D0A", "fill-opacity": 0.16 } });
           map.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-color": "#FF3D0A", "line-width": 2, "line-opacity": 0.9, "line-dasharray": [3, 2] } });
-          map.addLayer({ id: "celda-fill", type: "fill", source: "celda", paint: { "fill-color": "#1B1B1B", "fill-opacity": 0.14 } });
-          map.addLayer({ id: "celda-line", type: "line", source: "celda", paint: { "line-color": "#1B1B1B", "line-width": 2, "line-dasharray": [3, 2] } });
-          map.addLayer({ id: "celda-link", type: "line", source: "celda-link", paint: { "line-color": "#1B1B1B", "line-width": 3, "line-opacity": 0.8, "line-dasharray": [1.5, 1.5] } });
           map.addLayer({ id: "lim", type: "line", source: "lim", paint: { "line-color": "#5A5A57", "line-width": 2, "line-opacity": 0.8, "line-dasharray": [4, 3] } });
           const hidden = { visibility: "none" };
           // Límites de todas las comunas: línea fina punteada en --text-3, relleno casi invisible; las 3 del proyecto, algo más marcadas.
@@ -220,8 +205,6 @@ export default function DrenaMap(props: DrenaMapProps) {
           });
           map.addLayer({ id: "esc-halo", type: "line", source: "esc", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#FF3D0A", "line-width": 9, "line-opacity": 0.14 } });
           map.addLayer({ id: "esc-line", type: "line", source: "esc", paint: { "line-color": "#FF3D0A", "line-width": 2, "line-opacity": 0.85, "line-dasharray": [2.5, 2.5] } });
-          map.addLayer({ id: "chain-halo", type: "line", source: "chain", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#FF3D0A", "line-width": 14, "line-opacity": 0.2 } });
-          map.addLayer({ id: "chain-line", type: "line", source: "chain", paint: { "line-color": "#FF3D0A", "line-width": 3, "line-dasharray": [1.5, 1.5] } });
           map.addLayer({ id: "gore", type: "circle", source: "gore", paint: { "circle-radius": 4, "circle-color": "#5A5A57", "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 1.5 } });
           // Si cambia el esquema de color del sistema, se vuelven a leer los tokens
           const repintar = () => {
@@ -261,13 +244,10 @@ export default function DrenaMap(props: DrenaMapProps) {
     const map = mapRef.current;
     const set = (id: string, data: unknown) => map.getSource(id)?.setData(data);
     set("esc", fc((props.lines ?? []).map(line)));
-    set("chain", fc(props.chain ? [line(props.chain)] : []));
     set("lim", fc((props.limites ?? []).map(line)));
     set("area", fc(props.area ? [poly(props.area)] : []));
-    set("celda", fc(props.celda ? [poly(props.celda.poly)] : []));
-    set("celda-link", fc(props.celda ? [line(props.celda.link)] : []));
     set("gore", fc((props.gore ?? []).map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }))));
-  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore]);
+  }, [ready, props.lines, props.limites, props.area, props.gore]);
 
   // Visibilidad de las capas de datos reales
   useEffect(() => {
@@ -321,22 +301,10 @@ export default function DrenaMap(props: DrenaMapProps) {
     const add = (el: HTMLElement, coord: LngLat, anchor = "center", offset: [number, number] = [0, 0]) => {
       markers.current.push(new ml.Marker({ element: el, anchor, offset }).setLngLat(coord).addTo(map));
     };
-    (props.reales ?? []).forEach((r) => {
-      const el = document.createElement("div");
-      el.className = `real-ring real-ring--${r.conTop ? "ok" : "miss"}`;
-      if (!r.conTop) el.innerHTML = "<span>✕</span>";
-      add(el, r.coord);
-    });
-    (props.celda?.rayos ?? []).forEach((c) => {
-      const el = document.createElement("div");
-      el.className = "rayo";
-      el.textContent = "ϟ";
-      add(el, c);
-    });
     // pins: los atenuados primero para que queden debajo
     [...(props.pins ?? [])].sort((a, b) => Number(!!b.faded) - Number(!!a.faded)).forEach((p) => add(pinEl(p, size), p.coord));
     (props.labels ?? []).forEach((l) => add(labelEl(l), l.coord, l.anchor ?? "left", l.offset ?? [size / 2 + 6, 0]));
-  }, [ready, props.pins, props.labels, props.reales, props.celda, size]);
+  }, [ready, props.pins, props.labels, size]);
 
   return (
     <div className={`map ${props.className ?? ""}`}>

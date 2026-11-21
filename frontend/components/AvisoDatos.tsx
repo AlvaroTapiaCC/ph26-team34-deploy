@@ -2,10 +2,9 @@
 
 import { useStore } from "@/lib/store";
 
-/** Aviso discreto sobre el origen de los datos del modo Antes (servidor despertando o datos de ejemplo). */
+/** Aviso discreto sobre el origen de los datos (servidor despertando o datos de ejemplo). */
 export default function AvisoDatos({ movil = false }: { movil?: boolean }) {
-  const { fuente, despertando, s } = useStore();
-  if (s.modo !== "antes") return null;
+  const { fuente, despertando } = useStore();
   const texto = despertando
     ? "Despertando el servidor… puede tardar hasta un minuto"
     : fuente === "ejemplo"
