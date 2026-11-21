@@ -151,11 +151,13 @@ export default function DrenaMap(props: DrenaMapProps) {
             source: "rejillas",
             filter: ["has", "point_count"],
             layout: hidden,
+            // Anillo hueco: no se confunde con los pines de prioridad, que son figuras rellenas con número.
             paint: {
-              "circle-color": "#DCDCD9",
-              "circle-stroke-color": "#767672",
-              "circle-stroke-width": 1.5,
-              "circle-radius": ["step", ["get", "point_count"], 8, 10, 11, 50, 15, 200, 20],
+              "circle-color": "#FFFFFF",
+              "circle-opacity": 0.25,
+              "circle-stroke-color": "#5A5A57",
+              "circle-stroke-width": 2,
+              "circle-radius": ["step", ["get", "point_count"], 9, 10, 12, 50, 16, 200, 21],
             },
           });
           map.addLayer({
