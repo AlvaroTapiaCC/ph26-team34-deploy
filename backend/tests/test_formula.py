@@ -1,6 +1,7 @@
 import math
 
 import pytest
+from itertools import pairwise
 
 from app.config import get_formula_config
 from app.services.formula import (
@@ -138,7 +139,7 @@ def test_ranking_determinista_y_ordenado():
     r2 = calcular_ranking(list(reversed(s)), ch, CFG)
     assert [x.sumidero_id for x in r1] == [x.sumidero_id for x in r2]
     assert [x.rank for x in r1] == [1, 2, 3, 4]
-    assert all(a.prioridad >= b.prioridad for a, b in zip(r1, r1[1:]))
+    assert all(a.prioridad >= b.prioridad for a, b in pairwise(r1))
     for x in r1:
         assert x.prioridad == pytest.approx(x.p_ef * x.c)
 
