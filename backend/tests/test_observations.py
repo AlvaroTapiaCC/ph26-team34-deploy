@@ -185,14 +185,14 @@ def test_sumidero_inexistente_es_422(mundo):
 
 
 # --- empate entre candidatos ---------------------------------------------------------------
-def test_empate_devuelve_candidatos_y_no_guarda(mundo):
+def test_empate_asocia_al_mas_cercano_guarda_y_devuelve_candidatos(mundo):
     r = _enviar(lat=-33.45602, lon=-70.60002)  # entre A y B
     assert r.status_code == 200
     d = r.json()
-    assert d["id"] is None and d["sumidero_id"] is None
     assert {c["sumidero_id"] for c in d["candidatos"]} == {"A", "B"}
     assert d["candidatos"][0]["distancia_m"] <= d["candidatos"][1]["distancia_m"]
-    assert not mundo.observaciones and not mundo.casos and mundo.recalculos == 0
+    assert d["id"] and d["sumidero_id"] == d["candidatos"][0]["sumidero_id"]
+    assert len(mundo.observaciones) == 1 and mundo.casos and mundo.recalculos == 1
 
 
 def test_empate_se_resuelve_con_sumidero_id(mundo):
@@ -204,7 +204,7 @@ def test_decidir_asociacion_pura():
     cerca = lambda i, m: {"id": i, "distancia_m": m}  # noqa: E731
     assert svc.decidir_asociacion([]) == (None, [])
     assert svc.decidir_asociacion([cerca("a", 4), cerca("b", 30)])[0] == "a"   # el segundo está a >15 m
-    assert svc.decidir_asociacion([cerca("a", 4), cerca("b", 14.9)])[0] is None
+    assert svc.decidir_asociacion([cerca("a", 4), cerca("b", 14.9)]) == ("a", [cerca("a", 4), cerca("b", 14.9)])
     assert svc.decidir_asociacion([cerca("a", 60)]) == (None, [])              # muy lejos: sin asociación
 
 

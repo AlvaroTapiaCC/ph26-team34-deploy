@@ -181,10 +181,10 @@ def create_observation(
 
     Multipart. Con `tipo` = `rejilla` o `agua` la `foto` es obligatoria; con `texto`, el `texto`.
     Respuestas:
-    - 200 con `candidatos` (y `id` null) si hay dos o más sumideros a ≤15 m y no vino
-      `sumidero_id`: NO se guardó nada; el front pregunta y reenvía con `sumidero_id`.
     - 200 con el reporte guardado: id, sumidero_id, caso_id, clasificacion, prioridad_nueva,
       urgente, numeros_emergencia.
+    - Si hay dos o más sumideros a ≤15 m y no vino `sumidero_id`, se asocia al más cercano, se
+      guarda igual y la respuesta agrega `candidatos` para que el front pueda corregir.
     - 422 si la entrada es inválida; 413 si la foto pesa más de 15 MB; 503 si no hay base.
     """
     entrada = _parsear(
@@ -201,6 +201,7 @@ def create_observation(
 
     # 1) Asociación al sumidero, antes de gastar una llamada a Claude
     sumidero_id_final: str | None = None
+    candidatos: list[dict] = []
     ubic = (entrada.lat, entrada.lon)  # ubicación del reporte; sin GPS usa la del sumidero
     with get_conn() as conn:
         if obs_id and (previa := svc.observacion_existente(conn, obs_id)):
@@ -218,10 +219,7 @@ def create_observation(
                 ubic = (s["lat"], s["lon"])
         elif entrada.hay_gps:
             sumidero_id_final, cercanos = svc.decidir_asociacion(svc.sumideros_cercanos(conn, entrada.lat, entrada.lon))
-            if cercanos:
-                return {"id": None, "sumidero_id": None, "candidatos": _candidatos(cercanos), "caso_id": None,
-                        "clasificacion": None, "prioridad_nueva": None, "urgente": False,
-                        "numeros_emergencia": []}
+            candidatos = _candidatos(cercanos)  # empate: se asocia al más cercano y se informan las opciones
 
     # 2) Claude (sin conexión de base abierta). Nunca lanza por fallas de Claude: degrada.
     lectura = None
@@ -286,7 +284,7 @@ def create_observation(
     despacho = solicitar_despacho(caso_id, sumidero_id_final, urgente or caso_es_urgente)
 
     meta = principal.meta() if principal else {}
-    return {
+    respuesta = {
         "id": obs,
         "sumidero_id": sumidero_id_final,
         "caso_id": caso_id,
@@ -302,6 +300,9 @@ def create_observation(
         "claude_disponible": meta.get("claude_disponible", True),
         "fallo": meta.get("fallo", False),
     }
+    if candidatos:
+        respuesta["candidatos"] = candidatos
+    return respuesta
 
 
 @router.get("")

@@ -36,14 +36,15 @@ def decidir_asociacion(cercanos: list[dict[str, Any]]) -> tuple[str | None, list
     """A partir de los sumideros cercanos (ordenados por distancia) decide a cuál asociar.
 
     Devuelve (sumidero_id, candidatos). Si hay ambigüedad (dos o más a menos de
-    RADIO_AMBIGUO_M), sumidero_id es None y `candidatos` trae las opciones para que el
-    usuario elija. Si el más cercano está fuera de RADIO_MAX_ASOCIACION_M, no hay asociación.
+    RADIO_AMBIGUO_M), se asocia al más cercano y `candidatos` trae las opciones para que un
+    front pueda corregir después: el reporte nunca se descarta por un empate. Si el más
+    cercano está fuera de RADIO_MAX_ASOCIACION_M, no hay asociación.
     """
     if not cercanos:
         return None, []
     ambiguos = [c for c in cercanos if c["distancia_m"] <= RADIO_AMBIGUO_M]
     if len(ambiguos) >= 2:
-        return None, ambiguos[:MAX_CANDIDATOS]
+        return ambiguos[0]["id"], ambiguos[:MAX_CANDIDATOS]
     primero = cercanos[0]
     if primero["distancia_m"] > RADIO_MAX_ASOCIACION_M:
         return None, []
@@ -199,14 +200,15 @@ def listar(conn: Connection, desde: datetime | None, limite: int) -> list[dict[s
     """Observaciones recientes con su clasificación y caso.
 
     Sin GPS exacto, texto original ni enlace de la foto: son datos personales de vecinos (revisión
-    del PR #57).
+    del PR #57). De la lectura de un texto también se quitan `ubicacion_texto` y `desde_cuando`,
+    que repiten lo que escribió el vecino (puede ser un domicilio).
     """
     return conn.execute(
         """
         select o.id, o.sumidero_id, o.fuente, o.tipo, o.ts, o.is_simulated,
                o.media_url is not null as tiene_foto,
                co.case_id as caso_id, ca.urgente,
-               (select cl.resultado from classifications cl where cl.observation_id = o.id
+               (select cl.resultado - 'ubicacion_texto' - 'desde_cuando' from classifications cl where cl.observation_id = o.id
                  order by cl.created_at desc, cl.id desc limit 1) as clasificacion
           from observations o
           left join case_observations co on co.observation_id = o.id
