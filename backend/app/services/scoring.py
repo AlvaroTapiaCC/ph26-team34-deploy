@@ -221,12 +221,18 @@ def guardar_scores(conn: Connection, scenario_id: str, modo: str, scores: list[S
 
 
 def calcular(conn: Connection, scenario_id: str, modo: str, incluir_simulados: bool = True) -> list[Score]:
-    """Carga y calcula sin guardar. Cada score registra con qué datos se calculó."""
-    cfg = get_formula_config()
+    """Carga y calcula sin guardar. Cada score registra con qué datos se calculó.
+
+    Sin simulados (prueba de campo, §8.1) usa `formula_validacion.yaml`: mismos parámetros
+    con w_dias = w_cam = 0 y los demás pesos reescalados para sumar 1.
+    """
+    nombre_cfg = "formula" if incluir_simulados else "formula_validacion"
+    cfg = get_formula_config(nombre_cfg)
     entradas, chains = cargar_entradas(conn, scenario_id, modo, incluir_simulados, cfg)
     scores = calcular_ranking(entradas, chains, cfg, modo)
     for s in scores:
         s.detalle["incluye_simulados"] = incluir_simulados
+        s.detalle["config"] = nombre_cfg
     return scores
 
 
