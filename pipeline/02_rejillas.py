@@ -51,6 +51,15 @@ ZONAS = {
         "bbox": (-70.650, -33.485, -70.560, -33.405),
         "comunas": ["Providencia, Chile", "Ñuñoa, Chile"],
     },
+    "las_condes": {
+        "bbox": (-70.610, -33.440, -70.480, -33.370),
+        "comunas": ["Las Condes, Chile"],
+    },
+    # Providencia + Ñuñoa + Las Condes (unión de los rectángulos anteriores).
+    "oriente": {
+        "bbox": (-70.650, -33.485, -70.480, -33.370),
+        "comunas": ["Providencia, Chile", "Ñuñoa, Chile", "Las Condes, Chile"],
+    },
     # Centro aproximado del MUT; confirmar en el mapa. ~700 m de radio.
     "mut": {
         "bbox": (-70.6085, -33.4240, -70.5935, -33.4115),
