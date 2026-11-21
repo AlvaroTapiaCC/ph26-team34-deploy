@@ -65,6 +65,11 @@ def red():
         conn.execute("delete from scenarios where id = %s", (sc,))
 
 
+def _propios(red):
+    """Solo los sumideros creados por este test: la base puede tener datos reales cargados."""
+    return [v for k, v in red.items() if k != "sc"]
+
+
 def _por_id(scores):
     return {s.sumidero_id: s for s in scores}
 
@@ -77,7 +82,8 @@ def test_ultima_clasificacion_y_textos_sin_duplicar(red):
     rt = get_formula_config()["reportes_texto"]
     with get_conn() as conn:
         s = _por_id(calcular(conn, red["sc"], "antes"))
-    assert s[red["foto"]].p_obs == 1.0                                  # la última dice tapada
+    cfg = get_formula_config()
+    assert s[red["foto"]].p_obs == cfg["observado"]["tapada"]           # la última dice tapada
     assert s[red["real"]].detalle["aporte_reportes_texto"] == pytest.approx(
         rt["factor"] * rt["aporte_por_reporte"])                         # 3 clasificaciones = 1 reporte
     assert "aporte_reportes_texto" not in s[red["aneg"]].detalle        # anegamiento no sube P
@@ -105,7 +111,8 @@ def test_recompute_sin_simulados_no_pisa_la_tabla_de_la_demo(red):
     assert c.post("/formula/recompute", params={"scenario_id": red["sc"], "modo": "antes"}).json()["guardado"]
     with get_conn() as conn:
         antes = conn.execute("select sumidero_id, prioridad, rank from scores where scenario_id = %s"
-                             " and modo = 'antes' order by sumidero_id", (red["sc"],)).fetchall()
+                             " and modo = 'antes' and sumidero_id = any(%s) order by sumidero_id",
+                             (red["sc"], _propios(red))).fetchall()
     r = c.post("/formula/recompute", params={"scenario_id": red["sc"], "modo": "antes", "incluir_simulados": False})
     assert r.status_code == 200 and r.json()["guardado"] is False
     assert list(r.json()["resultados"]) == ["antes"]
@@ -115,7 +122,8 @@ def test_recompute_sin_simulados_no_pisa_la_tabla_de_la_demo(red):
     assert sorted(r.json()["resultados"]) == ["antes", "durante"]
     with get_conn() as conn:
         despues = conn.execute("select sumidero_id, prioridad, rank from scores where scenario_id = %s"
-                               " and modo = 'antes' order by sumidero_id", (red["sc"],)).fetchall()
+                               " and modo = 'antes' and sumidero_id = any(%s) order by sumidero_id",
+                               (red["sc"], _propios(red))).fetchall()
     assert despues == antes and len(antes) == 5
 
 
@@ -127,17 +135,18 @@ def test_explicacion_se_borra_solo_si_cambia_la_prioridad(red):
         recalcular(conn, red["sc"], "antes")
         conn.execute("update scores set explicacion = 'vieja' where scenario_id = %s", (red["sc"],))
         recalcular(conn, red["sc"], "antes")  # sin cambios en los datos
-        sin_cambio = conn.execute("select count(*) n from scores where scenario_id = %s"
-                                  " and explicacion = 'vieja'", (red["sc"],)).fetchone()["n"]
+        sin_cambio = conn.execute("select count(*) n from scores where scenario_id = %s and explicacion = 'vieja'"
+                                  " and sumidero_id = any(%s)", (red["sc"], _propios(red))).fetchone()["n"]
         rank_antes = {r["sumidero_id"]: r["rank"] for r in conn.execute(
-            "select sumidero_id, rank from scores where scenario_id = %s and modo = 'antes'", (red["sc"],))}
+            "select sumidero_id, rank from scores where scenario_id = %s and modo = 'antes'"
+            " and sumidero_id = any(%s)", (red["sc"], _propios(red)))}
         # Cambian solo datos propios de "aneg" (árboles, feria, pendiente, obras): sube su P y su rank. No se toca el
         # área, porque se normaliza contra el máximo y cambiaría la prioridad de todos.
         conn.execute("update sumideros set features = features || '{\"arboles\": 1, \"feria\": 1, \"pendiente\": 1, \"obras\": 1}' where id = %s",
                      (red["aneg"],))
         recalcular(conn, red["sc"], "antes")
-        despues = conn.execute("select sumidero_id, rank, explicacion from scores"
-                               " where scenario_id = %s and modo = 'antes'", (red["sc"],)).fetchall()
+        despues = conn.execute("select sumidero_id, rank, explicacion from scores where scenario_id = %s"
+                               " and modo = 'antes' and sumidero_id = any(%s)", (red["sc"], _propios(red))).fetchall()
         filas = {r["sumidero_id"]: r["explicacion"] for r in despues}
         rank_despues = {r["sumidero_id"]: r["rank"] for r in despues}
     assert sin_cambio == 5
