@@ -230,3 +230,146 @@ def test_precalentar_no_bloquea_ni_falla_si_la_base_no_responde(pool_limpio):
     hilo.join(5)
     assert not hilo.is_alive()             # terminó sin lanzar
     assert db._pool is not None and not db._pool.closed  # el pool sigue abierto para reintentar
+
+
+# --- Carrera al devolver la conexión al pool (revisión 4 del PR #56) ----------------
+from concurrent.futures import Future  # noqa: E402
+import random  # noqa: E402
+
+
+class _EjecutorSincrono:
+    """Corre el trabajo al momento; `despues` simula lo que pasa antes de que venza el plazo."""
+
+    def __init__(self, despues=None, vence=True):
+        self.despues, self.vence = despues, vence
+
+    def submit(self, fn, *args):
+        f = Future()
+        try:
+            f.set_result(fn(*args))
+        except BaseException as e:  # noqa: BLE001
+            f.set_exception(e)
+        if self.despues:
+            self.despues()
+        return _FuturoVencido(f) if self.vence else f
+
+
+class _FuturoVencido:
+    def __init__(self, f):
+        self.f = f
+
+    def result(self, timeout=None):
+        raise db.FuturesTimeout()
+
+    def cancel(self):
+        return False  # ya había empezado
+
+
+def test_no_cancela_una_conexion_que_ya_tomo_otro_request(pool_limpio):
+    """Secuencia: A termina y devuelve la conexión → B la toma → recién vence el plazo de A."""
+    conn = ConnFalsa()
+    pool = PoolFalso(conn)
+    pool_limpio.setattr(db, "get_pool", lambda: pool)
+    en_manos_de_b = []
+    pool_limpio.setattr(db, "_executor", _EjecutorSincrono(despues=lambda: en_manos_de_b.append(pool.getconn())))
+    pool_limpio.setattr(db, "_limpieza", _EjecutorSincrono(vence=False))  # la cancelación correría al tiro
+
+    with pytest.raises(db.DatabaseUnavailable):
+        db.ejecutar_con_plazo(lambda c: c.execute("select 1"), 3)
+
+    assert en_manos_de_b == [conn]                 # B tiene la conexión
+    assert not conn.cancelada.is_set()             # A no la canceló
+    assert not conn.closed                         # ni la cerró en manos de B
+    assert pool.devueltas == [conn]                # A la devolvió una sola vez, sana
+
+
+def test_si_vence_mientras_la_tiene_la_cierra_antes_de_devolverla(pool_limpio):
+    """Contraparte: si el plazo vence con la conexión aún en uso, nunca vuelve usable al pool."""
+    conn = ConnFalsa(cuelga_hasta_cancelar=True)
+    pool = PoolFalso(conn)
+    pool_limpio.setattr(db, "get_pool", lambda: pool)
+    with pytest.raises(db.DatabaseUnavailable):
+        db.ejecutar_con_plazo(lambda c: c.execute("select 1"), 0.3)
+    assert _esperar(lambda: pool.devueltas == [conn])
+    assert conn.cancelada.is_set() and conn.closed and conn.rollbacks == 0
+
+
+class _ConnCompartida:
+    """Conexión que registra si una cancelación interrumpe la consulta de quien la tiene."""
+
+    def __init__(self):
+        self.closed = False
+        self.interrumpida = False
+        self.lock = threading.Lock()
+
+    def execute(self, *a):
+        time.sleep(random.uniform(0.005, 0.03))
+        return self
+
+    def cancel_safe(self, timeout=None):
+        with self.lock:
+            if not self.closed:
+                self.interrumpida = True
+
+    def commit(self):
+        pass
+
+    def rollback(self):
+        pass
+
+    def close(self):
+        self.closed = True
+
+
+class _PoolUnaConexion:
+    """Pool de una conexión: la reemplaza si la devuelven cerrada (como psycopg_pool)."""
+
+    def __init__(self):
+        self.sem = threading.Semaphore(1)
+        self.conn = _ConnCompartida()
+
+    def getconn(self, timeout=None):
+        if not self.sem.acquire(timeout=timeout):
+            raise db.PoolTimeout()
+        if self.conn.closed:
+            self.conn = _ConnCompartida()
+        self.conn.interrumpida = False
+        return self.conn
+
+    def putconn(self, conn):
+        self.sem.release()
+
+
+def test_estres_ninguna_consulta_exitosa_es_interrumpida(pool_limpio):
+    """Muchos requests con plazos al borde de la duración de la consulta, en paralelo.
+
+    Una consulta que terminó bien nunca debe haber sido interrumpida por la cancelación
+    de un request anterior que venció.
+    """
+    pool = _PoolUnaConexion()
+    pool_limpio.setattr(db, "get_pool", lambda: pool)
+    violaciones, exitos, vencidos = [], [], []
+
+    def consulta(c):
+        c.execute("select 1")
+        time.sleep(0.005)  # ventana para que una cancelación tardía llegue
+        return c.interrumpida
+
+    def request():
+        try:
+            interrumpida = db.ejecutar_con_plazo(consulta, random.uniform(0.01, 0.05))
+            exitos.append(1)
+            if interrumpida:  # terminó bien pero otro request le canceló la consulta
+                violaciones.append(1)
+        except db.DatabaseUnavailable:
+            vencidos.append(1)
+
+    hilos = [threading.Thread(target=request) for _ in range(150)]
+    for h in hilos:
+        h.start()
+        time.sleep(0.002)
+    for h in hilos:
+        h.join(10)
+    time.sleep(0.3)
+    assert exitos and vencidos, "el test debe ejercitar ambos caminos"
+    assert violaciones == []

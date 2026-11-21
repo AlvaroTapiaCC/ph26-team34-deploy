@@ -10,7 +10,7 @@ permisos completos; la seguridad hacia el navegador la dan las políticas RLS.
   Supabase ignora el parámetro `options`, así que se hace con SET al abrirla).
 - `ejecutar_con_plazo` acota todo el trabajo (conexión, consulta y commit) del lado del
   cliente: el llamador responde dentro del plazo aunque la base se cuelgue en cualquier
-  punto; la cancelación y el descarte de la conexión siguen en segundo plano.
+  punto; la cancelación y el cierre de la conexión siguen en segundo plano.
 """
 from __future__ import annotations
 
@@ -75,11 +75,6 @@ def get_pool() -> ConnectionPool:
     return _pool
 
 
-def _descartar(conn: Connection) -> None:
-    """Marca la conexión como inservible: se cierra y el pool no la reutiliza."""
-    conn._drena_descartar = True  # type: ignore[attr-defined]
-
-
 @contextmanager
 def get_conn(timeout: float = DEFAULT_WAIT_S) -> Iterator[Connection]:
     """Conexión del pool. Hace commit al salir sin error y rollback si hubo una excepción."""
@@ -93,28 +88,17 @@ def get_conn(timeout: float = DEFAULT_WAIT_S) -> Iterator[Connection]:
         if not conn.closed:
             conn.commit()
     except BaseException:
-        # Una conexión descartada puede seguir ocupada por una consulta colgada:
-        # no se le hace rollback (bloquearía); se cierra y el pool la reemplaza.
-        if getattr(conn, "_drena_descartar", False):
-            conn.close()
-        elif not conn.closed:
+        if not conn.closed:
             conn.rollback()
         raise
     finally:
-        # Una conexión abandonada por plazo vencido no se reutiliza aunque haya terminado bien.
-        if getattr(conn, "_drena_descartar", False) and not conn.closed:
-            conn.close()
         pool.putconn(conn)
-
-
-class _Abandonado(Exception):
-    """El llamador ya respondió por plazo vencido; el trabajo no debe seguir."""
 
 
 def _cancelar_en_segundo_plano(conn: Connection) -> None:
     try:
         conn.cancel_safe(timeout=2)
-    except Exception:  # el servidor tampoco responde a la cancelación
+    except Exception:  # el servidor no responde a la cancelación o la conexión ya se cerró
         pass
 
 
@@ -125,25 +109,51 @@ def ejecutar_con_plazo(fn: Callable[[Connection], T], plazo: float) -> T:
     aunque la base se cuelgue en cualquier punto: al pedir la conexión, en la consulta, en el
     commit o al cancelar. Si vence:
     - si el trabajo aún no empezaba (todos los hilos ocupados), se cancela y nunca corre;
-    - si ya empezó, la conexión se marca para descartar y la cancelación se pide en segundo
-      plano, sin hacer esperar al llamador.
+    - si ya tiene la conexión, se pide cancelar en segundo plano y el trabajo la CIERRA en
+      vez de devolverla usable al pool.
+
+    Propiedad de la conexión: el trabajo la registra en `estado["conn"]` y la suelta bajo el
+    mismo candado ANTES de devolverla al pool. El manejador del plazo solo cancela si la
+    conexión sigue registrada, así que nunca cancela una conexión que otro request ya tomó.
     """
     limite = time.monotonic() + plazo
     estado: dict = {"conn": None, "abandonado": False}
     candado = threading.Lock()
 
     def trabajo() -> T:
-        with get_conn(timeout=max(0.01, limite - time.monotonic())) as conn:
-            with candado:
-                if estado["abandonado"]:
-                    _descartar(conn)
-                    raise _Abandonado
+        pool = get_pool()
+        try:
+            conn = pool.getconn(timeout=max(0.01, limite - time.monotonic()))
+        except PoolTimeout as e:
+            raise DatabaseUnavailable("La base no respondió a tiempo") from e
+        with candado:
+            ya_abandonado = estado["abandonado"]
+            if not ya_abandonado:
                 estado["conn"] = conn
-            try:
-                return fn(conn)
-            except psycopg.OperationalError:
-                _descartar(conn)
-                raise
+        try:
+            if ya_abandonado:
+                return None  # type: ignore[return-value]  # nadie espera el resultado
+            resultado = fn(conn)
+            conn.commit()
+            return resultado
+        except BaseException:
+            with candado:
+                abandonado = estado["abandonado"]
+            # Si fue abandonada puede seguir ocupada por una consulta colgada: un rollback
+            # bloquearía. En ese caso se cierra en el finally.
+            if not abandonado and not conn.closed:
+                try:
+                    conn.rollback()
+                except psycopg.Error:
+                    conn.close()
+            raise
+        finally:
+            with candado:
+                estado["conn"] = None          # deja de ser nuestra: ya no se puede cancelar
+                cerrar = estado["abandonado"]
+            if cerrar and not conn.closed:
+                conn.close()                   # el pool descarta las conexiones cerradas
+            pool.putconn(conn)
 
     fut = _executor.submit(trabajo)
     try:
@@ -152,9 +162,8 @@ def ejecutar_con_plazo(fn: Callable[[Connection], T], plazo: float) -> T:
         fut.cancel()  # si no alcanzó a empezar, nunca se ejecuta
         with candado:
             estado["abandonado"] = True
-            conn = estado["conn"]
+            conn = estado["conn"]              # None si el trabajo ya la devolvió al pool
         if conn is not None:
-            _descartar(conn)
             _limpieza.submit(_cancelar_en_segundo_plano, conn)
         raise DatabaseUnavailable("La base no respondió a tiempo") from None
     except psycopg.OperationalError as e:
