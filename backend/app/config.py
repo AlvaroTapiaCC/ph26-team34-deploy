@@ -16,7 +16,11 @@ from dotenv import load_dotenv
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 REPO_DIR = BACKEND_DIR.parent
-FORMULA_PATH = BACKEND_DIR / "config" / "formula.yaml"
+CONFIG_DIR = BACKEND_DIR / "config"
+FORMULA_PATH = CONFIG_DIR / "formula.yaml"
+# formula.yaml: la completa, para la demo.
+# formula_validacion.yaml: sin variables simuladas, para la predicción congelada (§8.1).
+FORMULA_CONFIGS = {"formula", "formula_validacion"}
 
 load_dotenv(BACKEND_DIR / ".env")
 
@@ -33,8 +37,15 @@ class Settings:
     database_url: str = field(default_factory=lambda: os.getenv("DATABASE_URL", ""))
     anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", ""))
     elevenlabs_api_key: str = field(default_factory=lambda: os.getenv("ELEVENLABS_API_KEY", ""))
-    claude_model: str = field(default_factory=lambda: os.getenv("CLAUDE_MODEL", "claude-sonnet-5-5"))
+    osrm_url: str = field(default_factory=lambda: os.getenv("OSRM_URL", "https://router.project-osrm.org"))
+    claude_model: str = field(default_factory=lambda: os.getenv("CLAUDE_MODEL", "claude-opus-5-5"))
+    # Clasificar y extraer son tareas acotadas: 'low' basta y responde más rápido.
+    claude_effort: str = field(default_factory=lambda: os.getenv("CLAUDE_EFFORT", "low"))
     storage_bucket: str = field(default_factory=lambda: os.getenv("SUPABASE_STORAGE_BUCKET", "photos"))
+    # Si se define, los endpoints administrativos (p. ej. /formula/recompute) exigen el
+    # header X-Admin-Token. Vacío = abiertos (desarrollo / demo).
+    admin_token: str = field(default_factory=lambda: os.getenv("ADMIN_TOKEN", ""))
+    sim_token: str = field(default_factory=lambda: os.getenv("SIM_TOKEN", ""))  # solo /sim/trigger; casi público
     cors_origins: list[str] = field(default_factory=lambda: _csv(os.getenv("CORS_ORIGINS", "*")))
 
 
@@ -44,7 +55,13 @@ def get_settings() -> Settings:
 
 
 @lru_cache
-def get_formula_config() -> dict[str, Any]:
-    """Pesos y parámetros de la fórmula (`config/formula.yaml`)."""
-    with FORMULA_PATH.open(encoding="utf-8") as f:
+def get_formula_config(nombre: str = "formula") -> dict[str, Any]:
+    """Pesos y parámetros de la fórmula (`config/<nombre>.yaml`).
+
+    Por defecto la completa (`formula.yaml`). La predicción congelada de validación usa
+    `get_formula_config("formula_validacion")`.
+    """
+    if nombre not in FORMULA_CONFIGS:
+        raise ValueError(f"Configuración de fórmula desconocida: {nombre!r}")
+    with (CONFIG_DIR / f"{nombre}.yaml").open(encoding="utf-8") as f:
         return yaml.safe_load(f)
