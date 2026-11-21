@@ -42,7 +42,7 @@ Drena ayuda a los municipios a **prevenir y responder a las inundaciones por llu
 | D1 | Rol de Claude | Claude ve, lee y explica; la fórmula decide | Auditable, reproducible y defendible ante el jurado. Claude sigue siendo indispensable (sección 1.2) |
 | D2 | Agua en la foto | Niveles fijos: `sin_agua`, `cuneta`, `hasta_vereda`, `sobre_vereda`, `no_evaluable` | Coherente con D1; más confiable que estimar centímetros |
 | D3 | Unidad de análisis | **El sumidero**. En el mapa se agrupan por intersección para que se lean mejor | La fórmula y la validación de campo trabajan por rejilla; el diseño actual trabaja por intersección |
-| D4 | Comuna | **Ñuñoa** como comuna principal, con datos reales y validación de campo. Providencia y Las Condes solo como contexto visual si sobra tiempo | La validación de campo se hace en Ñuñoa |
+| D4 | Zona | Catastro real de **Providencia, Ñuñoa y Las Condes** (3002 rejillas). La **prueba de campo es la zona MUT**: las 47 rejillas a menos de 700 m del MUT (centro -33.4178, -70.6010, aproximado). *Cambio del 21-11: antes era Ñuñoa* | Es donde el equipo fotografía las rejillas; el catastro de las tres comunas ya está en `data/` |
 | D5 | Despacho y rutas | **Se mantienen**: convierten la tabla de misiones en acción (qué cuadrilla, en qué orden y por dónde) | Es lo que el track reconoce ("despacho que reasigna rutas") y suma ambición |
 | D6 | Fase Después | **Se mantiene**: cierre con foto clasificada por Claude e informe del evento. La recalibración de pesos es opcional | Cierra el ciclo y suma ambición |
 | D7 | Hardware, drones y cámaras municipales en vivo | **No se construyen ni se usan.** Quedan como fuentes futuras en el pitch | Hardware armado por el equipo cae en otro track; drones necesitan autorización de la DGAC; las cámaras municipales necesitan un convenio |
@@ -249,9 +249,9 @@ La validación prueba **por separado** las dos piezas del sistema: la fórmula q
 
 ### 8.1 Prueba de campo (imprescindible)
 
-1. Elegir **unas 20 rejillas** en dos o tres calles de Ñuñoa, mezclando: con y sin árboles, cerca y lejos de una feria, arriba y abajo de una pendiente.
-2. Correr la fórmula **solo con datos públicos** y guardar el ranking en un **commit con fecha y hora**, para demostrar que la predicción se hizo antes de salir. En esta prueba no entra "días desde la última limpieza", porque no lo tenemos para Ñuñoa.
-3. Fotografiar las 20 rejillas con la app `/reportar`, que guarda GPS y hora.
+1. **Zona MUT:** las **47 rejillas** del catastro a menos de 700 m del MUT (centro -33.4178, -70.6010, aproximado). No se eligen a mano: entran todas las de la zona.
+2. Correr la fórmula **solo con datos públicos** con `backend/config/formula_validacion.yaml` (`pipeline/03_terreno.py` → `04_variables.py` → `05_prediccion.py`) y guardar `data/validacion/prediccion_congelada.csv` y su metadata en un **commit con fecha y hora**, para demostrar que la predicción se hizo antes de salir. No entran "días desde la última limpieza" ni la cámara; una variable sin dato al congelar queda con peso 0 y se reescala el resto (queda anotado en la metadata).
+3. Fotografiar las 47 rejillas con la app `/reportar`, que guarda GPS y hora.
 4. Etiquetar las fotos **dos veces**: dos personas del equipo, cada una por separado, las marcan como limpia, parcial o tapada. Claude clasifica las mismas fotos.
 5. Comparar:
    - **¿Acierta la fórmula?** De las rejillas tapadas, cuántas estaban en la mitad alta del ranking. Ejemplo: "6 de las 8 tapadas estaban entre nuestras 10 primeras".
@@ -259,7 +259,7 @@ La validación prueba **por separado** las dos piezas del sistema: la fórmula q
 
 **Advertencias para el pitch:**
 
-- Veinte rejillas son evidencia, no prueba: se presenta como una primera prueba de campo.
+- 47 rejillas de una sola zona son evidencia, no prueba: se presenta como una primera prueba de campo.
 - En noviembre puede haber pocas rejillas tapadas, porque no es época de caída de hojas. Si salen 2 de 20, se muestra igual; la comparación de Claude con las personas sigue valiendo.
 
 ### 8.2 Validación histórica (deseable)
@@ -373,7 +373,7 @@ Realtime activado en: `scores`, `cases`, `missions`, `routes`, `crews`, `observa
 4. `/reportar` con foto y texto.
 5. Despacho, rutas y mapa en vivo.
 6. `/cuadrilla` básica.
-7. Prueba de campo de 20 rejillas.
+7. Prueba de campo de las 47 rejillas de la zona MUT.
 8. Deploy en producción.
 
 **Deseable:**
@@ -397,7 +397,7 @@ Realtime activado en: `scores`, `cases`, `missions`, `routes`, `crews`, `observa
 | Hito | Hora | Listo cuando |
 |---|---|---|
 | H1: Base | Sáb 13:00 | Supabase con el esquema; backend conectado; `feat/front-v1` integrado en `main`; `formula.yaml` creado |
-| H2: Predicción guardada | Sáb 16:00 | Pipeline con datos reales de las calles elegidas; ranking de las 20 rejillas **en un commit con fecha y hora** |
+| H2: Predicción guardada | Sáb 16:15 | Pipeline con datos reales de la zona MUT; `prediccion_congelada.csv` de las 47 rejillas **en un commit con fecha y hora** |
 | H3: Prueba de campo | Sáb 19:00 | 20 fotos tomadas con luz de día; etiquetas de dos personas; Claude clasificando |
 | H4: Durante completo | Sáb 23:59 | Foto o texto → Claude → recálculo → despacho → ruta en vivo en `/central` |
 | H5: Cuadrilla, voz y Después | Dom 07:00 | `/cuadrilla` con voz; cierre verificado; informe |
@@ -455,7 +455,7 @@ No asignar responsables desde Claude Code. No modificar `README.md`.
 11. **Variables de OSM**: árboles mapeados, comercio, obras e infraestructura crítica (Metro, pasos bajo nivel, hospitales, colegios). *H2, imprescindible.*
 12. **Ferias y clima**: calendario de ferias de Ñuñoa (o plan B con OSM) y lluvia y viento recientes y pronosticados de Open-Meteo. *H2, imprescindible.*
 13. **Cargar a Supabase** las variables por sumidero y las cadenas por calle. *H2, imprescindible. Depende de 3 y de 8 a 12.*
-14. **Elegir las 20 rejillas de la prueba de campo** según los criterios de la sección 8.1, y armar un mapa de la salida. *H2, imprescindible. Depende de 8.*
+14. **Rejillas de la prueba de campo**: las 47 de la zona MUT (sección 8.1), con un mapa de la salida. *H2, imprescindible. Depende de 8.*
 15. **Datos de cuadrillas e historial de limpieza simulados** (`is_simulated = true`). *H2, imprescindible.*
 16. **Escenarios de lluvia** (pronóstico y, si se consigue, GOES-19). *H4, deseable.*
 17. **Anegamientos reales de octubre geolocalizados**, para la validación histórica y como fotos del modo "Durante" (con fuente). *H4, deseable.*
@@ -465,7 +465,7 @@ No asignar responsables desde Claude Code. No modificar `README.md`.
 18. **Paso 1: probabilidad P** con las variables normalizadas y "lo confirmado manda" (sección 6.1). Tests unitarios. *H2, imprescindible. Depende de 7.*
 19. **Paso 2: efecto en cadena calle abajo** con decaimiento por distancia y tope (sección 6.2). Tests. *H2, imprescindible. Depende de 18.*
 20. **Pasos 3 y 4: consecuencia y prioridad** (secciones 6.3 y 6.4), más el endpoint del ranking. *H2, imprescindible. Depende de 19.*
-21. **Guardar la predicción de la prueba de campo** en `data/validacion/ranking_<fecha>.json` y hacer un commit **antes** de salir. *H2, imprescindible. Depende de 13, 14 y 20.*
+21. **Guardar la predicción de la prueba de campo** en `data/validacion/prediccion_congelada.csv` (+ `.meta.json`) y hacer un commit **antes** de salir. *H2, imprescindible. Depende de 13, 14 y 20.*
 22. **Ajustes del modo "Durante"** (sección 6.5): agua observada, casos urgentes y recálculo aguas abajo. *H4, imprescindible. Depende de 20.*
 
 ### Épica 3: Claude (`area:ia`)
@@ -478,7 +478,7 @@ No asignar responsables desde Claude Code. No modificar `README.md`.
 
 ### Épica 4: Prueba de campo (`area:demo`, `fase:antes`)
 
-28. **Salida a terreno**: fotografiar las 20 rejillas con `/reportar` (desde arriba, a un metro, rejilla completa). *H3, imprescindible. Depende de 21 y 33.*
+28. **Salida a terreno**: fotografiar las 47 rejillas de la zona MUT con `/reportar` (desde arriba, a un metro, rejilla completa). *H3, imprescindible. Depende de 21 y 33.*
 29. **Etiquetado y comparación**: dos personas etiquetan por separado; Claude clasifica; se calculan los aciertos de la fórmula y de Claude (sección 8.1); resultados en `data/validacion/`. *H3, imprescindible. Depende de 23 y 28.*
 
 ### Épica 5: Despacho y rutas (`area:backend`, `fase:durante`)

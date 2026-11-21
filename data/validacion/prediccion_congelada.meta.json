@@ -1,0 +1,125 @@
+{
+  "generado_utc": "2026-11-21T18:58:34+00:00",
+  "git_head_al_generar": "48d9904901ceec572acf26762e193664ea3f6d9d",
+  "regla": "Predicción hecha antes de fotografiar. Después de este commit no se cambian pesos ni datos.",
+  "zona_mut": {
+    "centro_lonlat": [
+      -70.601433,
+      -33.417741
+    ],
+    "radio_m": 700,
+    "centro_confirmado": true,
+    "nota": "confirmado con el pin (Av. Apoquindo 2730, Las Condes) el 21-11-2026",
+    "rejillas_en_zona": 46,
+    "rejillas_rankeadas": 46,
+    "fuera_de_red_excluidas": []
+  },
+  "formula": {
+    "config": "backend/config/formula_validacion.yaml",
+    "sha256_config": "fde77019056cd4a9fcb88d5ad58dabd85f5c25462cd8faf95d648322a6f3e848",
+    "codigo": "backend/app/services/formula.py",
+    "sha256_codigo": "dc281a84bf171535f03a0aa264240f9e10947a02178cc9bc8505a34452db34de",
+    "modo": "antes",
+    "pesos_config": {
+      "w_arb": 0.289474,
+      "w_feria": 0.184211,
+      "w_obra": 0.105263,
+      "w_suelo": 0.105263,
+      "w_pend": 0.184211,
+      "w_clima": 0.131578,
+      "w_dias": 0.0,
+      "w_cam": 0.0
+    },
+    "variables_sin_dato_peso_0": {
+      "w_clima": "clima"
+    },
+    "pesos_efectivos": {
+      "w_arb": 0.333333,
+      "w_feria": 0.212122,
+      "w_obra": 0.121212,
+      "w_suelo": 0.121212,
+      "w_pend": 0.212122,
+      "w_clima": 0.0,
+      "w_dias": 0.0,
+      "w_cam": 0.0
+    },
+    "reescalado": "pesos con dato divididos por 0.868422 para sumar 1",
+    "cadena": {
+      "alpha": 0.35,
+      "lambda_m": 150,
+      "tope": 0.3
+    },
+    "consecuencia": {
+      "normalizacion_area": "log",
+      "piso_area": 0.15,
+      "w_crit": 1.0,
+      "radio_crit_m": 200,
+      "criticidad": {
+        "metro": 1.0,
+        "paso_bajo_nivel": 1.0,
+        "hospital": 0.9,
+        "punto_critico_gobierno": 0.8,
+        "colegio": 0.6
+      }
+    }
+  },
+  "parametros_entradas": {
+    "terreno": {
+      "ancho_aporte_m": 20.0,
+      "pendiente_ref": 0.057,
+      "pendiente_ref_regla": "percentil 90 de pendiente_tramo de las rejillas en_zona_mut",
+      "snap_max_m": 30.0,
+      "cadena_max_m": 3000.0
+    },
+    "variables": {
+      "arboles": "fracción WorldCover clase 10 a < 15 m",
+      "suelo": "fracción WorldCover clase 60 a < 100 m",
+      "feria": "max(0, 1 - d/300 m) al amenity=marketplace más cercano",
+      "obras": "1 si landuse/building=construction a <= 100 m",
+      "criticidad": "máximo peso de consecuencia.criticidad a <= 200 m (sin puntos críticos del Gobierno)"
+    }
+  },
+  "cadenas": {
+    "usadas": 20,
+    "regla": "cadenas de 03_terreno recortadas a las rejillas de la zona"
+  },
+  "entradas": {
+    "terreno": {
+      "ruta": "data/terreno_mut.csv",
+      "sha256": "da934c7337171f5d93f5cd21d277465d737def126f03b1b9cb1fa9a5529f6378"
+    },
+    "variables": {
+      "ruta": "data/variables_mut.csv",
+      "sha256": "f55d67a808d8cecd539b74e1946da03275f87ef9e88ea84a1c4c69632f41193c"
+    },
+    "cadenas": {
+      "ruta": "data/street_chains_mut.json",
+      "sha256": "6ec228e9ad04987c0344111d67382d864204b0332578737e7687a980bb9b5393"
+    },
+    "rejillas": {
+      "ruta": "data/rejillas.geojson",
+      "sha256": "dde763af25b2afb38c8b17f9aa66c670c860fae797d1821c9191fd012c55de22"
+    }
+  },
+  "metas_entradas": {
+    "terreno": {
+      "ruta": "pipeline/03_terreno.py",
+      "version": "0.3.0",
+      "sha256": "7f0ca89601f48f5e73df678a78b163db3b17ba3d61e3b9cc11d72b10f82304e6"
+    },
+    "variables": {
+      "ruta": "pipeline/04_variables.py",
+      "version": "0.2.0",
+      "sha256": "eae3d788f467fc43d83bc4ec16ca958e115cf98445e369eb98eba8444cd50cfb"
+    }
+  },
+  "salida": {
+    "archivo": "prediccion_congelada.csv",
+    "sha256": "584029a89d8a7aabbc3b14ec73ffefef05b145246fb57619e258635971f9637f"
+  },
+  "script": {
+    "ruta": "pipeline/05_prediccion.py",
+    "version": "1.0.0",
+    "sha256": "0652005a472dba660d3d32948752a7d7a8c67460007b93f31451e69caa520488"
+  }
+}
