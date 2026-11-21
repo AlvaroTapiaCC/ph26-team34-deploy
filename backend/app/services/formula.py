@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import math
+from itertools import pairwise
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -137,7 +138,7 @@ def cadena_valida(ch: StreetChain) -> bool:
         d = [float(x) for x in dist]
     except (TypeError, ValueError):
         return False
-    return all(math.isfinite(x) for x in d) and all(b >= a for a, b in zip(d, d[1:]))
+    return all(math.isfinite(x) for x in d) and all(b >= a for a, b in pairwise(d))
 
 
 def efecto_cadena(
