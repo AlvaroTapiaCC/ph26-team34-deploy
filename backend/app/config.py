@@ -48,6 +48,7 @@ class Settings:
     # Token de la app de cuadrilla (/cuadrilla escribe posición y avance). Vive en el navegador:
     # es casi público y solo frena abusos casuales. Vacío = sin exigir (desarrollo / demo).
     crew_token: str = field(default_factory=lambda: os.getenv("CREW_TOKEN", ""))
+    sim_token: str = field(default_factory=lambda: os.getenv("SIM_TOKEN", ""))  # solo /sim/trigger; casi público
     cors_origins: list[str] = field(default_factory=lambda: _csv(os.getenv("CORS_ORIGINS", "*")))
 
 
