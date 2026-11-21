@@ -127,7 +127,12 @@ def leer_rejillas(path: Path) -> tuple[dict[str, Sumidero], dict[str, Intersecci
     data = json.loads(path.read_text(encoding="utf-8"))
     sumideros: dict[str, Sumidero] = {}
     inters: dict[str, Interseccion] = {}
-    for f in data.get("features", []):
+    # Orden estable por ID antes de agrupar: el resultado (esquinas y sus IDs -2, -3...) no
+    # depende del orden de las filas del archivo.
+    def _clave(f: dict[str, Any]) -> str:
+        return str(f.get("id") or (f.get("properties") or {}).get("ID_IDE") or "")
+
+    for f in sorted(data.get("features", []), key=_clave):
         p = f.get("properties") or {}
         sid = f.get("id") or p.get("ID_IDE")
         if not sid:

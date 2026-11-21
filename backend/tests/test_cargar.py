@@ -174,3 +174,16 @@ def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
 ])
 def test_titulo_de_calles(entrada, salida):
     assert cargar._titulo(entrada) == salida
+
+
+def test_agrupacion_no_depende_del_orden_del_archivo(tmp_path):
+    """Revisión #76: invertir el catastro cambiaba 250 intersecciones."""
+    rejillas = [_rejilla("A", -70.600, calle_p="X", calle_i="Y"), _rejilla("B", -70.6003, calle_p="Y", calle_i="X"),
+                _rejilla("C", -70.605, calle_p="X", calle_i="Y"), _rejilla("D", -70.6052, calle_p="X", calle_i="Y")]
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    d1 = cargar.preparar(_datos(tmp_path / "a", rejillas))
+    d2 = cargar.preparar(_datos(tmp_path / "b", list(reversed(rejillas))))
+    asignacion = lambda d: {sid: s.intersection_id for sid, s in d["sumideros"].items()}  # noqa: E731
+    assert asignacion(d1) == asignacion(d2)
+    assert set(d1["intersecciones"]) == set(d2["intersecciones"])
