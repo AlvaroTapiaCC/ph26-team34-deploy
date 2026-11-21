@@ -110,9 +110,10 @@ def test_recompute_sin_simulados_no_pisa_la_tabla_de_la_demo(red):
     c = TestClient(app)
     assert c.post("/formula/recompute", params={"scenario_id": red["sc"], "modo": "antes"}).json()["guardado"]
     with get_conn() as conn:
+        # Todo el escenario temporal (incluidos los sumideros reales): así se detecta cualquier
+        # escritura accidental, no solo en los sumideros del test
         antes = conn.execute("select sumidero_id, prioridad, rank from scores where scenario_id = %s"
-                             " and modo = 'antes' and sumidero_id = any(%s) order by sumidero_id",
-                             (red["sc"], _propios(red))).fetchall()
+                             " and modo = 'antes' order by sumidero_id", (red["sc"],)).fetchall()
     r = c.post("/formula/recompute", params={"scenario_id": red["sc"], "modo": "antes", "incluir_simulados": False})
     assert r.status_code == 200 and r.json()["guardado"] is False
     assert list(r.json()["resultados"]) == ["antes"]
@@ -122,9 +123,9 @@ def test_recompute_sin_simulados_no_pisa_la_tabla_de_la_demo(red):
     assert sorted(r.json()["resultados"]) == ["antes", "durante"]
     with get_conn() as conn:
         despues = conn.execute("select sumidero_id, prioridad, rank from scores where scenario_id = %s"
-                               " and modo = 'antes' and sumidero_id = any(%s) order by sumidero_id",
-                               (red["sc"], _propios(red))).fetchall()
-    assert despues == antes and len(antes) == 5
+                               " and modo = 'antes' order by sumidero_id", (red["sc"],)).fetchall()
+    assert despues == antes
+    assert {f["sumidero_id"] for f in antes} >= set(_propios(red))  # los 5 del test están incluidos
 
 
 def test_explicacion_se_borra_solo_si_cambia_la_prioridad(red):
