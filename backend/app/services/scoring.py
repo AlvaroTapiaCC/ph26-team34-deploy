@@ -186,8 +186,10 @@ def cargar_entradas(
 def guardar_scores(conn: Connection, scenario_id: str, modo: str, scores: list[Score]) -> None:
     """Reemplaza los scores del escenario y modo.
 
-    La explicación de Claude se conserva solo si el rank y la prioridad no cambiaron;
-    si cambiaron, se borra para que no quede un texto que ya no corresponde (#27 la regenera).
+    La explicación de Claude se conserva solo si la prioridad del sumidero no cambió; si
+    cambió, se borra para que no quede un texto que ya no corresponde (#27 la regenera).
+    El rank no cuenta: si otro sumidero sube, los que adelanta no cambian sus propias
+    razones (la explicación no menciona la posición).
     """
     with conn.transaction():
         conn.execute(
@@ -205,8 +207,7 @@ def guardar_scores(conn: Connection, scenario_id: str, modo: str, scores: list[S
                   c = excluded.c, prioridad = excluded.prioridad, rank = excluded.rank,
                   detalle = excluded.detalle, computed_at = excluded.computed_at,
                   explicacion = case
-                    when scores.rank is not distinct from excluded.rank
-                     and abs(coalesce(scores.prioridad, -1) - coalesce(excluded.prioridad, -1)) < 1e-9
+                    when abs(coalesce(scores.prioridad, -1) - coalesce(excluded.prioridad, -1)) < 1e-9
                     then scores.explicacion
                     else null
                   end

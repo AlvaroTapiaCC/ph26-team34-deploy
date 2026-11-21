@@ -108,14 +108,18 @@ def test_recompute_sin_simulados_no_pisa_la_tabla_de_la_demo(red):
                              " and modo = 'antes' order by sumidero_id", (red["sc"],)).fetchall()
     r = c.post("/formula/recompute", params={"scenario_id": red["sc"], "modo": "antes", "incluir_simulados": False})
     assert r.status_code == 200 and r.json()["guardado"] is False
-    assert red["sim"] not in {i["sumidero_id"] for i in r.json()["items"]}
+    assert list(r.json()["resultados"]) == ["antes"]
+    assert red["sim"] not in {i["sumidero_id"] for i in r.json()["resultados"]["antes"]}
+    # Sin `modo`: ambos modos, igual que el recálculo normal
+    r = c.post("/formula/recompute", params={"scenario_id": red["sc"], "incluir_simulados": False})
+    assert sorted(r.json()["resultados"]) == ["antes", "durante"]
     with get_conn() as conn:
         despues = conn.execute("select sumidero_id, prioridad, rank from scores where scenario_id = %s"
                                " and modo = 'antes' order by sumidero_id", (red["sc"],)).fetchall()
     assert despues == antes and len(antes) == 5
 
 
-def test_explicacion_se_borra_solo_si_cambia_el_ranking(red):
+def test_explicacion_se_borra_solo_si_cambia_la_prioridad(red):
     from app.db import get_conn
     from app.services.scoring import recalcular
 
@@ -125,11 +129,20 @@ def test_explicacion_se_borra_solo_si_cambia_el_ranking(red):
         recalcular(conn, red["sc"], "antes")  # sin cambios en los datos
         sin_cambio = conn.execute("select count(*) n from scores where scenario_id = %s"
                                   " and explicacion = 'vieja'", (red["sc"],)).fetchone()["n"]
-        # Cambia un dato: el sumidero "aneg" pasa a tener muchos árboles y sube
-        conn.execute("update sumideros set features = features || '{\"arboles\": 1, \"area_aporte\": 50000}'"
-                     " where id = %s", (red["aneg"],))
+        rank_antes = {r["sumidero_id"]: r["rank"] for r in conn.execute(
+            "select sumidero_id, rank from scores where scenario_id = %s and modo = 'antes'", (red["sc"],))}
+        # Cambian solo datos propios de "aneg" (árboles, feria, pendiente, obras): sube su P y su rank. No se toca el
+        # área, porque se normaliza contra el máximo y cambiaría la prioridad de todos.
+        conn.execute("update sumideros set features = features || '{\"arboles\": 1, \"feria\": 1, \"pendiente\": 1, \"obras\": 1}' where id = %s",
+                     (red["aneg"],))
         recalcular(conn, red["sc"], "antes")
-        filas = {r["sumidero_id"]: r["explicacion"] for r in conn.execute(
-            "select sumidero_id, explicacion from scores where scenario_id = %s and modo = 'antes'", (red["sc"],))}
+        despues = conn.execute("select sumidero_id, rank, explicacion from scores"
+                               " where scenario_id = %s and modo = 'antes'", (red["sc"],)).fetchall()
+        filas = {r["sumidero_id"]: r["explicacion"] for r in despues}
+        rank_despues = {r["sumidero_id"]: r["rank"] for r in despues}
     assert sin_cambio == 5
-    assert filas[red["aneg"]] is None                                   # cambió: se borró
+    assert filas[red["aneg"]] is None                                   # su prioridad cambió: se borró
+    # Los demás cambiaron de rank (aneg los adelantó) pero no de prioridad: conservan la suya
+    otros = [red[k] for k in ("real", "foto", "sim", "urg")]
+    assert any(rank_antes[o] != rank_despues[o] for o in otros)          # el test sí movió ranks
+    assert all(filas[o] == "vieja" for o in otros)                      # y conservan su explicación
