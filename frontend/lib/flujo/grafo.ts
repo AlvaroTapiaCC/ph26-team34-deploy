@@ -8,7 +8,8 @@ export interface Tramo {
   a: number; // nodo OSM de origen
   b: number; // nodo OSM de destino
   L: number; // m
-  s: number; // pendiente real del DEM (m/m)
+  s: number; // pendiente del DEM (m/m)
+  sp: number; // pendiente que usa la simulación: s suavizada donde el DEM no sirve (pipeline/flujo/pendientes.py)
   relleno: boolean; // la dirección sale del relleno de una depresión (el DEM no baja aquí)
   ap: number; // área propia que aporta el nodo de origen (m²)
   acc: number; // área acumulada que pasa por el tramo (m²)
@@ -16,7 +17,9 @@ export interface Tramo {
   coords: LngLat[]; // de aguas arriba a aguas abajo
   cum: number[]; // metros acumulados en cada vértice
   mid: LngLat;
-  v: number; // velocidad del agua (m/s)
+  v: number; // velocidad del agua (m/s), Manning simplificado
+  capCuneta: number; // caudal (L/s) que cabe en la cuneta sin salirse
+  capCalzada: number; // caudal (L/s) que cabe en la calzada hasta la solera
   entrantes: number[];
 }
 
@@ -47,14 +50,24 @@ export function distM(a: LngLat, b: LngLat): number {
   return Math.hypot(dx, dy);
 }
 
-/** Velocidad proporcional a la pendiente, entre velocidadMin y velocidadMax. */
+/** Manning simplificado: v = (1/n) · R^(2/3) · S^(1/2), entre velocidadMin y velocidadMax (m/s). */
 export function velocidad(pendiente: number, cfg = FLUJO_CONFIG): number {
-  const k = Math.min(1, Math.max(0, pendiente / cfg.pendienteRef));
-  return cfg.velocidadMin + (cfg.velocidadMax - cfg.velocidadMin) * k;
+  const v = (1 / cfg.manningN) * Math.pow(cfg.radioHidraulicoM, 2 / 3) * Math.sqrt(Math.max(0, pendiente));
+  return Math.min(cfg.velocidadMax, Math.max(cfg.velocidadMin, v));
+}
+
+/** Caudal (L/s) que cabe en la cuneta: área de la cuneta × velocidad. */
+export function capacidadCuneta(pendiente: number, cfg = FLUJO_CONFIG): number {
+  return cfg.areaCunetaM2 * velocidad(pendiente, cfg) * 1000;
+}
+
+/** Caudal (L/s) que cabe en la calzada hasta la solera: área × velocidad. */
+export function capacidadCalzada(pendiente: number, cfg = FLUJO_CONFIG): number {
+  return cfg.areaCalzadaM2 * velocidad(pendiente, cfg) * 1000;
 }
 
 interface FeatureTramo {
-  properties: { kind: "tramo"; id: number; a: number; b: number; L: number; s: number; r: number; ap: number; acc: number; sig: number | null };
+  properties: { kind: "tramo"; id: number; a: number; b: number; L: number; s: number; sp?: number; r: number; ap: number; acc: number; sig: number | null };
   geometry: { coordinates: LngLat[] };
 }
 interface FeatureSumidero {
@@ -72,7 +85,8 @@ export function construirGrafo(geojson: { features: (FeatureTramo | FeatureSumid
       const cum = [0];
       for (let i = 1; i < coords.length; i++) cum.push(cum[i - 1] + distM(coords[i - 1], coords[i]));
       const m = coords[Math.floor(coords.length / 2)];
-      tramos[p.id] = { id: p.id, a: p.a, b: p.b, L: p.L, s: p.s, relleno: p.r === 1, ap: p.ap, acc: p.acc, sig: p.sig, coords, cum, mid: m, v: velocidad(p.s), entrantes: [] };
+      const sp = p.sp ?? p.s;
+      tramos[p.id] = { id: p.id, a: p.a, b: p.b, L: p.L, s: p.s, sp, relleno: p.r === 1, ap: p.ap, acc: p.acc, sig: p.sig, coords, cum, mid: m, v: velocidad(sp), capCuneta: capacidadCuneta(sp), capCalzada: capacidadCalzada(sp), entrantes: [] };
     } else {
       const p = (f as FeatureSumidero).properties;
       sumideros.push({ id: p.id, coord: (f as FeatureSumidero).geometry.coordinates, tramo: p.tramo, pos: p.pos, ap: p.ap, s: p.s, drena: p.drena, comuna: p.comuna });

@@ -1881,82 +1881,217 @@ p {
   opacity: 1;
 }
 
-/* Simulación del flujo: barra sobre el mapa y aviso */
-.flujo {
+/* Simulación: panel lateral sobre el mapa y aviso */
+.sim {
   position: absolute;
-  top: 20px;
-  left: 20px;
+  top: 16px;
+  right: 16px;
   z-index: 5;
+  width: 272px;
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12), inset 0 0 0 1px var(--line);
+}
+.sim__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sim__reloj {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 14px;
+}
+.sim__ctrls {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
-  border-radius: 16px;
-  background: var(--surface);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12), inset 0 0 0 1px var(--line);
 }
-.flujo__play {
+.sim__play {
+  flex: none;
+  display: grid;
+  place-items: center;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--lime);
   color: var(--lime-ink);
-  font-size: 14px;
-  font-weight: 700;
 }
-.flujo__play:disabled,
-.flujo__reiniciar:disabled {
-  opacity: 0.4;
+.sim__play:disabled,
+.sim__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
-.flujo .seg {
-  min-height: 0;
+.sim__vel.seg {
+  height: 40px;
+  padding: 3px;
+  gap: 2px;
 }
-.flujo .seg__item {
-  padding: 6px 10px;
+.sim__vel .seg__item {
+  height: 34px;
+  padding: 0 10px;
   font-size: 13px;
 }
-.flujo .is-locked {
-  opacity: 0.5;
-  pointer-events: none;
+.sim__btn {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text);
 }
-.flujo__reloj {
+.sim__btn:hover:not(:disabled) {
+  background: #e9e9e6;
+}
+.sim__reiniciar {
+  height: 40px;
+  margin-left: auto;
+}
+.sim__lluvia {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  min-width: 88px;
-  padding: 0 4px;
-}
-.flujo__reloj b {
-  font-family: var(--font-mono);
-  font-size: 16px;
-  line-height: 18px;
-}
-.flujo__reloj small {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 13px;
-  color: var(--text-3);
-}
-.flujo__reiniciar {
-  padding: 8px 10px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
+  gap: 4px;
+  font-size: 12px;
   color: var(--text-2);
 }
-.flujo__reiniciar:hover {
+.sim__lluvia span {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.sim__lluvia b {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+.sim__lluvia small {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+}
+.sim__lluvia input {
+  width: 100%;
+  accent-color: var(--lime);
+}
+.sim__lecs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.sim__lec {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px;
+  border-radius: 10px;
   background: var(--surface-2);
 }
-.flujo__error {
+.sim__lec b {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 18px;
+}
+.sim__lec b.is-accent {
+  color: var(--lime);
+}
+.sim__lec small {
+  font-size: 11px;
+  line-height: 13px;
+  color: var(--text-2);
+}
+.sim__graf {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sim__graf-t {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 16px;
+}
+.sim__graf-t span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-2);
+}
+.sim__graf-t b {
+  flex: none;
+  font-family: var(--font-mono);
+}
+.sim__chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.sim__chart-max {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  fill: var(--text-3);
+}
+.sim__hint {
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--text-3);
+}
+.sim__rej {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.sim__rej small {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: var(--text-3);
+}
+.sim__ico {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1.5px #767672;
+}
+.sim__rej .sim__ico:not(:first-child) {
+  margin-left: 6px;
+}
+.sim__ico--parcial {
+  background: linear-gradient(#ffffff 50%, #1b1b1b 50%);
+  box-shadow: inset 0 0 0 1.5px #1b1b1b;
+}
+.sim__ico--tapada {
+  background: var(--lime);
+  box-shadow: none;
+}
+.sim__acc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sim__error {
   font-size: 12px;
   color: var(--danger);
 }
 .flujo-aviso {
   position: absolute;
-  left: 20px;
-  bottom: 30px;
+  left: 16px;
+  bottom: 16px;
   z-index: 4;
-  max-width: 440px;
+  max-width: calc(100% - 340px);
   padding: 4px 8px;
   border-radius: 8px;
   background: var(--surface);

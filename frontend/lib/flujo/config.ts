@@ -1,12 +1,13 @@
-// Parámetros de la simulación del flujo. Todo lo que se pueda ajustar vive aquí, no en el código del motor ni del mapa.
+// Parámetros de la simulación hidráulica. Todo lo que se pueda ajustar vive aquí, no en el motor ni en el mapa.
 //
-// Es una simulación del escurrimiento según pendiente y área de aporte; NO es una medición.
+// Modelo simplificado (método racional + pendiente de un DEM de 30 m); es una simulación, NO una medición.
 // Las intensidades de lluvia y los estados de rejilla de cada escenario son SUPUESTOS ilustrativos de la demo
 // (no datos medidos): se marcan como tales en la interfaz.
 import type { LngLat, ScenarioId } from "../data";
 
 export type EstadoRejilla = "limpia" | "parcial" | "tapada";
 export type NivelAgua = "sin_agua" | "cuneta" | "hasta_vereda" | "sobre_vereda" | "no_evaluable";
+export const ESTADOS: EstadoRejilla[] = ["limpia", "parcial", "tapada"];
 
 export interface LluviaEscenario {
   /** Intensidad en mm/h para cada hora desde el inicio del escenario; se interpola entre horas. */
@@ -16,26 +17,31 @@ export interface LluviaEscenario {
 }
 
 export const FLUJO_CONFIG = {
-  // --- Lluvia -> caudal ---
-  /** Fracción de la lluvia que escurre por la calle (calzada y veredas impermeables). */
+  // --- Caudal de entrada: método racional, Q = C · i · A ---
+  /** C: coeficiente de escorrentía urbana (calzada y veredas impermeables). */
   coefEscorrentia: 0.85,
-  // Caudal local (L/s) = mm/h × m² × coef / 3600, porque 1 mm sobre 1 m² son 1 L.
+  // Q (L/s) = C × i (mm/h) × A (m²) / 3600, porque 1 mm sobre 1 m² es 1 L. A = área de aporte propia del tramo.
 
-  // --- Velocidad del agua: proporcional a la pendiente del tramo ---
-  pendienteRef: 0.056, // m/m, percentil 90 de las rejillas de la zona MUT (data/terreno_mut.meta.json)
-  velocidadMin: 0.3, // m/s en tramos planos
-  velocidadMax: 2.5, // m/s con pendiente >= pendienteRef
+  // --- Velocidad: Manning simplificado, v = (1/n) · R^(2/3) · S^(1/2), con piso y tope ---
+  manningN: 0.016, // asfalto
+  radioHidraulicoM: 0.04, // agua de pocos centímetros en la cuneta
+  velocidadMin: 0.15, // m/s en tramos casi planos
+  velocidadMax: 3.0, // m/s, tope
 
-  // --- Sumideros ---
+  // --- Capacidad de la calle = área mojada × velocidad ---
+  areaCunetaM2: 0.03, // cuneta: sección triangular de ~0,6 m de ancho y 0,1 m de alto
+  areaCalzadaM2: 0.25, // media calzada hasta el borde de la solera: ~3,5 m de ancho y 15 cm de alto (triángulo)
+
+  // --- Rejillas ---
   /** Caudal máximo (L/s) que traga una rejilla limpia. */
   capacidadRejillaLs: 60,
   /** Qué fracción de esa capacidad conserva según su estado. */
-  factorEstado: { limpia: 1, parcial: 0.5, tapada: 0.08 } as Record<EstadoRejilla, number>,
-  /** Estado de las rejillas que nadie reportó ni el escenario supone. */
+  factorEstado: { limpia: 1, parcial: 0.5, tapada: 0.05 } as Record<EstadoRejilla, number>,
+  /** Estado de las rejillas que nadie tocó ni el escenario supone. */
   estadoPorDefecto: "limpia" as EstadoRejilla,
-  /** Exceso (L/s) que no entra a la rejilla y sigue por la calle, para pasar de un nivel de agua al siguiente. */
-  umbralesExcesoLs: { cuneta: 3, hasta_vereda: 25, sobre_vereda: 70 },
-  /** Un punto "se desborda" desde este nivel. */
+  /** Nivel de agua en una rejilla según lo que no traga: "cuneta" en fracción de la cuneta; los otros, de la calzada. */
+  umbralesExceso: { cuneta: 0.05, hasta_vereda: 1, sobre_vereda: 2 },
+  /** Una rejilla "se desborda" desde este nivel: lo que no traga ya no cabe en la calzada y sube a la vereda. */
   nivelDesborde: "hasta_vereda" as NivelAgua,
 
   // --- Efecto en la prioridad (mismos valores que backend/config/formula.yaml, sección durante) ---
@@ -46,15 +52,19 @@ export const FLUJO_CONFIG = {
   velocidades: [1, 10, 60] as const,
   /** Paso máximo de simulación por cuadro (s simulados): evita saltos bruscos a 60×. */
   pasoMaxSimS: 20,
+  /** Puntos que guarda el gráfico de caudal del punto seleccionado. */
+  serieMax: 120,
+  /** Tope del slider de lluvia (mm/h). */
+  lluviaMaxMmH: 120,
 
   // --- Dibujo ---
   particulasMax: 2200,
   /** Una partícula por cada tanto de caudal (L/s) en un tramo de 100 m. */
   lsPorParticula: 12,
-  /** Velocidad visual de las partículas (m/s en pantalla); no depende de la velocidad del reloj. */
-  velocidadVisualMs: 22,
-  /** Caudal (L/s) a partir del cual el trazo llega a su grosor máximo. */
-  caudalGrosorMaxLs: 400,
+  /** Escala visual: metros de pantalla por cada m/s de agua (las partículas avanzan según la velocidad del tramo). */
+  escalaVisual: 14,
+  /** Caudal (L/s) a partir del cual el trazo llega a su grosor máximo (escala logarítmica). */
+  caudalGrosorMaxLs: 2000,
   /** Debajo de este caudal el tramo no se dibuja. */
   caudalMinimoLs: 0.5,
   colores: {
@@ -62,7 +72,6 @@ export const FLUJO_CONFIG = {
     aguaClaro: "#9DB4C7",
     desborde: "#FF3D0A", // accent
   },
-  /** Lluvia que se aplica al "tiempo real" cuando no hay otra fuente: el escenario elegido, a 1×. */
   intervaloFuenteMs: 10_000,
 };
 
@@ -73,6 +82,9 @@ export const LLUVIA_ESCENARIO: Record<ScenarioId, LluviaEscenario> = {
   pareja: { perfilMmH: [16, 24, 22, 14, 6, 0] },
 };
 
+/** Intensidad máxima del perfil del escenario: punto de partida del slider de lluvia. */
+export const picoEscenario = (id: ScenarioId) => Math.max(...LLUVIA_ESCENARIO[id].perfilMmH);
+
 /** Estado supuesto de las rejillas cercanas a cada punto del ranking, por escenario. Supuesto de la demo, no observación. */
 export const ESTADOS_ESCENARIO: Record<ScenarioId, Record<string, EstadoRejilla>> = {
   "13oct": { p1: "tapada", p2: "parcial", p5: "tapada", p6: "parcial", p10: "parcial" },
@@ -82,3 +94,6 @@ export const ESTADOS_ESCENARIO: Record<ScenarioId, Record<string, EstadoRejilla>
 
 /** Radio (m) para asociar un punto del ranking con las rejillas del catastro que lo rodean. */
 export const RADIO_PUNTO_M = 90;
+
+/** Aviso visible junto al mapa. La pendiente sale del DEM Copernicus GLO-30 de 30 m (pipeline/flujo/pendientes.py). */
+export const AVISO_MODELO = "Modelo simplificado (método racional + pendiente del DEM de 30 m, Copernicus GLO-30). Simulación, no medición.";
