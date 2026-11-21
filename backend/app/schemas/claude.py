@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 EstadoRejilla = Literal["limpia", "parcial", "tapada", "no_evaluable"]
 NivelAgua = Literal["sin_agua", "cuneta", "hasta_vereda", "sobre_vereda", "no_evaluable"]
@@ -17,6 +17,11 @@ Confianza = Literal["alta", "media", "baja"]
 
 class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+    @field_validator("nota", check_fields=False)
+    @classmethod
+    def _nota_corta(cls, v: str) -> str:
+        return v if len(v) <= 300 else v[:297] + "..."
 
 
 class ClasificacionRejilla(_Strict):
@@ -29,7 +34,7 @@ class ClasificacionRejilla(_Strict):
     agua_visible: bool
     nivel_agua: NivelAgua
     confianza: Confianza
-    nota: str = Field(max_length=300)
+    nota: str
 
     @classmethod
     def no_evaluable(cls, nota: str = "No se pudo clasificar la imagen") -> "ClasificacionRejilla":
@@ -47,7 +52,7 @@ class ClasificacionCamara(_Strict):
     agua_visible: bool
     nivel_agua: NivelAgua
     confianza: Confianza
-    nota: str = Field(max_length=300)
+    nota: str
 
     @classmethod
     def no_evaluable(cls, nota: str = "No se pudo clasificar la imagen") -> "ClasificacionCamara":

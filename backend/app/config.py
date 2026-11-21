@@ -34,8 +34,13 @@ class Settings:
     anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", ""))
     elevenlabs_api_key: str = field(default_factory=lambda: os.getenv("ELEVENLABS_API_KEY", ""))
     osrm_url: str = field(default_factory=lambda: os.getenv("OSRM_URL", "https://router.project-osrm.org"))
-    claude_model: str = field(default_factory=lambda: os.getenv("CLAUDE_MODEL", "claude-sonnet-5-5"))
+    claude_model: str = field(default_factory=lambda: os.getenv("CLAUDE_MODEL", "claude-opus-5-5"))
+    # Clasificar y extraer son tareas acotadas: 'low' basta y responde más rápido.
+    claude_effort: str = field(default_factory=lambda: os.getenv("CLAUDE_EFFORT", "low"))
     storage_bucket: str = field(default_factory=lambda: os.getenv("SUPABASE_STORAGE_BUCKET", "photos"))
+    # Si se define, los endpoints administrativos (p. ej. /formula/recompute) exigen el
+    # header X-Admin-Token. Vacío = abiertos (desarrollo / demo).
+    admin_token: str = field(default_factory=lambda: os.getenv("ADMIN_TOKEN", ""))
     cors_origins: list[str] = field(default_factory=lambda: _csv(os.getenv("CORS_ORIGINS", "*")))
 
 

@@ -12,7 +12,7 @@ def test_health():
 
 
 def test_stub_routes_mounted():
-    assert client.get("/scenarios").status_code == 501
+    assert client.get("/crews").status_code == 501
 
 
 def test_formula_weights_sum_to_one():
