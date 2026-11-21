@@ -1666,9 +1666,10 @@ p {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: auto 1fr;
   gap: 16px;
   padding: 16px;
+  overflow-y: auto;
 }
 .method__row {
   display: grid;
@@ -1693,8 +1694,8 @@ p {
 .formula__eq {
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 22px;
-  line-height: 30px;
+  font-size: 18px;
+  line-height: 26px;
   color: var(--lime);
 }
 .formula__term {
@@ -1704,7 +1705,8 @@ p {
   line-height: 22px;
 }
 .formula__term em {
-  display: block;
+  display: inline;
+  margin-left: 6px;
   font-style: normal;
   font-size: 13px;
   color: var(--surface-3);

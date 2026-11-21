@@ -233,8 +233,14 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo): CapaFlujo {
       LAYERS.forEach((id) => map.getLayer(id) && map.setLayoutProperty(id, "visibility", v ? "visible" : "none"));
     },
     destruir() {
-      LAYERS.forEach((id) => map.getLayer(id) && map.removeLayer(id));
-      Object.values(SRC).forEach((id) => map.getSource(id) && map.removeSource(id));
+      try {
+        // Si el mapa ya se destruyó (cambio de vista), no queda nada que quitar
+        if (!map.getStyle()) return;
+        LAYERS.forEach((id) => map.getLayer(id) && map.removeLayer(id));
+        Object.values(SRC).forEach((id) => map.getSource(id) && map.removeSource(id));
+      } catch {
+        /* mapa ya removido */
+      }
     },
   };
 }

@@ -146,6 +146,14 @@ export default function DrenaMap(props: DrenaMapProps) {
   const [failed, setFailed] = useState(false);
   const size = props.pinSize ?? 40;
 
+  // Capas extra de quien usa el mapa (p. ej. la simulación del flujo). Va antes de crear el mapa: así su limpieza corre antes de map.remove()
+  const onMapReadyRef = useRef(props.onMapReady);
+  onMapReadyRef.current = props.onMapReady;
+  useEffect(() => {
+    if (!ready) return;
+    return onMapReadyRef.current?.(mapRef.current, libRef.current) || undefined;
+  }, [ready]);
+
   // Crear mapa
   useEffect(() => {
     let cancelled = false;
@@ -239,14 +247,6 @@ export default function DrenaMap(props: DrenaMapProps) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Capas extra de quien usa el mapa (p. ej. la simulación del flujo)
-  const onMapReadyRef = useRef(props.onMapReady);
-  onMapReadyRef.current = props.onMapReady;
-  useEffect(() => {
-    if (!ready) return;
-    return onMapReadyRef.current?.(mapRef.current, libRef.current) || undefined;
-  }, [ready]);
 
   // Encuadre
   useEffect(() => {
