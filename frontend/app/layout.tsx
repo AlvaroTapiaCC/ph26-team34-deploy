@@ -1,10 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const space = Space_Grotesk({ subsets: ["latin"], weight: ["700"], variable: "--ff-space" });
-const geist = Geist({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--ff-geist" });
-const geistMono = Geist_Mono({ subsets: ["latin"], weight: ["500", "700"], variable: "--ff-geist-mono" });
+const space = localFont({
+  src: "./fonts/space-grotesk-700.woff2",
+  weight: "700",
+  variable: "--ff-space",
+});
+const geist = localFont({
+  src: "./fonts/geist.woff2",
+  weight: "100 900",
+  variable: "--ff-geist",
+});
+const geistMono = localFont({
+  src: "./fonts/geist-mono.woff2",
+  weight: "100 900",
+  variable: "--ff-geist-mono",
+  adjustFontFallback: false,
+});
 
 export const metadata: Metadata = {
   title: "Drena · prioriza sumideros",

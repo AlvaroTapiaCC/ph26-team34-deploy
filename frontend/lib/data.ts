@@ -114,7 +114,7 @@ export interface Scenario {
 
 export const SCENARIOS: Scenario[] = [
   {
-    id: "13oct", label: "13 de octubre", short: "13 oct", aguaExterna: 38, criticosTop30: 11,
+    id: "13oct", label: "Temporal de octubre", short: "Octubre", aguaExterna: 38, criticosTop30: 11,
     ranking: [["p1", 0.92], ["p2", 0.88], ["p3", 0.81], ["p4", 0.76], ["p5", 0.69], ["p6", 0.63], ["p7", 0.58], ["p8", 0.51], ["p9", 0.44], ["p10", 0.39], ["p11", 0.33]],
   },
   {
@@ -302,7 +302,7 @@ export const RAYOS: LngLat[] = [
   [-70.5375, -33.4175], [-70.5525, -33.4205], [-70.5395, -33.4215], [-70.5445, -33.4185], [-70.5575, -33.4225],
 ];
 
-// Validación 13-oct: anegamientos reales ilustrativos
+// Validación histórica: posiciones de reportes ilustrativas
 export const ANEGAMIENTOS_REALES: { coord: LngLat; conTop: boolean }[] = [
   { coord: [-70.6013, -33.418], conTop: true },
   { coord: [-70.6085, -33.4388], conTop: true },

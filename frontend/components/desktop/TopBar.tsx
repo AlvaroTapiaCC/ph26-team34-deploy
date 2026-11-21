@@ -44,7 +44,7 @@ export default function TopBar() {
         onChange={(modo) => set({ modo, vista: "main", ficha: null })}
       />
       <Button variant={s.vista === "validacion" ? "primary" : "secondary"} onClick={() => go("validacion")}>
-        Validación 13-oct
+        Validación histórica
       </Button>
       <Button variant={s.vista === "metodologia" ? "primary" : "secondary"} onClick={() => go("metodologia")}>
         Metodología

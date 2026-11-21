@@ -14,7 +14,7 @@ export function Validacion() {
     <main className="bento">
       <div className="col col--l is-narrow">
         <section className="result">
-          <Kicker tone="accent">Validación · 13 de octubre de 2026</Kicker>
+          <Kicker tone="accent">Validación · Temporal de octubre de 2026</Kicker>
           <div className="result__big">
             <span className="result__x">[X]</span>
             <span className="result__y">de [Y]</span>
@@ -40,11 +40,11 @@ export function Validacion() {
         <section className="card sources">
           <Kicker>Anegamientos reales · fuentes</Kicker>
           <ul>
-            <li>· Prensa del 13 y 14 de octubre</li>
+            <li>· Prensa de octubre de 2026</li>
             <li>· @TTISantiago</li>
             <li>· 175 puntos críticos · Gobierno de Santiago (secundaria)</li>
           </ul>
-          <p className="risk">Riesgo: si son menos de 10 puntos ubicables, la validación pierde fuerza. Se muestra igual, con el límite del DEM de 30 m.</p>
+          <p className="risk">La comparación es preliminar y depende de cuántos reportes se puedan ubicar.</p>
         </section>
       </div>
       <div className="col col--r">
@@ -79,70 +79,57 @@ export function Validacion() {
 }
 
 export function Metodologia() {
-  const pasos = [
-    "Recortar DEM GLO-30 con margen hacia la precordillera",
-    "Rebajar 2–3 m las celdas que son calle en OSM",
-    "pysheds: rellenar depresiones, dirección D8, acumulación C × lluvia",
-    "Repetir solo con celdas fuera de la comuna → % de agua externa",
-    "Máximo de acumulación en 40 m por intersección OSMnx",
-    "Seguir el flujo 3 km → cadena aguas abajo",
-  ];
   const datos = [
-    ["Elevación", "Copernicus DEM GLO-30"],
-    ["Calles y límites", "OpenStreetMap · OSMnx"],
-    ["Puntos críticos", "OSM: metro, hospitales, colegios, pasos bajo nivel"],
-    ["Cobertura de suelo", "ESA WorldCover 10 m"],
-    ["Lluvia 13-oct", "DMC · Tobalaba, Quinta Normal, La Reina, Pudahuel"],
-    ["Anegamientos reales", "Prensa y @TTISantiago, armado a mano"],
+    ["Catastro de sumideros", "DOH · SIALL"],
+    ["Elevación y calles", "DEM Copernicus de 30 m · OpenStreetMap y OSMnx"],
+    ["Infraestructura crítica", "OpenStreetMap · Gobierno de Santiago"],
+    ["Árboles y suelo", "ESA WorldCover"],
+    ["Lluvia y viento", "Open-Meteo"],
+    ["Ferias, mercados y obras", "OpenStreetMap"],
+    ["Paraderos y recorridos de buses", "GTFS de DTPM"],
+    ["Anegamientos de octubre de 2026", "Prensa y @TTISantiago · validación histórica"],
   ];
   return (
     <main className="method">
       <div className="method__row method__row--a">
         <section className="formula">
-          <Kicker tone="accent">Cómo se decide la prioridad</Kicker>
-          <div className="formula__eq">
-            de dónde viene el agua · cuánta área drena · qué hay cerca · si la rejilla está tapada → prioridad
+          <Kicker tone="accent">Puntaje de prioridad</Kicker>
+          <div className="formula__eq">Prioridad = P<sub>ef</sub> × C</div>
+          <div className="formula__term">
+            <b>P<sub>ef</sub></b>Puntaje de obstrucción, entre 0 y 1 (no es una probabilidad). Considera las observaciones y el arrastre desde aguas arriba.
           </div>
           <div className="formula__term">
-            <b>Si la rejilla está tapada</b>
-            Lo confirmado manda: una foto reciente fija el estado y se recalcula todo lo que está aguas abajo. <em>Más importante.</em>
+            <b>C</b>Consecuencia estimada según el área que aporta agua al sumidero y la infraestructura crítica cercana.
           </div>
-          <div className="formula__term">
-            <b>Cuánta área drena</b>
-            El agua que le llega al sumidero según las calles y la pendiente. <em>Más importante.</em>
-          </div>
-          <div className="formula__term">
-            <b>De dónde viene el agua</b>
-            Qué parte baja desde otras comunas o desde más arriba en la misma calle. <em>Importante.</em>
-          </div>
-          <div className="formula__term">
-            <b>Qué hay cerca</b>
-            Metro, pasos bajo nivel, hospitales y colegios: pesan más si fallan. <em>Menos importante.</em>
-          </div>
-          <p className="formula__ia">La fórmula decide; Claude ve, lee y explica. Claude convierte fotos y textos en datos y redacta la explicación, pero no cambia el orden.</p>
+          <p className="formula__ia">
+            <strong>Claude describe; la fórmula decide; la central aprueba.</strong>{" "}
+            Claude interpreta fotos de vecinos y cuadrillas, reportes escritos e imágenes de la cámara de la demo. Con esa evidencia explica por qué se prioriza cada sumidero.
+          </p>
         </section>
         <section className="nots">
           <Kicker tone="ink">Lo que no hace, a propósito</Kicker>
-          <p className="nots__item">
-            <span>✕</span>No recomienda cerrar o mantener abiertas calles. Un error ahí puede costar una vida.
-          </p>
-          <p className="nots__item">
-            <span>✕</span>No recomienda desviar agua: traslada la inundación a otro barrio.
-          </p>
-          <p className="nots__item">
-            <span>✕</span>No muestra profundidades ni minutos de llegada: un modelo de 30 m no los calcula con precisión.
-          </p>
+          <p className="nots__item"><span aria-hidden="true">✕</span>No recomienda cerrar calles ni mantenerlas abiertas.</p>
+          <p className="nots__item"><span aria-hidden="true">✕</span>No recomienda desviar agua.</p>
         </section>
       </div>
       <div className="method__row method__row--b">
         <section className="card pipeline">
-          <Kicker>Pipeline · se calcula una vez antes de la demo</Kicker>
-          {pasos.map((t, i) => (
-            <div key={i} className="step">
-              <b>{i + 1}</b>
-              {t}
-            </div>
-          ))}
+          <Kicker>Fases del evento</Kicker>
+          <p className="step">
+            <span><strong>Antes.</strong> Priorizar los sumideros que conviene limpiar y preparar las rutas de las cuadrillas.</span>
+          </p>
+          <p className="step">
+            <span><strong>Durante.</strong> Recalcular prioridades y rutas a partir de las observaciones.</span>
+          </p>
+          <p className="step">
+            <span>
+              <strong>Nivel de agua observado.</strong> Ajusta la consecuencia estimada. Las categorías son sin agua,
+              en la cuneta, hasta la vereda, sobre la vereda y no evaluable.
+            </span>
+          </p>
+          <p className="step">
+            <span><strong>Después.</strong> Verificar los cierres con fotos y resumir qué funcionó durante el evento.</span>
+          </p>
         </section>
         <section className="card datos">
           <Kicker>Datos públicos</Kicker>
