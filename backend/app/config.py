@@ -35,6 +35,9 @@ class Settings:
     elevenlabs_api_key: str = field(default_factory=lambda: os.getenv("ELEVENLABS_API_KEY", ""))
     claude_model: str = field(default_factory=lambda: os.getenv("CLAUDE_MODEL", "claude-sonnet-5-5"))
     storage_bucket: str = field(default_factory=lambda: os.getenv("SUPABASE_STORAGE_BUCKET", "photos"))
+    # Si se define, los endpoints administrativos (p. ej. /formula/recompute) exigen el
+    # header X-Admin-Token. Vacío = abiertos (desarrollo / demo).
+    admin_token: str = field(default_factory=lambda: os.getenv("ADMIN_TOKEN", ""))
     cors_origins: list[str] = field(default_factory=lambda: _csv(os.getenv("CORS_ORIGINS", "*")))
 
 
