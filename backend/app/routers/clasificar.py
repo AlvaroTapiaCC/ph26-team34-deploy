@@ -27,8 +27,13 @@ def _leer(foto: UploadFile) -> bytes:
 
 
 def _clasificar(fn, foto: UploadFile):
+    return clasificar_bytes(fn, _leer(foto))
+
+
+def clasificar_bytes(fn, data: bytes):
+    """Corre `fn` sobre los bytes de una foto; una imagen ilegible responde 422. Lo reusa POST /observations."""
     try:
-        return fn(_leer(foto))
+        return fn(data)
     except ImagenInvalida:
         raise HTTPException(422, "No se pudo leer la imagen. Envía una foto JPEG, PNG, WebP o HEIC.") from None
 
