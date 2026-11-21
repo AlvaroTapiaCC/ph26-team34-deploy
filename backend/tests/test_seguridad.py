@@ -47,6 +47,14 @@ def test_0004_quita_lectura_de_tablas_privadas_y_cierra_el_bucket():
     assert not (PUBLICAS & PRIVADAS)
 
 
+def test_0005_grant_select_solo_en_tablas_publicas():
+    sql = (MIGRACIONES / "0005_permisos_explicitos.sql").read_text(encoding="utf-8")
+    assert "revoke all on all tables in schema public from anon, authenticated" in sql
+    grant = sql[sql.index("grant select on"):sql.index("to anon, authenticated;")]
+    assert set(re.findall(r"\w+", grant)) - {"grant", "select", "on"} == PUBLICAS
+    assert "alter default privileges in schema public revoke all on tables" in sql
+
+
 # --- Helper de Storage con Supabase simulado -------------------------------------------
 @pytest.fixture
 def supabase_falso(monkeypatch):
@@ -118,6 +126,15 @@ def test_integracion_anon_lee_ranking_pero_no_datos_crudos_ni_fotos():
             assert r.status_code in (200, 401, 403) and (r.status_code != 200 or r.json() == []), tabla
         r = httpx.get(f"{rest}/crew_positions", params={"crew_id": f"eq.{crew}"}, headers=anon)
         assert r.status_code != 200 or r.json() == []
+
+        # El navegador no puede escribir, ni siquiera en las tablas públicas
+        r = httpx.post(f"{rest}/scores", headers={**anon, "Content-Type": "application/json"},
+                       json={"sumidero_id": sid, "scenario_id": scen, "modo": "durante", "prioridad": 9})
+        assert r.status_code in (401, 403)
+        r = httpx.patch(f"{rest}/scores", params={"sumidero_id": f"eq.{sid}"},
+                        headers={**anon, "Content-Type": "application/json", "Prefer": "return=representation"},
+                        json={"prioridad": 9})
+        assert r.status_code in (401, 403) or r.json() == []
 
         # Las fotos no se abren sin firma, ni con la URL pública ni con la publishable key
         base_st = s.supabase_url.rstrip("/") + "/storage/v1/object"
