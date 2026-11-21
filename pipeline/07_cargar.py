@@ -23,6 +23,10 @@ Garantías:
   - Idempotente: se puede correr las veces que haga falta. Las features se FUSIONAN con las
     que ya tiene el sumidero (jsonb ||), así un paso nuevo agrega variables sin borrar otras.
   - No borra sumideros que ya no vengan en los archivos (se avisa).
+  - Las cadenas sí se corrigen: si una fuente deja de traer una cadena, se borra. La fuente es el
+    prefijo del street_id ("flujo:" para pipeline/03_terreno.py); una cadena sin prefijo, o de un
+    prefijo que no viene en esta carga, no se toca. Los sumideros que apuntaban a una cadena
+    borrada quedan sin street_id ni orden_en_calle.
   - Valida antes de escribir: IDs únicos, coordenadas finitas, features numéricas y finitas,
     cadenas bien formadas (mismo largo, distancias crecientes) y que referencien sumideros.
 """
@@ -262,6 +266,19 @@ def preparar(data_dir: Path = DATA, rejillas: Path | None = None) -> dict[str, A
 # ---------------------------------------------------------------------------
 # Escritura
 # ---------------------------------------------------------------------------
+def prefijo_fuente(street_id: str) -> str | None:
+    """Fuente de una cadena: lo que va hasta el primer ':' inclusive ("flujo:"). None si no tiene."""
+    i = street_id.find(":")
+    return street_id[: i + 1] if i > 0 else None
+
+
+def cadenas_obsoletas(guardadas: list[str], nuevas: list[str]) -> list[str]:
+    """Cadenas guardadas que su misma fuente ya no trae. Sin cadenas nuevas no borra nada."""
+    fuentes = {f for f in map(prefijo_fuente, nuevas) if f}
+    vigentes = set(nuevas)
+    return sorted(c for c in guardadas if prefijo_fuente(c) in fuentes and c not in vigentes)
+
+
 def escribir(conn, datos: dict[str, Any]) -> dict[str, int]:
     from psycopg.types.json import Jsonb
 
@@ -306,7 +323,16 @@ def escribir(conn, datos: dict[str, Any]) -> dict[str, int]:
             """,
             [(c["street_id"], c["nombre"], c["sumidero_ids"], c["distancias_m"]) for c in datos["cadenas"]],
         )
-        # Una recarga corrige la anterior: las esquinas que ya no tienen sumideros se borran
+        # Una recarga corrige la anterior: las cadenas que su fuente ya no trae se borran (revisión #76),
+        # así una base actualizada calcula el mismo ranking que una instalación limpia.
+        guardadas = [r["street_id"] if isinstance(r, dict) else r[0]
+                     for r in cur.execute("select street_id from street_chains").fetchall()]
+        obsoletas = cadenas_obsoletas(guardadas, [c["street_id"] for c in datos["cadenas"]])
+        if obsoletas:
+            cur.execute("update sumideros set street_id = null, orden_en_calle = null where street_id = any(%s)",
+                        (obsoletas,))
+            cur.execute("delete from street_chains where street_id = any(%s)", (obsoletas,))
+        # Las esquinas que ya no tienen sumideros se borran
         huerfanas = cur.execute(
             "delete from intersections i where not exists (select 1 from sumideros s where s.intersection_id = i.id)"
         ).rowcount
@@ -315,6 +341,7 @@ def escribir(conn, datos: dict[str, Any]) -> dict[str, int]:
         ).fetchone()
     return {"intersecciones": len(inters), "intersecciones_huerfanas_borradas": huerfanas,
             "sumideros": len(sumideros), "cadenas": len(datos["cadenas"]),
+            "cadenas_obsoletas_borradas": len(obsoletas),
             "sumideros_doh_que_no_vienen": (sobrantes["n"] if isinstance(sobrantes, dict) else sobrantes[0])}
 
 

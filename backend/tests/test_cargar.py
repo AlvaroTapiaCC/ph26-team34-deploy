@@ -128,6 +128,14 @@ def test_datos_invalidos_salen_con_error(tmp_path, capsys):
     assert "Datos inválidos" in capsys.readouterr().out
 
 
+def test_cadenas_obsoletas_solo_de_la_misma_fuente():
+    """Revisión #76: una recarga debe retirar las cadenas que su fuente ya no trae, y nada más."""
+    guardadas = ["flujo:A", "flujo:VIEJA", "otra:X", "sinprefijo"]
+    assert cargar.cadenas_obsoletas(guardadas, ["flujo:A", "flujo:B"]) == ["flujo:VIEJA"]
+    assert cargar.cadenas_obsoletas(guardadas, []) == []  # sin archivo de cadenas no se borra nada
+    assert cargar.prefijo_fuente("flujo:AL13SU010093") == "flujo:" and cargar.prefijo_fuente("sinprefijo") is None
+
+
 # --- Integración: carga real, idempotente, con IDs únicos -------------------------------------
 @pytest.mark.skipif(os.getenv("DRENA_TEST_INTEGRACION") != "1", reason="DRENA_TEST_INTEGRACION=1 para correrlo")
 def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
@@ -139,8 +147,9 @@ def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
     datos_dir = _datos(
         tmp_path, [_rejilla(a, calle_p=calle, calle_i="X"), _rejilla(b, -70.6003, calle_p="X", calle_i=calle)],
         terreno=f"ID_IDE,elevacion_m,pendiente,area_aporte_m2,street_id,orden_en_calle,en_zona_mut\n"
-                f"{a},630,0.3,800,flujo:{run},0,True\n",
-        cadenas=[{"street_id": f"flujo:{run}", "nombre": "test", "sumidero_ids": [a, b], "distancias_m": [0, 40]}],
+                f"{a},630,0.3,800,t{run}:c,0,True\n",
+        cadenas=[{"street_id": f"t{run}:c", "nombre": "test", "sumidero_ids": [a, b], "distancias_m": [0, 40]},
+                 {"street_id": f"t{run}:vieja", "nombre": "test", "sumidero_ids": [b, a], "distancias_m": [0, 40]}],
     )
     iid = None
     try:
@@ -149,11 +158,20 @@ def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
             # Otro paso del pipeline agrega una feature directo en la base
             conn.execute("update sumideros set features = features || '{\"arboles\": 0.7}' where id = %s", (a,))
             r2 = cargar.escribir(conn, cargar.preparar(datos_dir))  # segunda corrida: idempotente
+            # La fuente deja de traer una cadena: la recarga la retira (y no toca las cadenas reales)
+            n_reales = conn.execute("select count(*) as n from street_chains where street_id like 'flujo:%'").fetchone()["n"]
+            (datos_dir / "street_chains_x.json").write_text(json.dumps(
+                [{"street_id": f"t{run}:c", "nombre": "test", "sumidero_ids": [a, b], "distancias_m": [0, 40]}]),
+                encoding="utf-8")
+            r3 = cargar.escribir(conn, cargar.preparar(datos_dir))
+            vieja = conn.execute("select 1 from street_chains where street_id = %s", (f"t{run}:vieja",)).fetchone()
+            n_reales_despues = conn.execute(
+                "select count(*) as n from street_chains where street_id like 'flujo:%'").fetchone()["n"]
             etiquetas_antes = conn.execute("select etiquetas from sumideros where id = %s", (a,)).fetchone()["etiquetas"]
             # Una corrección posterior con en_zona_mut=False quita la etiqueta (vacío la conservaría)
             (datos_dir / "terreno_x.csv").write_text(
                 "ID_IDE,elevacion_m,pendiente,area_aporte_m2,street_id,orden_en_calle,en_zona_mut\n"
-                f"{a},630,0.3,800,flujo:{run},0,False\n", encoding="utf-8")
+                f"{a},630,0.3,800,t{run}:c,0,False\n", encoding="utf-8")
             cargar.escribir(conn, cargar.preparar(datos_dir))
             etiquetas_despues = conn.execute("select etiquetas from sumideros where id = %s", (a,)).fetchone()["etiquetas"]
             filas = {x["id"]: x for x in conn.execute(
@@ -162,7 +180,7 @@ def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
             iid = filas[a]["intersection_id"]
             n_inter = conn.execute("select count(*) as n from intersections where id = %s", (iid,)).fetchone()["n"]
             cadena = conn.execute("select sumidero_ids from street_chains where street_id = %s",
-                                  (f"flujo:{run}",)).fetchone()
+                                  (f"t{run}:c",)).fetchone()
         assert r1["sumideros"] == r2["sumideros"] == 2
         assert filas[a]["features"] == {"pendiente": 0.3, "area_aporte": 800.0, "arboles": 0.7}  # fusionadas
         assert filas[a]["elevacion"] == 630
@@ -170,10 +188,12 @@ def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
         assert filas[a]["comuna"] == "Providencia" and filas[a]["calle"].startswith("Calle Test")
         assert filas[a]["intersection_id"] == filas[b]["intersection_id"] and n_inter == 1
         assert cadena["sumidero_ids"] == [a, b]
+        assert r2["cadenas_obsoletas_borradas"] == 0 and r3["cadenas_obsoletas_borradas"] == 1 and vieja is None
+        assert n_reales_despues == n_reales
     finally:
         with get_conn() as conn:
             # Todas las intersecciones de esta ejecución (sus nombres llevan `run`), no solo la de `a`
-            conn.execute("delete from street_chains where street_id = %s", (f"flujo:{run}",))
+            conn.execute("delete from street_chains where street_id like %s", (f"t{run}:%",))
             conn.execute("delete from sumideros where id = any(%s)", ([a, b],))
             conn.execute("delete from intersections where id like %s", (f"%{run}%",))
 
