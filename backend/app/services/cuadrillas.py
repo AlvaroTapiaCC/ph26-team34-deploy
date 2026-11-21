@@ -107,6 +107,45 @@ def _paradas(conn: Connection, crew_id: str) -> list[dict[str, Any]]:
     ).fetchall()
 
 
+def ultimo_cambio(conn: Connection, crew_id: str) -> dict[str, Any] | None:
+    """Último cambio de ruta de la cuadrilla (evento `replan` del despacho, #32) y qué lo causó.
+
+    Lo usa la app de cuadrilla (#38) para avisar "cambió tu siguiente parada" con su motivo.
+    Privacidad (#104): de la observación que lo causó solo salen su tipo, fuente y la
+    clasificación en categorías; nunca el texto, la foto ni la ubicación del reporte.
+    """
+    fila = conn.execute(
+        """
+        select e.ts, e.payload->>'motivo' as motivo, e.payload->'ruta_version' as ruta_version,
+               e.payload->'siguiente_antes' as siguiente_antes,
+               e.payload->'siguiente_despues' as siguiente_despues,
+               o.tipo as obs_tipo, o.fuente as obs_fuente, o.is_simulated as obs_simulada,
+               c.resultado->>'rejilla' as rejilla, c.resultado->>'nivel_agua' as nivel_agua,
+               c.resultado->'material' as material
+          from events e
+          left join observations o on o.id::text = e.payload->>'observation_id'
+          left join lateral (
+                select resultado from classifications cl where cl.observation_id = o.id
+                 order by cl.created_at desc, cl.id desc limit 1
+          ) c on true
+         where e.tipo = 'replan' and e.payload->>'crew_id' = %s
+         order by e.id desc
+         limit 1
+        """,
+        (crew_id,),
+    ).fetchone()
+    if fila is None:
+        return None
+    observacion = None
+    if fila["obs_tipo"] is not None:
+        observacion = {"tipo": fila["obs_tipo"], "fuente": fila["obs_fuente"], "is_simulated": fila["obs_simulada"],
+                       "rejilla": fila["rejilla"], "nivel_agua": fila["nivel_agua"],
+                       "material": fila["material"] if isinstance(fila["material"], list) else []}
+    return {"hora": fila["ts"], "motivo": fila["motivo"], "ruta_version": fila["ruta_version"],
+            "siguiente_antes": fila["siguiente_antes"], "siguiente_despues": fila["siguiente_despues"],
+            "observacion": observacion}
+
+
 def ruta(conn: Connection, crew_id: str, ver_privado: bool = False) -> dict[str, Any]:
     """Ruta vigente: la última versión guardada por el despacho (#32) o, si no hay, una calculada
     al vuelo desde la posición de la cuadrilla por sus misiones activas (sin guardarla).
@@ -120,6 +159,7 @@ def ruta(conn: Connection, crew_id: str, ver_privado: bool = False) -> dict[str,
         raise NoEncontrado(f"Cuadrilla {crew_id} no existe")
     oculta = not (crew["is_simulated"] or ver_privado)
     extra = {"posicion_oculta": True} if oculta else {}
+    cambio = ultimo_cambio(conn, crew_id)
     paradas = _paradas(conn, crew_id)
     if not oculta:
         guardada = conn.execute(
@@ -128,16 +168,18 @@ def ruta(conn: Connection, crew_id: str, ver_privado: bool = False) -> dict[str,
             (crew_id,),
         ).fetchone()
         if guardada:
-            return {"crew_id": crew_id, "origen": "despacho", **guardada, "misiones": paradas}
+            return {"crew_id": crew_id, "origen": "despacho", **guardada, "misiones": paradas,
+                    "ultimo_cambio": cambio}
 
     puntos = [(p["lat"], p["lon"]) for p in paradas if p["lat"] is not None]
     if crew["lat"] is not None and not oculta:
         puntos = [(crew["lat"], crew["lon"]), *puntos]
     if not puntos:
         return {"crew_id": crew_id, "origen": "sin_misiones", "version": None, "geojson": None,
-                "paradas": [], "misiones": [], **extra}
+                "paradas": [], "misiones": [], "ultimo_cambio": cambio, **extra}
     r = routing.ruta(puntos).to_dict()
-    return {"crew_id": crew_id, "origen": "calculada", "version": None, **r, "misiones": paradas, **extra}
+    return {"crew_id": crew_id, "origen": "calculada", "version": None, **r, "misiones": paradas,
+            "ultimo_cambio": cambio, **extra}
 
 
 # ---------------------------------------------------------------------------
