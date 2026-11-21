@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from app.db import get_conn
 from app.seguridad import exigir_cuadrilla
-from app.services import cuadrillas, storage
+from app.services import cuadrillas, dispatch, storage
 from app.services.claude_vision import ImagenInvalida, preparar_imagen
 
 log = logging.getLogger(__name__)
@@ -82,4 +82,8 @@ def close_mission(mission_id: UUID, foto: UploadFile = File(...)):
         r["cierre"]["foto_url_firmada"] = storage.url_firmada(ruta)
     except storage.StorageError:
         r["cierre"]["foto_url_firmada"] = None
+    # La rejilla recién limpiada sale del plan y la cuadrilla recibe su siguiente parada (#32).
+    # No lanza: el cierre ya quedó guardado.
+    r["despacho"] = dispatch.replanificar_seguro("cierre", sumidero_id=r["mision"]["sumidero_id"],
+                                                 caso_id=str(r["mision"]["case_id"]) if r["mision"]["case_id"] else None)
     return r
