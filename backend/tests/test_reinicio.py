@@ -90,6 +90,9 @@ def _pasada(conn):
     m = r["siguiente_despues"]["mission_id"]
     conn.execute("update missions set estado = 'cerrada', cerrada_at = clock_timestamp() where id = %s", (m,))
     conn.execute("insert into closures (mission_id, verificado) values (%s, true)", (m,))
+    # Lo que deja un cierre verificado de #42: la limpieza de hoy (simulada, por ser sim-c*)
+    conn.execute("insert into cleaning_history (sumidero_id, fecha, is_simulated)"
+                 " values (%s, (now() at time zone 'America/Santiago')::date, true)", (REJILLA_DEMO,))
     return {"crew": r["crew_id"], "antes": r["siguiente_antes"]["sumidero_id"],
             "despues": r["siguiente_despues"]["sumidero_id"]}
 
@@ -114,6 +117,7 @@ def test_dos_pasadas_con_reinicio_dan_lo_mismo_y_no_cambian_la_base(conn):
 
     r1 = reinicio.reiniciar(conn)
     assert r1["borrado"]["observaciones"] == 1 and r1["borrado"]["eventos"] >= 1
+    assert r1["borrado"]["limpiezas"] == 1
     assert r1["plan"] == plan0                       # vuelve al mismo plan inicial
     assert _ranking_base(conn) == base0
     assert conn.execute(conteo).fetchone() == conteo0  # catastro, caché de Claude, historial y cadenas

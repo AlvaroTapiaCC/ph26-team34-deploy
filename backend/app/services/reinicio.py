@@ -5,7 +5,7 @@ Borra lo que generó la demo desde el último reinicio y regenera el plan inicia
 - **Observaciones** registradas desde la marca (por su evento `observacion` o por su hora), con
   sus clasificaciones (en cascada) y los casos que quedan sin observaciones.
 - **Plan de las cuadrillas simuladas:** todas sus misiones, cierres (en cascada) y versiones de
-  ruta. Es dato derivado: se vuelve a generar con el despacho (#32). Las cuadrillas simuladas
+  ruta, y la limpieza que registró cada cierre verificado en `cleaning_history` (#42). Es dato derivado: se vuelve a generar con el despacho (#32). Las cuadrillas simuladas
   vuelven a la posición que tenían en el reinicio anterior y quedan `disponible`.
 - **Eventos** desde la marca (`observacion`, `replan`), para que el panel "qué cambió" parta limpio.
 
@@ -58,6 +58,17 @@ def reiniciar(conn: Connection, desde: datetime | None = None,
         # 1) Plan de las cuadrillas simuladas (dato derivado, se regenera abajo). Va primero: las
         #    misiones apuntan a casos. Los cierres se borran en cascada.
         sim = "select id from crews where is_simulated"
+        # La limpieza que registró un cierre verificado de una cuadrilla simulada (#42) es de la demo:
+        # si quedara, la rejilla bajaría en el ranking y la segunda pasada no sería igual.
+        borrado["limpiezas"] = conn.execute(
+            f"""
+            delete from cleaning_history ch
+             using closures cl join missions m on m.id = cl.mission_id
+             where cl.verificado and m.crew_id in ({sim}) and ch.is_simulated
+               and ch.sumidero_id = m.sumidero_id
+               and ch.fecha = (cl.created_at at time zone 'America/Santiago')::date
+            """
+        ).rowcount
         borrado["misiones"] = conn.execute(f"delete from missions where crew_id in ({sim})").rowcount
         borrado["rutas"] = conn.execute(f"delete from routes where crew_id in ({sim})").rowcount
 
