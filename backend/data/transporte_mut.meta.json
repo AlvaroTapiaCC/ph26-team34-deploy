@@ -1,0 +1,59 @@
+{
+  "fuente": "GTFS de DTPM",
+  "url": "https://www.dtpm.cl/descargas/gtfs/GTFS_20261114_v2.zip",
+  "fecha_descarga": "2026-11-21",
+  "sha256_zip": "ff0cda445cc4652013e159a133fcf863278ec55f6146e48c5a2416bf41c0b155",
+  "centro_lonlat": [
+    -70.601433,
+    -33.417741
+  ],
+  "radio_m": 900,
+  "paraderos_a_menos_de_80m": [
+    {
+      "paradero": "PC1329",
+      "rejilla": "AL13SU010174",
+      "distancia_m": 12.2
+    },
+    {
+      "paradero": "PC36",
+      "rejilla": "AL13SU010171",
+      "distancia_m": 28.6
+    },
+    {
+      "paradero": "PC207",
+      "rejilla": "AL13SU010157",
+      "distancia_m": 34.9
+    },
+    {
+      "paradero": "PC155",
+      "rejilla": "AL13SU012923",
+      "distancia_m": 49.7
+    },
+    {
+      "paradero": "PC1330",
+      "rejilla": "AL13SU010172",
+      "distancia_m": 60.3
+    },
+    {
+      "paradero": "PC270",
+      "rejilla": "AL13SU010155",
+      "distancia_m": 63.3
+    },
+    {
+      "paradero": "PC22",
+      "rejilla": "AL13SU010169",
+      "distancia_m": 73.1
+    },
+    {
+      "paradero": "PC267",
+      "rejilla": "AL13SU016874",
+      "distancia_m": 76.8
+    },
+    {
+      "paradero": "PC35",
+      "rejilla": "AL13SU010169",
+      "distancia_m": 78.2
+    }
+  ],
+  "sha256_salida": "d23f2f36ad99a0207daac885278cba895eb2a511162e4c4a7511561e0651b05f"
+}
