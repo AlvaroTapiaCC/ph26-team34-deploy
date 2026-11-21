@@ -6,7 +6,7 @@
   "project-oneliner-spanish": "Dice a qué sumideros mandar cuadrillas primero, antes y durante la lluvia.",
 
   // Brief description of your project (in Spanish).
-  "project-description-spanish": "Drena ayuda a los municipios a prevenir y responder a las inundaciones por lluvia urbana causadas por sumideros tapados. Antes de la lluvia, una fórmula transparente cruza terreno, calles y puntos críticos para priorizar qué sumideros limpiar y arma la ruta de cada cuadrilla. Durante el evento, Claude convierte fotos, cámaras y reportes en datos y recalcula qué viene aguas abajo. La fórmula decide; Claude ve, lee y explica.",
+  "project-description-spanish": "Drena ayuda a los municipios a prevenir y responder a las inundaciones por lluvia urbana causadas por sumideros tapados. Antes de la lluvia, una fórmula transparente cruza terreno, calles y puntos críticos para priorizar qué sumideros limpiar y arma la ruta de cada cuadrilla. Durante el evento, Claude convierte fotos, cámaras y reportes en datos, y la fórmula recalcula las prioridades aguas abajo y reordena las rutas. La fórmula decide; Claude ve, lee y explica.",
 
   // Public URL where your project is deployed and running.
   // Must be a valid URL, for example: https://my-project.vercel.app

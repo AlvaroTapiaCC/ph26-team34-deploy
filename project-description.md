@@ -7,7 +7,7 @@ El 13 de octubre de 2026 una lluvia localizada cayó sobre Santiago oriente. Los
 ## Qué hace Drena
 
 - **Antes:** una fórmula transparente cruza terreno, calles y puntos críticos para priorizar qué sumideros limpiar, y arma la ruta de cada cuadrilla.
-- **Durante:** Claude convierte fotos, cámaras y reportes en datos y recalcula qué viene aguas abajo del punto anegado.
+- **Durante:** Claude convierte fotos, cámaras y reportes en datos; la fórmula recalcula las prioridades aguas abajo del punto anegado y las rutas de las cuadrillas se reordenan en vivo.
 - **Después:** se contrasta lo previsto con lo ocurrido para validar la priorización y mejorar la fórmula.
 
 ## Principio
@@ -20,7 +20,7 @@ Drena no recomienda cerrar calles ni desviar agua. Solo indica a qué sumideros 
 
 ## Stack
 
-Next.js en Vercel, FastAPI en Render, MapLibre y la API de Claude.
+Next.js en Vercel, FastAPI en Render, Supabase (Postgres + PostGIS, Storage y Realtime), MapLibre, la API de Claude y ElevenLabs.
 
 ## Equipo
 
