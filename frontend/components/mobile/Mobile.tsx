@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { COMUNAS, ESCURRIMIENTO, fmt, googleMapsTramos, MAX_WAYPOINTS_MOVIL, pad2, PUNTOS, SCENARIOS, textoWhatsApp, type LngLat, type ScenarioId } from "@/lib/data";
+import { ESCURRIMIENTO, fmt, googleMapsTramos, MAX_WAYPOINTS_MOVIL, pad2, PUNTOS, statsPunto, textoWhatsApp, type LngLat, type ScenarioId } from "@/lib/data";
+import { boundsDe } from "@/lib/real";
 import { useStore, type MobileTab } from "@/lib/store";
+import AvisoDatos from "../AvisoDatos";
 import { copy } from "../desktop/Modals";
-import { CriticidadPill } from "../desktop/Ficha";
+import { CriticidadPill, VariablesReales } from "../desktop/Ficha";
 import DrenaMap, { type MapPin } from "../map/DrenaMap";
 import { Button, Kicker, Logo, PrioChip, Segmented, Stat, Toast } from "../ui";
 
-const SHORT = Object.fromEntries(SCENARIOS.map((s) => [s.id, s.short])) as Record<ScenarioId, string>;
+const PINS_MAX = 100; // con datos reales hay ~2.000 intersecciones: se dibujan las más prioritarias
+const TOP_ENCUADRE = 30;
 
 function Nav() {
   const { s, set } = useStore();
@@ -36,7 +39,8 @@ function useMobilePins(onPin: (id: string) => void, focus?: string) {
   const { ranking, s } = useStore();
   return useMemo<MapPin[]>(() => {
     const visible = ranking.filter((p) => s.comuna === "Todas" || p.comuna === s.comuna);
-    return ranking.map((p) => ({
+    const enMapa = ranking.length > PINS_MAX ? [...visible.slice(0, PINS_MAX), ...ranking.filter((p) => !visible.includes(p)).slice(0, 30)] : ranking;
+    return enMapa.map((p) => ({
       id: p.id,
       coord: p.coord,
       rank: p.rank,
@@ -87,9 +91,12 @@ function Estado({ kind }: { kind: "cargando" | "vacio" | "error" | "caido" }) {
 }
 
 function Prioridades() {
-  const { s, set, filtered, scenarioLabel, ruta } = useStore();
+  const { s, set, filtered, scenarioLabel, ruta, escenarios } = useStore();
   const pins = useMobilePins((id) => set({ selected: id, mobileView: "mapa" }));
-  const hasAlta = filtered.some((p) => p.prio === "alta");
+  const real = !!filtered[0]?.real;
+  // Con datos reales siempre hay lista, aunque aún no haya prioridades altas
+  const hasAlta = filtered.length > 0 && (real || filtered.some((p) => p.prio === "alta"));
+  const bounds = useMemo(() => (real ? boundsDe(filtered.slice(0, TOP_ENCUADRE)) : ([[-70.628, -33.444], [-70.592, -33.416]] as [LngLat, LngLat])), [real, filtered]);
   return (
     <>
       <div className="mob__body">
@@ -100,7 +107,7 @@ function Prioridades() {
           </button>
         </div>
         <div className="mob__pad">
-          <Segmented<ScenarioId> size="lg" soft options={SCENARIOS.map((x) => ({ id: x.id, label: x.short }))} value={s.scenario} onChange={(scenario) => set({ scenario })} />
+          <Segmented<ScenarioId> size="lg" soft options={escenarios.map((x) => ({ id: x.id, label: x.short }))} value={s.scenario} onChange={(scenario) => set({ scenario })} />
         </div>
         {s.status === "error" ? (
           <div className="mgap">
@@ -117,7 +124,7 @@ function Prioridades() {
         ) : (
           <>
             <div className="mob__pad" onClick={() => set({ mobileView: "mapa", selected: filtered[0].id })}>
-              <DrenaMap className="mmap" bounds={[[-70.628, -33.444], [-70.592, -33.416]]} padding={10} pinSize={34} pins={pins} lines={ESCURRIMIENTO} />
+              <DrenaMap className="mmap" bounds={bounds} padding={10} pinSize={34} pins={pins} lines={real ? [] : ESCURRIMIENTO} />
             </div>
             <div className="mlist">
               <Kicker>
@@ -128,7 +135,7 @@ function Prioridades() {
                   <span className="mrow__rank">{pad2(p.rank)}</span>
                   <div>
                     <span className="mrow__name">{p.nombre}</span>
-                    <span className="mrow__meta">{p.pctExterno} % agua externa</span>
+                    <span className="mrow__meta">{p.real ? `${p.real.sumideros.length} ${p.real.sumideros.length === 1 ? "sumidero" : "sumideros"}` : `${p.pctExterno} % agua externa`}</span>
                   </div>
                   <PrioChip prio={p.prio} />
                 </button>
@@ -158,7 +165,7 @@ function MapaFull() {
   ];
   return (
     <div className="mfull">
-      <DrenaMap bounds={b} padding={20} pins={pins} lines={ESCURRIMIENTO} attribution="© Esri, OSM">
+      <DrenaMap bounds={b} padding={20} pins={pins} lines={sel.real ? [] : ESCURRIMIENTO} attribution="© Esri, OSM">
         <div className="mfull__top">
           <button className="mfull__logo" onClick={() => set({ mobileView: "lista" })}>
             <Logo size={20} />
@@ -175,7 +182,7 @@ function MapaFull() {
           <div>
             <div className="sheet__title">{sel.nombre}</div>
             <div className="sheet__sub">
-              {sel.pctExterno} % del agua viene de {sel.origen ?? sel.comuna}
+              {sel.real ? `${sel.comuna} · ${sel.cerca}` : `${sel.pctExterno} % del agua viene de ${sel.origen ?? sel.comuna}`}
             </div>
           </div>
         </div>
@@ -193,8 +200,9 @@ function MapaFull() {
 }
 
 function FichaM() {
-  const { s, set, ranking, addRuta } = useStore();
+  const { s, set, ranking, addRuta, fichaReal } = useStore();
   const p = ranking.find((x) => x.id === s.ficha) ?? ranking[0];
+  const criticidad = p.real ? (fichaReal?.criticidad ?? []) : p.criticidad;
   return (
     <div className="mob__body">
       <div className="photo mficha__photo" style={{ backgroundImage: "url(/img/sumidero-ficha-m.jpg)" }}>
@@ -216,18 +224,29 @@ function FichaM() {
           </div>
         </div>
         <div className="mstats">
-          <Stat inset="soft" value={`${p.pctExterno} %`} label={`agua de ${p.origen ?? p.comuna}`} accent />
-          <Stat inset="soft" value={`${fmt(p.area)} km²`} label="área de aporte" />
+          {p.real ? (
+            statsPunto(p)
+              .slice(0, 2)
+              .map((st, i) => <Stat key={st.label} inset="soft" value={st.value} label={st.label} accent={i === 0} />)
+          ) : (
+            <>
+              <Stat inset="soft" value={`${p.pctExterno} %`} label={`agua de ${p.origen ?? p.comuna}`} accent />
+              <Stat inset="soft" value={`${fmt(p.area)} km²`} label="área de aporte" />
+            </>
+          )}
         </div>
+        {p.real && <VariablesReales />}
         <div className="pills mpills" style={{ marginTop: 0 }}>
-          {p.criticidad.map((c) => (
+          {criticidad.map((c) => (
             <CriticidadPill key={c} text={c.replace(/Metro [^·]+·/, "Metro ·")} />
           ))}
         </div>
         <div className="todo">
           <Kicker tone="accent">Qué hacer</Kicker>
           <p>
-            Limpiar los sumideros de la esquina antes de las 14:00. Recibe agua de {fmt(p.area)} km², el {p.pctExterno} % desde {p.origen ?? p.comuna}.
+            {p.real
+              ? (fichaReal?.explicacion ?? p.real.explicacion ?? `Revisar ${p.cerca} de la esquina y despejar las rejillas antes de la lluvia.`)
+              : `Limpiar los sumideros de la esquina antes de las 14:00. Recibe agua de ${fmt(p.area)} km², el ${p.pctExterno} % desde ${p.origen ?? p.comuna}.`}
           </p>
         </div>
         <div className="grow" />
@@ -243,7 +262,7 @@ function FichaM() {
 }
 
 function Filtros() {
-  const { s, set } = useStore();
+  const { s, set, escenarios, comunas } = useStore();
   const [esc, setEsc] = useState(s.scenario);
   const [com, setCom] = useState(s.comuna);
   const [cu, setCu] = useState(s.cuadrillas);
@@ -254,10 +273,10 @@ function Filtros() {
         <div className="grab" />
         <h2>Filtros</h2>
         <Kicker>Escenario de lluvia</Kicker>
-        <Segmented<ScenarioId> size="lg" options={SCENARIOS.map((x) => ({ id: x.id, label: x.short }))} value={esc} onChange={setEsc} />
+        <Segmented<ScenarioId> size="lg" options={escenarios.map((x) => ({ id: x.id, label: x.short }))} value={esc} onChange={setEsc} />
         <Kicker>Comuna</Kicker>
         <div className="fchips">
-          {COMUNAS.map((c) => (
+          {comunas.map((c) => (
             <button key={c.id} className={`fchip ${com === c.id ? "is-on" : ""}`} onClick={() => setCom(c.id)}>
               {c.id}
             </button>
@@ -464,6 +483,7 @@ export default function Mobile() {
       {body}
       {s.mobileView === "filtros" && <Filtros />}
       <Nav />
+      <AvisoDatos movil />
       <Toast text={s.toast} className="toast--m" />
     </div>
   );
