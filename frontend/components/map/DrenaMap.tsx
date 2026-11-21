@@ -33,6 +33,8 @@ export interface DrenaMapProps {
   area?: LngLat[] | null;
   celda?: { poly: LngLat[]; rayos: LngLat[]; link: [LngLat, LngLat] } | null;
   gore?: LngLat[] | null;
+  comunas?: boolean; // límites comunales reales (public/data/comunas.geojson)
+  rejillas?: boolean; // catastro de rejillas MOP, agrupadas en zoom bajo (public/data/rejillas.geojson)
   reales?: { coord: LngLat; conTop: boolean }[] | null;
   bounds: [LngLat, LngLat];
   padding?: number | { top: number; bottom: number; left: number; right: number };
@@ -132,12 +134,40 @@ export default function DrenaMap(props: DrenaMapProps) {
         map.once("style.load", () => {
           const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]) });
           ["esc", "chain", "lim", "area", "celda", "celda-link", "gore"].forEach(add);
+          map.addSource("comunas", { type: "geojson", data: "/data/comunas.geojson" });
+          map.addSource("rejillas", { type: "geojson", data: "/data/rejillas.geojson", cluster: true, clusterMaxZoom: 15, clusterRadius: 40 });
           map.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-color": "#FF3D0A", "fill-opacity": 0.16 } });
           map.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-color": "#FF3D0A", "line-width": 2, "line-opacity": 0.9, "line-dasharray": [3, 2] } });
           map.addLayer({ id: "celda-fill", type: "fill", source: "celda", paint: { "fill-color": "#1B1B1B", "fill-opacity": 0.14 } });
           map.addLayer({ id: "celda-line", type: "line", source: "celda", paint: { "line-color": "#1B1B1B", "line-width": 2, "line-dasharray": [3, 2] } });
           map.addLayer({ id: "celda-link", type: "line", source: "celda-link", paint: { "line-color": "#1B1B1B", "line-width": 3, "line-opacity": 0.8, "line-dasharray": [1.5, 1.5] } });
           map.addLayer({ id: "lim", type: "line", source: "lim", paint: { "line-color": "#5A5A57", "line-width": 2, "line-opacity": 0.8, "line-dasharray": [4, 3] } });
+          // Colores = tokens de globals.css (--text-2, --prio-baja, --surface-3, --surface); MapLibre no lee variables CSS.
+          const hidden = { visibility: "none" };
+          map.addLayer({ id: "comunas-line", type: "line", source: "comunas", layout: hidden, paint: { "line-color": "#5A5A57", "line-width": 1.75, "line-opacity": 0.9 } });
+          map.addLayer({
+            id: "rej-cluster",
+            type: "circle",
+            source: "rejillas",
+            filter: ["has", "point_count"],
+            layout: hidden,
+            // Anillo hueco: no se confunde con los pines de prioridad, que son figuras rellenas con número.
+            paint: {
+              "circle-color": "#FFFFFF",
+              "circle-opacity": 0.25,
+              "circle-stroke-color": "#5A5A57",
+              "circle-stroke-width": 2,
+              "circle-radius": ["step", ["get", "point_count"], 9, 10, 12, 50, 16, 200, 21],
+            },
+          });
+          map.addLayer({
+            id: "rej-point",
+            type: "circle",
+            source: "rejillas",
+            filter: ["!", ["has", "point_count"]],
+            layout: hidden,
+            paint: { "circle-radius": 2.5, "circle-color": "#767672", "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 0.75 },
+          });
           map.addLayer({ id: "esc-halo", type: "line", source: "esc", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#FF3D0A", "line-width": 9, "line-opacity": 0.14 } });
           map.addLayer({ id: "esc-line", type: "line", source: "esc", paint: { "line-color": "#FF3D0A", "line-width": 2, "line-opacity": 0.85, "line-dasharray": [2.5, 2.5] } });
           map.addLayer({ id: "chain-halo", type: "line", source: "chain", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#FF3D0A", "line-width": 14, "line-opacity": 0.2 } });
@@ -176,6 +206,15 @@ export default function DrenaMap(props: DrenaMapProps) {
     set("celda-link", fc(props.celda ? [line(props.celda.link)] : []));
     set("gore", fc((props.gore ?? []).map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }))));
   }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore]);
+
+  // Visibilidad de las capas de datos reales
+  useEffect(() => {
+    if (!ready) return;
+    const map = mapRef.current;
+    const vis = (ids: string[], on?: boolean) => ids.forEach((id) => map.setLayoutProperty(id, "visibility", on ? "visible" : "none"));
+    vis(["comunas-line"], props.comunas);
+    vis(["rej-cluster", "rej-point"], props.rejillas);
+  }, [ready, props.comunas, props.rejillas]);
 
   // Marcadores HTML
   useEffect(() => {

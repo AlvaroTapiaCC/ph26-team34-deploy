@@ -1,0 +1,22 @@
+{
+  "archivo": "comunas.geojson",
+  "sha256": "ab7712c5772caae7076bf1c00ac7e5a9c09d33142c824897caf042626686521a",
+  "descargado_utc": "2026-11-21T15:00:05+00:00",
+  "fuente": "OpenStreetMap, consultado con osmnx (Nominatim)",
+  "osmnx": "2.2.0",
+  "consultas": [
+    "Providencia, Chile",
+    "Ñuñoa, Chile",
+    "Las Condes, Chile"
+  ],
+  "comunas": [
+    "Providencia",
+    "Ñuñoa",
+    "Las Condes"
+  ],
+  "script": {
+    "ruta": "pipeline/00_comunas.py",
+    "version": "0.1.0",
+    "sha256": "936f9b86def5f6ce9ba2eb18b02f3623b8dadf8d8669401c373c626c6419f18b"
+  }
+}

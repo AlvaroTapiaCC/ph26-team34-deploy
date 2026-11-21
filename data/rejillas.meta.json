@@ -1,0 +1,206 @@
+{
+  "archivo": "rejillas.geojson",
+  "sha256": "dde763af25b2afb38c8b17f9aa66c670c860fae797d1821c9191fd012c55de22",
+  "descargado_utc": "2026-11-21T15:01:42+00:00",
+  "servicio": "https://rest-sit.mop.gob.cl/arcgis/rest/services/DOH/SIALL/MapServer/3",
+  "operaciones": {
+    "atributos": "query",
+    "coordenadas": "identify"
+  },
+  "version_servidor": 10.21,
+  "zona": "oriente",
+  "bbox_lonlat": [
+    -70.65,
+    -33.485,
+    -70.48,
+    -33.37
+  ],
+  "recorte": [
+    "Providencia, Chile",
+    "Ñuñoa, Chile",
+    "Las Condes, Chile"
+  ],
+  "n_rejillas": 3002,
+  "rejillas_sin_coordenada": [],
+  "limites_comunales": {
+    "archivo": "data/comunas.geojson",
+    "sha256": "ab7712c5772caae7076bf1c00ac7e5a9c09d33142c824897caf042626686521a",
+    "meta": "comunas.meta.json"
+  },
+  "regla_comuna": "comuna = límites OSM (recorte espacial); COMUNA = DOH, solo referencia; comuna_discrepa marca las filas donde difieren",
+  "id_estable": "ID_IDE",
+  "objectid_duplicados_descartados": [
+    32049,
+    33480,
+    33896,
+    34048,
+    34262,
+    34401,
+    36889,
+    37272,
+    37363,
+    37519,
+    37759,
+    37790,
+    37870,
+    37884,
+    37916,
+    37964,
+    37984,
+    38412,
+    38429,
+    38466,
+    38499,
+    38502,
+    38507,
+    38522,
+    38556,
+    38585,
+    38598,
+    38646,
+    38863,
+    38929,
+    39129,
+    39251,
+    39313,
+    39334,
+    39500,
+    39535,
+    39580,
+    39698,
+    39955,
+    39981,
+    40046,
+    40162,
+    40353,
+    40457,
+    40657,
+    40743,
+    40761,
+    40807,
+    41264,
+    41367,
+    41678,
+    41741,
+    42312,
+    42347,
+    42360,
+    42431,
+    42443,
+    42575,
+    42600,
+    42674,
+    42993,
+    43149,
+    43392,
+    43635,
+    44093,
+    44146,
+    44197,
+    44478,
+    44784,
+    44971,
+    44973,
+    45341,
+    45453,
+    45487,
+    45537,
+    45676,
+    45788,
+    45988,
+    46257,
+    46317,
+    46355,
+    46394,
+    46511,
+    46557,
+    46733,
+    46770,
+    46918,
+    46920,
+    46950,
+    47372,
+    47571,
+    47662,
+    47693,
+    47870,
+    48413,
+    49048,
+    49055,
+    49679,
+    50088,
+    50109,
+    50370,
+    50390,
+    50445
+  ],
+  "valores_desconocidos": -99,
+  "conteos": {
+    "rectangulo": 5858,
+    "descargadas": 5858,
+    "en_zona": 3002,
+    "por_comuna_osm": {
+      "Las Condes": 1201,
+      "Ñuñoa": 1055,
+      "Providencia": 746
+    },
+    "por_comuna_doh": {
+      "LAS CONDES": 1204,
+      "ÑUÑOA": 1021,
+      "PROVIDENCIA": 765,
+      "LA REINA": 9,
+      "PEÑALOLÉN": 3
+    },
+    "comuna_discrepa": {
+      "total": 47,
+      "detalle": [
+        {
+          "doh": "LA REINA",
+          "osm": "Providencia",
+          "n": 2
+        },
+        {
+          "doh": "LA REINA",
+          "osm": "Ñuñoa",
+          "n": 7
+        },
+        {
+          "doh": "LAS CONDES",
+          "osm": "Providencia",
+          "n": 3
+        },
+        {
+          "doh": "PEÑALOLÉN",
+          "osm": "Ñuñoa",
+          "n": 3
+        },
+        {
+          "doh": "PROVIDENCIA",
+          "osm": "Ñuñoa",
+          "n": 28
+        },
+        {
+          "doh": "ÑUÑOA",
+          "osm": "Providencia",
+          "n": 4
+        }
+      ]
+    },
+    "duplicados_descartados_rectangulo": 103,
+    "mut_700m": {
+      "centro_lonlat": [
+        -70.601,
+        -33.4178
+      ],
+      "radio_m": 700,
+      "rejillas": 47
+    }
+  },
+  "script": {
+    "ruta": "pipeline/02_rejillas.py",
+    "version": "0.3.0",
+    "sha256": "f400f135b33dbec144df147467c168f6d5161b49d15b17e3832cefd47e1f56e0",
+    "sha256_nota": "sha256 sobre el archivo con fin de línea LF (el del repo). El valor original, 5ab27767d44db9ee7a14b2a5d43173e41fc470f5991a38b03d27b0c69838efdc, se calculó sobre una copia CRLF de Windows con el mismo contenido."
+  },
+  "anegados": null
+}

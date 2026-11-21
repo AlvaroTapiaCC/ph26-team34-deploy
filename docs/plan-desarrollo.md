@@ -153,7 +153,7 @@ A partir de los números de la fórmula, Claude redacta un texto breve. Ejemplo:
 
 ## 6. La fórmula
 
-El código convierte las respuestas de Claude en números (por ejemplo, tapada = 1, parcial = 0,6, limpia = 0) y calcula en cuatro pasos. **Todos los pesos viven en `backend/config/formula.yaml`**: los fijamos nosotros a criterio, porque no hay registros reales para entrenar.
+El código convierte las respuestas de Claude en números (por ejemplo, tapada = 0,95, parcial = 0,6, limpia = 0,05) y calcula en cuatro pasos. **Todos los pesos viven en `backend/config/formula.yaml`**: los fijamos nosotros a criterio, porque no hay registros reales para entrenar.
 
 ### 6.1 Paso 1: probabilidad de que el sumidero se tape (P)
 
@@ -166,7 +166,8 @@ P_pred = clamp( w_arb·arboles + w_feria·feria_cercana_proxima + w_obra·obras
               + w_cam·señal_camara , 0, 1 )
 ```
 
-- **Lo confirmado manda:** si hay una foto reciente con `rejilla` evaluable, P = valor observado (1 / 0,6 / 0) y no se usa P_pred.
+- **Lo confirmado manda:** si hay una foto reciente con `rejilla` evaluable, P = valor observado (0,95 / 0,6 / 0,05) y no se usa P_pred.
+- **Predicción congelada de validación:** usa `backend/config/formula_validacion.yaml`, igual a `formula.yaml` pero con `w_dias = w_cam = 0` y los otros pesos reescalados para sumar 1. La demo usa `formula.yaml`.
 - Los reportes de texto sin foto suben P, pero pesan menos que una foto (por ejemplo, ×0,5).
 - Varios reportes parecidos en la misma cuadra suben la confianza y, con ella, P.
 
@@ -312,7 +313,7 @@ Foto / texto / cámara ──► POST /observations ──► Claude (JSON fijo,
 /frontend
   app/central/  app/cuadrilla/  app/reportar/
   components/  lib/
-/pipeline            01_sumideros.py, 02_dem_calles.py, 03_satelite.py,
+/pipeline            00_comunas.py, 02_rejillas.py (catastro; 01_sumideros.py obsoleto), 03_terreno.py, 03_satelite.py,
                      04_osm_features.py, 05_ferias_clima.py, 06_formula_base.py, 07_cargar.py
 /data                geojson generados, fotos de la demo, demo_timeline.json,
                      validacion/ (ranking guardado, etiquetas humanas, resultados)

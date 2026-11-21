@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { cita, ESCURRIMIENTO, fmt, GORE, LIMITES, MAP_BOUNDS, motivo, pad2, SCENARIOS, TOTAL_INTERSECCIONES, type RankedPunto } from "@/lib/data";
+import { cita, ESCURRIMIENTO, fmt, GORE, MAP_BOUNDS, motivo, pad2, SCENARIOS, TOTAL_INTERSECCIONES, type RankedPunto } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Button, Check, Kicker, PrioChip, Stat } from "../ui";
@@ -146,7 +146,8 @@ function MainMap() {
       pins={L.prioridad ? pins : []}
       labels={L.prioridad ? labels : []}
       lines={L.escurrimiento ? ESCURRIMIENTO : []}
-      limites={L.limites ? LIMITES : null}
+      comunas={L.limites}
+      rejillas={L.rejillas}
       gore={L.gore ? GORE : null}
       attribution="Base: Esri, HERE, Garmin, © OpenStreetMap · ubicaciones aproximadas"
     >
@@ -156,6 +157,7 @@ function MainMap() {
         <Check on={L.escurrimiento} label="Líneas de escurrimiento" onClick={() => toggleLayer("escurrimiento")} />
         <Check on={L.limites} label="Límites comunales" onClick={() => toggleLayer("limites")} />
         <Check on={L.gore} label="175 puntos críticos GORE" onClick={() => toggleLayer("gore")} />
+        <Check on={L.rejillas} label="Rejillas (catastro MOP)" onClick={() => toggleLayer("rejillas")} />
         <div className="legend__chips">
           <PrioChip prio="alta" />
           <PrioChip prio="media" />

@@ -87,7 +87,7 @@ function Estado({ kind }: { kind: "cargando" | "vacio" | "error" | "caido" }) {
 }
 
 function Prioridades() {
-  const { s, set, filtered, scenarioLabel } = useStore();
+  const { s, set, filtered, scenarioLabel, ruta } = useStore();
   const pins = useMobilePins((id) => set({ selected: id, mobileView: "mapa" }));
   const hasAlta = filtered.some((p) => p.prio === "alta");
   return (
@@ -140,7 +140,7 @@ function Prioridades() {
       {s.status === "ok" && hasAlta && (
         <div className="mob__cta">
           <Button variant="primary" size="lg" className="btn--block" style={{ boxShadow: "var(--sh-soft)" }} onClick={() => set({ mobileTab: "ruta", mobileView: "lista" })}>
-            Generar ruta · 8 puntos
+            Generar ruta · {ruta.paradas.length} {ruta.paradas.length === 1 ? "punto" : "puntos"}
           </Button>
         </div>
       )}
