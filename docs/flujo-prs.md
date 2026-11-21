@@ -11,6 +11,7 @@
    ```
 
    Requiere el venv: `cd backend && python3.12 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt` (en Windows `.venv/Scripts/pip`).
+   El script revisa por separado los cambios publicados en la rama, los agregados al índice y las ediciones locales. Si detecta posibles secretos, indica en qué grupo los encontró y omite los valores.
 4. Revisa la checklist de la plantilla (`.github/pull_request_template.md`). Llena **"Riesgos revisados"** con lo que verificaste y lo que queda pendiente a propósito.
 5. Nadie mergea sin aprobación. Al responder una revisión: un commit por punto o grupo de puntos, más un comentario que explique qué cambió y cómo se probó.
 
