@@ -45,6 +45,7 @@ class Settings:
     # Si se define, los endpoints administrativos (p. ej. /formula/recompute) exigen el
     # header X-Admin-Token. Vacío = abiertos (desarrollo / demo).
     admin_token: str = field(default_factory=lambda: os.getenv("ADMIN_TOKEN", ""))
+    sim_token: str = field(default_factory=lambda: os.getenv("SIM_TOKEN", ""))  # solo /sim/trigger; casi público
     cors_origins: list[str] = field(default_factory=lambda: _csv(os.getenv("CORS_ORIGINS", "*")))
 
 
