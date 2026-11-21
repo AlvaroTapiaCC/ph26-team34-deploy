@@ -40,6 +40,7 @@ def test_cuadrillas_en_su_comuna_y_sin_superponerse():
     assert len({(c.lon, c.lat) for c in cs}) == 4  # las dos de Providencia no quedan encima
     assert (cs[3].lon, cs[3].lat) == sim.CENTRO_MUT  # la de la prueba de campo parte en la zona MUT
     assert "hidrojet" in cs[0].equipamiento and "hidrojet" not in cs[1].equipamiento
+    assert "hidrojet" in cs[3].equipamiento  # la única dentro de la zona MUT puede recibir sedimento
 
 
 def test_cuadrillas_omiten_comunas_sin_sumideros():
@@ -71,14 +72,22 @@ def test_integracion_solo_toca_lo_simulado_de_sus_sumideros():
             conn.execute("insert into cleaning_history (sumidero_id, fecha, is_simulated)"
                          " values (%s, '2026-11-20', true)", (a,))
             hist = [(b, date(2026, 10, 1))]  # solo `b` (sin historial real) recibe simulado
-            sim.escribir(conn, [crew, real], hist, [a, b])
+            r1 = sim.escribir(conn, [crew, real], hist, [a, b])
+            # La cuadrilla simulada sale y actualiza su GPS: una recarga no la devuelve a su posición inicial
+            conn.execute("update crews set geom_actual = st_setsrid(st_point(-70.65, -33.40), 4326), estado = 'en_ruta'"
+                         " where id = %s", (crew.id,))
             r2 = sim.escribir(conn, [crew, real], hist, [a, b])  # idempotente
+            pos = conn.execute("select st_x(geom_actual) as lon, st_y(geom_actual) as lat, estado from crews"
+                               " where id = %s", (crew.id,)).fetchone()
             filas = conn.execute("select sumidero_id, fecha, is_simulated from cleaning_history"
                                  " where sumidero_id = any(%s) order by sumidero_id, fecha", ([a, b, otro],)).fetchall()
             c = conn.execute("select is_simulated, equipamiento from crews where id = %s", (crew.id,)).fetchone()
             cr = conn.execute("select is_simulated, nombre, equipamiento from crews where id = %s",
                               (real.id,)).fetchone()
         assert r2["historial_reemplazado"] == 1
+        assert (round(pos["lon"], 6), round(pos["lat"], 6), pos["estado"]) == (-70.65, -33.40, "en_ruta")
+        # El resumen cuenta solo lo escrito: la real con el mismo id figura como omitida
+        assert r1["cuadrillas"] == r2["cuadrillas"] == 1 and r2["cuadrillas_omitidas_por_ser_reales"] == [real.id]
         assert [(f["sumidero_id"], str(f["fecha"]), f["is_simulated"]) for f in filas] == [
             (a, "2026-01-01", False),   # el real sigue y su simulado previo se borró
             (b, "2026-10-01", True),

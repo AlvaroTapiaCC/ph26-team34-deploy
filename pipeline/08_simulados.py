@@ -34,14 +34,15 @@ FECHA_REFERENCIA = date(2026, 11, 21)   # "hoy" de la simulación: fija para que
 DIAS_MAX = 120                          # la última limpieza cae entre 0 y 120 días antes
 PCT_SIN_REGISTRO = 10                   # % de sumideros sin ningún registro de limpieza
 
-CENTRO_MUT = (-70.6010, -33.4178)       # zona de la prueba de campo (mismo centro que #75)
+CENTRO_MUT = (-70.601433, -33.417741)   # centro confirmado de la zona MUT (Av. Apoquindo 2730, #81)
 
 # (id, nombre, comuna, equipamiento, posición fija o None = centro de los sumideros de la comuna)
 CUADRILLAS = [
     ("sim-c1", "Cuadrilla 1 · Providencia", "Providencia", ["basica", "hidrojet"], None),
     ("sim-c2", "Cuadrilla 2 · Ñuñoa", "Ñuñoa", ["basica"], None),
     ("sim-c3", "Cuadrilla 3 · Las Condes", "Las Condes", ["basica", "hidrojet"], None),
-    ("sim-c4", "Cuadrilla 4 · zona MUT", "Providencia", ["basica"], CENTRO_MUT),
+    # Con hidrojet: es la única dentro de la zona MUT y el despacho (#32) manda el sedimento a hidrojet
+    ("sim-c4", "Cuadrilla 4 · zona MUT", "Providencia", ["basica", "hidrojet"], CENTRO_MUT),
 ]
 
 
@@ -113,24 +114,30 @@ def escribir(conn, cuadrillas: list[Cuadrilla], historial: list[tuple[str, date]
     `sumidero_ids` incluye también los sumideros con historial real: así se les borra el
     simulado que tuvieran de antes; `historial` solo trae los que no tienen real.
     """
+    escritas: list[str] = []
+    omitidas: list[str] = []
     with conn.transaction(), conn.cursor() as cur:
-        cur.executemany(
-            """
-            insert into crews (id, nombre, equipamiento, estado, geom_actual, is_simulated)
-            values (%s, %s, %s, 'disponible', st_setsrid(st_point(%s, %s), 4326), true)
-            on conflict (id) do update set nombre = excluded.nombre, equipamiento = excluded.equipamiento,
-              geom_actual = excluded.geom_actual
-            where crews.is_simulated   -- una cuadrilla real con el mismo id no se toca
-            """,
-            [(c.id, c.nombre, list(c.equipamiento), c.lon, c.lat) for c in cuadrillas],
-        )
+        for c in cuadrillas:
+            # La posición se asigna solo al CREARLA: una recarga no devuelve a su punto de partida a una
+            # cuadrilla que ya se movió (revisión #79). Una cuadrilla real con el mismo id no se toca.
+            n = cur.execute(
+                """
+                insert into crews (id, nombre, equipamiento, estado, geom_actual, is_simulated)
+                values (%s, %s, %s, 'disponible', st_setsrid(st_point(%s, %s), 4326), true)
+                on conflict (id) do update set nombre = excluded.nombre, equipamiento = excluded.equipamiento
+                where crews.is_simulated
+                """,
+                (c.id, c.nombre, list(c.equipamiento), c.lon, c.lat),
+            ).rowcount
+            (escritas if n else omitidas).append(c.id)
         borrados = cur.execute(
             "delete from cleaning_history where is_simulated and sumidero_id = any(%s)", (sumidero_ids,)
         ).rowcount
         cur.executemany(
             "insert into cleaning_history (sumidero_id, fecha, is_simulated) values (%s, %s, true)", historial
         )
-    return {"cuadrillas": len(cuadrillas), "historial": len(historial), "historial_reemplazado": borrados}
+    return {"cuadrillas": len(escritas), "cuadrillas_omitidas_por_ser_reales": omitidas,
+            "historial": len(historial), "historial_reemplazado": borrados}
 
 
 def main(argv: list[str] | None = None) -> int:
