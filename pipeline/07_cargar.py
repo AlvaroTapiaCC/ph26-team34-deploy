@@ -82,8 +82,24 @@ def _slug(texto: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", t).strip("-")
 
 
+_CONECTORES = {"de", "del", "la", "las", "el", "los", "y", "con"}
+_ABREVIATURAS = {"av": "Av.", "avda": "Av.", "pje": "Pje.", "psje": "Pje.", "pdte": "Pdte.", "gral": "Gral.",
+                 "sta": "Sta.", "sto": "Sto.", "pza": "Pza.", "dr": "Dr."}
+
+
 def _titulo(calle: str) -> str:
-    return " ".join(p.capitalize() if len(p) > 2 else p.lower() for p in calle.split())
+    """'AV LAS CONDES' -> 'Av. Las Condes'; 'PASAJE DE LA PAZ' -> 'Pasaje de la Paz'."""
+    palabras = []
+    for i, p in enumerate(calle.split()):
+        base = p.lower().rstrip(".")
+        if base in _ABREVIATURAS:
+            palabras.append(_ABREVIATURAS[base])
+        elif i > 0 and base in _CONECTORES and palabras[-1] not in _ABREVIATURAS.values():
+            # "de la Paz" en minúscula; pero tras "Av." el artículo es parte del nombre: "Av. Las Condes"
+            palabras.append(base)
+        else:
+            palabras.append(p.capitalize())
+    return " ".join(palabras)
 
 
 def _num(v: Any) -> float | None:

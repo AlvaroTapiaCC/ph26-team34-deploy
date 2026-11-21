@@ -145,3 +145,13 @@ def test_integracion_carga_idempotente_y_fusiona_features(tmp_path):
             conn.execute("delete from sumideros where id = any(%s)", ([a, b],))
             if iid:
                 conn.execute("delete from intersections where id = %s", (iid,))
+
+
+@pytest.mark.parametrize("entrada,salida", [
+    ("AV LAS CONDES", "Av. Las Condes"),
+    ("PASAJE DE LA PAZ", "Pasaje de la Paz"),
+    ("LOS LEONES", "Los Leones"),
+    ("AVDA. IRARRAZAVAL", "Av. Irarrazaval"),
+])
+def test_titulo_de_calles(entrada, salida):
+    assert cargar._titulo(entrada) == salida
