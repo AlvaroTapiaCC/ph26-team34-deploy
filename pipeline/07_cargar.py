@@ -12,7 +12,8 @@ Entradas (todas en data/; solo la primera es obligatoria):
   - terreno_*.csv             salida de pipeline/03_terreno.py: elevacion_m, pendiente,
                               area_aporte_m2, street_id, orden_en_calle, en_zona_mut
   - street_chains_*.json      [{street_id, nombre, sumidero_ids, distancias_m}]
-  - features_*.csv            contrato para los demás pasos del pipeline (#11, #12, #13):
+  - features_*.csv o          contrato para los demás pasos del pipeline (#11, #12, #13);
+    variables_*.csv           pipeline/04_variables.py (#81) lo escribe como variables_mut.csv:
                               columna ID_IDE + columnas con nombre de feature de la fórmula
                               (arboles, feria, obras, suelo, pendiente, clima, camara,
                               criticidad, area_aporte), normalizadas 0-1 salvo area_aporte (m²)
@@ -248,7 +249,8 @@ def preparar(data_dir: Path = DATA, rejillas: Path | None = None) -> dict[str, A
     resumen = {"rejillas": str(rejillas.name), "terreno": {}, "features": {}, "cadenas_archivos": []}
     for p in sorted(data_dir.glob("terreno_*.csv")):
         resumen["terreno"][p.name] = aplicar_terreno(p, sumideros, avisos)
-    for p in sorted(data_dir.glob("features_*.csv")):
+    # variables_*.csv es como las deja pipeline/04_variables.py (#81); features_*.csv, el nombre genérico.
+    for p in sorted([*data_dir.glob("features_*.csv"), *data_dir.glob("variables_*.csv")]):
         resumen["features"][p.name] = aplicar_features(p, sumideros, avisos)
     paths_cadenas = sorted(data_dir.glob("street_chains_*.json"))
     resumen["cadenas_archivos"] = [p.name for p in paths_cadenas]

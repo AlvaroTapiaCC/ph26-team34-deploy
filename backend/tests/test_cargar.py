@@ -90,6 +90,18 @@ def test_features_solo_las_de_la_formula(tmp_path):
     assert any("inventada" in x for x in d["avisos"])
 
 
+def test_variables_del_paso_04_tambien_se_cargan(tmp_path):
+    """pipeline/04_variables.py (#81) deja `variables_mut.csv`, no `features_*.csv`: mismo contrato."""
+    _datos(tmp_path, [_rejilla("A")])
+    (tmp_path / "variables_mut.csv").write_text(  # encabezado real de data/variables_mut.csv
+        "ID_IDE,arboles,suelo,d_feria_m,feria,obras,criticidad,criticidad_motivo\n"
+        "A,0.8889,0.0023,787.8,0.0,0.0,0.6,colegio:50m\n", encoding="utf-8")
+    d = cargar.preparar(tmp_path)
+    assert d["sumideros"]["A"].features == {"arboles": 0.8889, "suelo": 0.0023, "feria": 0.0, "obras": 0.0,
+                                           "criticidad": 0.6}
+    assert "variables_mut.csv" in d["resumen"]["features"]
+
+
 # --- Cadenas ----------------------------------------------------------------------------
 def test_cadenas_invalidas_se_ignoran(tmp_path):
     cadenas = [
