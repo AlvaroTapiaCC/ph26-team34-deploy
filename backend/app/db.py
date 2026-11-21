@@ -8,13 +8,14 @@ permisos completos; la seguridad hacia el navegador la dan las políticas RLS.
   que la API convierte en un 503.
 - Cada conexión nueva fija `statement_timeout` del lado del servidor (el pooler de
   Supabase ignora el parámetro `options`, así que se hace con SET al abrirla).
-- `ejecutar_con_timeout` acota una consulta también del lado del cliente: si la base
-  deja de responder después de entregar la conexión (red colgada), se cancela, la
-  conexión se descarta y se lanza `DatabaseUnavailable`.
+- `ejecutar_con_plazo` acota todo el trabajo (conexión, consulta y commit) del lado del
+  cliente: el llamador responde dentro del plazo aunque la base se cuelgue en cualquier
+  punto; la cancelación y el descarte de la conexión siguen en segundo plano.
 """
 from __future__ import annotations
 
 import threading
+import time
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeout
@@ -36,8 +37,9 @@ T = TypeVar("T")
 
 _pool: ConnectionPool | None = None
 _lock = threading.Lock()
-# Hilos para correr consultas con tope de tiempo del lado del cliente
-_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="db-timeout")
+# Hilos para correr trabajo con plazo del lado del cliente, y para limpiar lo que venció
+_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="db-plazo")
+_limpieza = ThreadPoolExecutor(max_workers=2, thread_name_prefix="db-limpieza")
 
 
 class DatabaseUnavailable(RuntimeError):
@@ -99,28 +101,87 @@ def get_conn(timeout: float = DEFAULT_WAIT_S) -> Iterator[Connection]:
             conn.rollback()
         raise
     finally:
+        # Una conexión abandonada por plazo vencido no se reutiliza aunque haya terminado bien.
+        if getattr(conn, "_drena_descartar", False) and not conn.closed:
+            conn.close()
         pool.putconn(conn)
 
 
-def ejecutar_con_timeout(conn: Connection, fn: Callable[[Connection], T], timeout: float) -> T:
-    """Corre `fn(conn)` con un tope de `timeout` segundos medido en el cliente.
+class _Abandonado(Exception):
+    """El llamador ya respondió por plazo vencido; el trabajo no debe seguir."""
 
-    Si vence, pide al servidor cancelar la consulta, descarta la conexión y lanza
-    `DatabaseUnavailable`. Usar dentro de `get_conn()`.
-    """
-    fut = _executor.submit(fn, conn)
+
+def _cancelar_en_segundo_plano(conn: Connection) -> None:
     try:
-        return fut.result(timeout=max(0.0, timeout))
+        conn.cancel_safe(timeout=2)
+    except Exception:  # el servidor tampoco responde a la cancelación
+        pass
+
+
+def ejecutar_con_plazo(fn: Callable[[Connection], T], plazo: float) -> T:
+    """Pide una conexión, corre `fn(conn)` y hace commit, todo dentro de `plazo` segundos.
+
+    El llamador recibe la respuesta (o `DatabaseUnavailable`) en a lo más `plazo` segundos,
+    aunque la base se cuelgue en cualquier punto: al pedir la conexión, en la consulta, en el
+    commit o al cancelar. Si vence:
+    - si el trabajo aún no empezaba (todos los hilos ocupados), se cancela y nunca corre;
+    - si ya empezó, la conexión se marca para descartar y la cancelación se pide en segundo
+      plano, sin hacer esperar al llamador.
+    """
+    limite = time.monotonic() + plazo
+    estado: dict = {"conn": None, "abandonado": False}
+    candado = threading.Lock()
+
+    def trabajo() -> T:
+        with get_conn(timeout=max(0.01, limite - time.monotonic())) as conn:
+            with candado:
+                if estado["abandonado"]:
+                    _descartar(conn)
+                    raise _Abandonado
+                estado["conn"] = conn
+            try:
+                return fn(conn)
+            except psycopg.OperationalError:
+                _descartar(conn)
+                raise
+
+    fut = _executor.submit(trabajo)
+    try:
+        return fut.result(timeout=max(0.0, limite - time.monotonic()))
     except FuturesTimeout:
-        try:
-            conn.cancel_safe(timeout=1)
-        except Exception:  # el servidor tampoco responde a la cancelación
-            pass
-        _descartar(conn)
-        raise DatabaseUnavailable("La base no respondió a la consulta a tiempo") from None
+        fut.cancel()  # si no alcanzó a empezar, nunca se ejecuta
+        with candado:
+            estado["abandonado"] = True
+            conn = estado["conn"]
+        if conn is not None:
+            _descartar(conn)
+            _limpieza.submit(_cancelar_en_segundo_plano, conn)
+        raise DatabaseUnavailable("La base no respondió a tiempo") from None
     except psycopg.OperationalError as e:
-        _descartar(conn)
         raise DatabaseUnavailable(f"Se perdió la conexión: {type(e).__name__}") from e
+
+
+def precalentar_pool(espera_s: float = 15) -> threading.Thread | None:
+    """Abre el pool y su primera conexión en segundo plano al arrancar la app.
+
+    Abrir la primera conexión a Supabase tarda ~3 s; sin esto, el primer /health/db
+    después de un arranque en frío vencería su plazo. No bloquea el arranque y no falla
+    si la base no está disponible.
+    """
+    if not get_settings().database_url:
+        return None
+
+    def _calentar() -> None:
+        try:
+            # Pedir y devolver una conexión. (pool.wait() cerraría el pool si la base no responde.)
+            with get_conn(timeout=espera_s):
+                pass
+        except Exception:
+            pass  # el primer request reintentará y responderá 503 si sigue caída
+
+    hilo = threading.Thread(target=_calentar, name="db-precalentar", daemon=True)
+    hilo.start()
+    return hilo
 
 
 def close_pool() -> None:
