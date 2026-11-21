@@ -1,0 +1,13 @@
+# Lint del backend (issue #65). Reglas de bajo ruido: errores reales, no estilo.
+#   F  pyflakes: imports o variables sin usar, nombres no definidos
+#   E9 errores de sintaxis
+#   B  bugbear: argumentos mutables por defecto, excepts que tragan todo, etc.
+target-version = "py312"
+line-length = 120
+extend-exclude = [".venv"]
+
+[lint]
+select = ["F", "E9", "B"]
+ignore = [
+  "B008",  # FastAPI usa llamadas en defaults: File(...), Header(...), Query(...)
+]
