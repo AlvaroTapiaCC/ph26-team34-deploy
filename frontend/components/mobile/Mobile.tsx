@@ -45,7 +45,6 @@ function useMobilePins(onPin: (id: string) => void, focus?: string) {
       rank: p.rank,
       prio: p.prio,
       faded: !visible.includes(p),
-      ring: p.id === (focus ?? visible[0]?.id) ? "dashed" : undefined,
       onClick: () => onPin(p.id),
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps

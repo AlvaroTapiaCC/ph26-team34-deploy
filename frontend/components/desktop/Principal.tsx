@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { cajasComunas } from "@/lib/comunas";
 import { cita, GORE, MAP_BOUNDS, motivo, pad2, PUNTOS, statsPunto, type LngLat, type RankedPunto } from "@/lib/data";
-import { ESTADOS, type EstadoRejilla } from "@/lib/flujo/config";
+import { ESTADOS, FLUJO_CONFIG, type EstadoRejilla } from "@/lib/flujo/config";
 import { useFlujo, type Flujo } from "@/lib/flujo/useFlujo";
 import { boundsDe } from "@/lib/real";
 import { useStore } from "@/lib/store";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Button, Check, Chevron, Kicker, PrioChip, Stat } from "../ui";
-import SimPanel, { SimAviso } from "./SimPanel";
+import Recorrido, { recorridoVisto } from "./Recorrido";
+import SimPanel, { Leyenda } from "./SimPanel";
 
 export function Hero({ p }: { p: RankedPunto }) {
   const { set, addRuta, scenarioLabel } = useStore();
@@ -179,18 +180,12 @@ function Bottom({ flujo }: { flujo: Flujo }) {
   );
 }
 
+/** Pines de prioridad: solo el top 10 (▲◆● con su color), sin anillos ni líneas debajo. */
 function usePins() {
   const { s, ranking, set } = useStore();
   return useMemo(() => {
-    const visible = ranking.filter((p) => s.comuna === "Todas" || p.comuna === s.comuna);
-    const pins: MapPin[] = visible.map((p, i) => ({
-      id: p.id,
-      coord: p.coord,
-      rank: p.rank,
-      prio: p.prio,
-      ring: i === 0 ? "dashed" : undefined,
-      onClick: () => set({ ficha: p.id }),
-    }));
+    const visible = ranking.filter((p) => s.comuna === "Todas" || p.comuna === s.comuna).slice(0, FLUJO_CONFIG.topPrioridad);
+    const pins: MapPin[] = visible.map((p) => ({ id: p.id, coord: p.coord, rank: p.rank, prio: p.prio, onClick: () => set({ ficha: p.id }) }));
     const labels: MapLabel[] = visible.slice(0, 3).map((p) => ({ coord: p.coord, text: p.nombre, tone: "card" }));
     return { pins, labels };
   }, [ranking, s.comuna, set]);
@@ -199,7 +194,7 @@ function usePins() {
 /** Encuadre del mapa: toda la zona o la comuna elegida (caja de comunas_rm.geojson). */
 const TOP_ENCUADRE = 30; // con datos reales el mapa se ajusta a las primeras intersecciones de la lista
 
-function useEncuadre(): [LngLat, LngLat] {
+function useEncuadre(cajaRed: [LngLat, LngLat] | null): [LngLat, LngLat] {
   const { s, filtered } = useStore();
   const real = !!filtered[0]?.real;
   const cajaReal = useMemo(() => (real ? boundsDe(filtered.slice(0, TOP_ENCUADRE)) : null), [real, filtered]);
@@ -211,64 +206,93 @@ function useEncuadre(): [LngLat, LngLat] {
       vivo = false;
     };
   }, []);
-  return cajaReal ?? ((s.comuna !== "Todas" && cajas[s.comuna]) || MAP_BOUNDS);
+  if (s.comuna !== "Todas" && cajas[s.comuna]) return cajas[s.comuna];
+  return cajaReal ?? cajaRed ?? MAP_BOUNDS;
 }
 
-/** Capas del mapa. Plegable: en pantallas angostas parte cerrada para no tapar el mapa. */
-function Capas() {
+/** Barra del mapa: capas (plegable, con la leyenda de prioridad), vista 2D/3D y recorrido guiado. */
+function BarraMapa({ tresD, onTresD, onAyuda, guiado }: { tresD: boolean; onTresD: (v: boolean) => void; onAyuda: () => void; guiado: boolean }) {
   const { s, toggleLayer, ranking } = useStore();
   const real = !!ranking[0]?.real;
   const [abierta, setAbierta] = useState(() => window.innerWidth > 1400);
+  useEffect(() => {
+    if (guiado) setAbierta(false);
+  }, [guiado]);
   const L = s.layers;
   return (
-    <div className={`legend legend--capas ${abierta ? "" : "is-closed"}`}>
-      <button className="legend__toggle" onClick={() => setAbierta(!abierta)} aria-expanded={abierta}>
-        <Kicker>Capas</Kicker>
-        <Chevron open={abierta} />
-      </button>
+    <div className="mapbar">
+      <div className="mapbar__fila">
+        <button className="mapbtn" onClick={() => setAbierta(!abierta)} aria-expanded={abierta}>
+          Capas
+          <Chevron open={abierta} />
+        </button>
+        <div className="mapbtn-grupo" role="radiogroup" aria-label="Vista del mapa">
+          <button className={`mapbtn ${!tresD ? "is-on" : ""}`} role="radio" aria-checked={!tresD} onClick={() => onTresD(false)}>
+            2D
+          </button>
+          <button className={`mapbtn ${tresD ? "is-on" : ""}`} role="radio" aria-checked={tresD} onClick={() => onTresD(true)}>
+            3D
+          </button>
+        </div>
+        <button className="mapbtn mapbtn--icono" onClick={onAyuda} aria-label="¿Cómo leer esto?" title="¿Cómo leer esto?">
+          ?
+        </button>
+      </div>
       {abierta && (
-        <>
-          <Check on={L.prioridad} label="Puntos por prioridad" onClick={() => toggleLayer("prioridad")} />
-          <Check on={L.escurrimiento} label="Flujo de agua (estimado)" onClick={() => toggleLayer("escurrimiento")} />
+        <div className="capas">
+          <Check on={L.escurrimiento} label="Agua (estimado)" onClick={() => toggleLayer("escurrimiento")} />
+          <Check on={L.prioridad} label="Top 10 de prioridad" onClick={() => toggleLayer("prioridad")} />
           <Check on={L.limites} label="Límites comunales" onClick={() => toggleLayer("limites")} />
-          {!real && <Check on={L.gore} label="175 puntos críticos GORE" onClick={() => toggleLayer("gore")} />}
           <Check on={L.rejillas} label="Catastro MOP completo" onClick={() => toggleLayer("rejillas")} />
-          <div className="legend__chips">
-            <PrioChip prio="alta" />
-            <PrioChip prio="media" />
-            <PrioChip prio="baja" />
+          {!real && <Check on={L.gore} label="175 puntos críticos GORE" onClick={() => toggleLayer("gore")} />}
+          <div className="capas__prio">
+            <span className="capas__t">Prioridad de limpieza</span>
+            <span className="capas__fila">
+              <span className="capas__fig capas__fig--alta">▲</span> Alta
+              <span className="capas__fig capas__fig--media">◆</span> Media
+              <span className="capas__fig capas__fig--baja">●</span> Baja
+            </span>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
 }
 
 function MainMap({ flujo }: { flujo: Flujo }) {
-  const { s, ranking } = useStore();
+  const { s, ranking, filtered } = useStore();
   const real = !!ranking[0]?.real;
   const { pins, labels } = usePins();
-  const bounds = useEncuadre();
+  const bounds = useEncuadre(flujo.ui.caja);
   const L = s.layers;
-  // El panel de simulación ocupa ~290 px a la derecha: el encuadre lo deja libre
-  const ancho = window.innerWidth > 1400;
+  const [tresD, setTresD] = useState(true);
+  const [recorrido, setRecorrido] = useState<boolean | null>(null); // null: todavía no se sabe si ya se vio
+  const top = useMemo(() => filtered.slice(0, FLUJO_CONFIG.topPrioridad).map((p) => p.coord), [filtered]);
+  // El recorrido arranca solo la primera vez (se recuerda en este navegador)
+  useEffect(() => {
+    if (!flujo.ui.cargado || recorrido !== null) return;
+    setRecorrido(!recorridoVisto());
+  }, [flujo.ui.cargado, recorrido]);
   return (
     <DrenaMap
       className="map--main"
       bounds={bounds}
-      padding={{ top: 40, bottom: 40, left: ancho ? 240 : 40, right: 300 }}
+      padding={{ top: 70, bottom: 60, left: 40, right: 360 }}
       pins={L.prioridad ? pins : []}
       labels={L.prioridad ? labels : []}
       comunas={L.limites}
       rejillas={L.rejillas}
       gore={L.gore && !real ? GORE : null}
-      attribution="Base: Esri, HERE, Garmin, © OpenStreetMap · ubicaciones aproximadas"
+      relieve
+      tresD={tresD}
+      attribution="Base: Esri, HERE, Garmin, © OpenStreetMap · relieve: Terrain Tiles (AWS) · edificios: OpenFreeMap"
       attributionSide="right"
       onMapReady={flujo.alMapaListo}
     >
-      <Capas />
+      <BarraMapa tresD={tresD} onTresD={setTresD} onAyuda={() => setRecorrido(true)} guiado={!!recorrido} />
       <SimPanel flujo={flujo} />
-      <SimAviso />
+      {!recorrido && <Leyenda />}
+      {recorrido && <Recorrido flujo={flujo} cerca={top} onTresD={setTresD} onFin={() => setRecorrido(false)} />}
     </DrenaMap>
   );
 }
@@ -290,6 +314,7 @@ export default function Principal({ vacio }: { vacio: React.ReactNode }) {
     onClickRejilla: (id) => {
       const actual: EstadoRejilla = flujo.estadoDe(id) ?? "limpia";
       setRejillas({ [id]: ESTADOS[(ESTADOS.indexOf(actual) + 1) % ESTADOS.length] });
+      flujo.pulsar(id);
     },
   });
   // Con datos reales siempre hay lista (aunque todavía no haya prioridades altas)
