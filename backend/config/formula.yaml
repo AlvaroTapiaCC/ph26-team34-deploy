@@ -31,9 +31,9 @@ features_simuladas: [dias_sin_limpieza]
 
 # Lo confirmado manda: una foto reciente con rejilla evaluable fija P.
 observado:
-  tapada: 1.0
+  tapada: 0.95
   parcial: 0.6
-  limpia: 0.0
+  limpia: 0.05
   vigencia_horas: 72          # una foto deja de "mandar" después de este tiempo
 
 # Reportes de texto sin foto suben P, pero pesan menos que una foto.

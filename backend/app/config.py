@@ -16,7 +16,11 @@ from dotenv import load_dotenv
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 REPO_DIR = BACKEND_DIR.parent
-FORMULA_PATH = BACKEND_DIR / "config" / "formula.yaml"
+CONFIG_DIR = BACKEND_DIR / "config"
+FORMULA_PATH = CONFIG_DIR / "formula.yaml"
+# formula.yaml: la completa, para la demo.
+# formula_validacion.yaml: sin variables simuladas, para la predicción congelada (§8.1).
+FORMULA_CONFIGS = {"formula", "formula_validacion"}
 
 load_dotenv(BACKEND_DIR / ".env")
 
@@ -50,7 +54,13 @@ def get_settings() -> Settings:
 
 
 @lru_cache
-def get_formula_config() -> dict[str, Any]:
-    """Pesos y parámetros de la fórmula (`config/formula.yaml`)."""
-    with FORMULA_PATH.open(encoding="utf-8") as f:
+def get_formula_config(nombre: str = "formula") -> dict[str, Any]:
+    """Pesos y parámetros de la fórmula (`config/<nombre>.yaml`).
+
+    Por defecto la completa (`formula.yaml`). La predicción congelada de validación usa
+    `get_formula_config("formula_validacion")`.
+    """
+    if nombre not in FORMULA_CONFIGS:
+        raise ValueError(f"Configuración de fórmula desconocida: {nombre!r}")
+    with (CONFIG_DIR / f"{nombre}.yaml").open(encoding="utf-8") as f:
         return yaml.safe_load(f)
