@@ -87,24 +87,32 @@ function Bottom() {
     <div className="bottom">
       <div className="tile tile--accent">
         <Kicker tone="light">Agua que viene de otra comuna</Kicker>
-        <div className="tile__big">{sc.aguaExterna} %</div>
-        <p className="tile__p">promedio del top 30</p>
+        <div className="tile__row">
+          <div className="tile__big">{sc.aguaExterna} %</div>
+          <p className="tile__p">promedio del top 30</p>
+        </div>
       </div>
       <div className="tile tile--dark">
         <Kicker tone="accent">Puntos críticos en el top 30</Kicker>
-        <div className="tile__big">{sc.criticosTop30}</div>
-        <p className="tile__p">metro · pasos bajo nivel · hospitales o colegios</p>
+        <div className="tile__row">
+          <div className="tile__big">{sc.criticosTop30}</div>
+          <p className="tile__p">metro, pasos bajo nivel, hospitales, colegios</p>
+        </div>
       </div>
       <div className="tile tile--plain">
         <Kicker>Lo que no hace</Kicker>
-        <p className="tile__body">No recomienda cerrar calles ni desviar agua, ni muestra profundidades o minutos de llegada.</p>
+        <p className="tile__body">No recomienda cerrar calles ni desviar agua, ni da profundidades.</p>
       </div>
       <div className="tile tile--grey">
         <Kicker>Ruta de cuadrilla</Kicker>
-        <p className="tile__body">{ruta.paradas.length} {ruta.paradas.length === 1 ? "punto" : "puntos"} de {s.comuna === "Todas" ? "todas las comunas" : s.comuna} ({s.cuadrillas} {s.cuadrillas === 1 ? "cuadrilla" : "cuadrillas"}), en orden.</p>
-        <Button variant="primary" className="btn--block" onClick={() => set({ modal: "ruta" })}>
-          Generar ruta · {ruta.paradas.length} {ruta.paradas.length === 1 ? "punto" : "puntos"}
-        </Button>
+        <div className="tile__row">
+          <p className="tile__body">
+            {ruta.paradas.length} {ruta.paradas.length === 1 ? "punto" : "puntos"} · {s.cuadrillas} {s.cuadrillas === 1 ? "cuadrilla" : "cuadrillas"}, en orden
+          </p>
+          <Button variant="primary" className="tile__btn" onClick={() => set({ modal: "ruta" })}>
+            Generar ruta
+          </Button>
+        </div>
       </div>
     </div>
   );
