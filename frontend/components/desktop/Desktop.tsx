@@ -1,6 +1,7 @@
 "use client";
 
 import { useStore } from "@/lib/store";
+import AvisoDatos from "../AvisoDatos";
 import { Toast } from "../ui";
 import Antes from "./Antes";
 import Durante from "./Durante";
@@ -27,6 +28,7 @@ export default function Desktop() {
       <TopBar />
       <Body />
       <Modals />
+      <AvisoDatos />
       <Toast text={s.toast} />
     </div>
   );

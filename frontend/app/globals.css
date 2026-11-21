@@ -2441,3 +2441,53 @@ p {
   max-width: calc(100% - 32px);
   white-space: normal;
 }
+
+/* Aviso discreto del origen de los datos del modo Antes */
+.aviso-datos {
+  position: fixed;
+  left: 16px;
+  bottom: 12px;
+  z-index: 20;
+  max-width: calc(100% - 32px);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: var(--sh-soft);
+  pointer-events: none;
+}
+.aviso-datos--m {
+  bottom: 92px;
+}
+.vars {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+.vars__row {
+  display: grid;
+  grid-template-columns: 1fr 90px 40px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.vars__row b {
+  text-align: right;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+.vars__bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  overflow: hidden;
+  display: block;
+}
+.vars__bar span {
+  display: block;
+  height: 100%;
+  background: var(--lime);
+}

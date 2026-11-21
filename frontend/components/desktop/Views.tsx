@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ANEGAMIENTOS_REALES, MAP_BOUNDS, SCENARIOS } from "@/lib/data";
+import { ANEGAMIENTOS_REALES, MAP_BOUNDS } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import DrenaMap from "../map/DrenaMap";
 import { Button, Kicker } from "../ui";
@@ -209,8 +209,8 @@ export function ErrorDatos() {
 }
 
 export function Vacio() {
-  const { s, set } = useStore();
-  const sc = SCENARIOS.find((x) => x.id === s.scenario)!;
+  const { s, set, scenarioLabel } = useStore();
+  const sc = { label: scenarioLabel };
   return (
     <section className="card vacio">
       <div className="vacio__icon">○</div>
