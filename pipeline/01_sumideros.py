@@ -1,4 +1,13 @@
-"""Descarga los sumideros existentes de Ñuñoa publicados por la DOH."""
+"""OBSOLETO: usar pipeline/02_rejillas.py.
+
+Descarga los sumideros existentes de Ñuñoa publicados por la DOH.
+
+La única fuente del catastro es pipeline/02_rejillas.py → data/rejillas.geojson
+(Providencia, Ñuñoa y Las Condes, mismo ID_IDE). Este script y
+data/sumideros_nunoa.geojson se conservan solo como referencia y no los usa nadie.
+Ojo: aquí la comuna sale del código de la DOH (CODCOMU); en 02_rejillas.py sale del
+recorte por límites comunales, por eso los conteos de Ñuñoa difieren en unas pocas rejillas.
+"""
 
 import argparse
 import json
@@ -153,6 +162,7 @@ def guardar(salida, catastro):
 
 
 def main():
+    print("AVISO: pipeline/01_sumideros.py está obsoleto; usar pipeline/02_rejillas.py.", file=sys.stderr)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--salida", type=Path, default=SALIDA, help="Ruta del GeoJSON generado")
     args = parser.parse_args()
