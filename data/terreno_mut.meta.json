@@ -1,0 +1,64 @@
+{
+  "generado_utc": "2026-11-21T18:18:22+00:00",
+  "metodo": "plan B: elevación por nodo (OSMnx) y flujo por el grafo de calles",
+  "zona": {
+    "centro_lonlat": [
+      -70.601,
+      -33.4178
+    ],
+    "radio_m": 700,
+    "nota": "centro del MUT aproximado"
+  },
+  "red_calles": {
+    "fuente": "OpenStreetMap vía OSMnx",
+    "network_type": "drive",
+    "radio_m": 2500.0,
+    "osmnx": "2.2.0",
+    "graphml": "cache/osm/red_drive_mut_2500m.graphml",
+    "sha256": "4b9bc1db9b412b399fbb7dfc192411776362e7c1b21abdff33380b2d518bd667",
+    "descargada_utc": "2026-11-21T18:18:21+00:00"
+  },
+  "dem": {
+    "fuente": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_S34_00_W071_00_DEM/Copernicus_DSM_COG_10_S34_00_W071_00_DEM.tif",
+    "sha256": "a27fc1c1b4ef86047f3d7523c222fdbb322a3e3aff09bb6a7d5d30b6fe2c91c1",
+    "muestreo": "mínimo de 3×3 píxeles por nodo"
+  },
+  "parametros": {
+    "ancho_aporte_m": 20.0,
+    "pendiente_ref": 0.05634,
+    "pendiente_ref_regla": "percentil 90 de pendiente_tramo de las rejillas en_zona_mut",
+    "snap_max_m": 30.0,
+    "cadena_max_m": 3000.0
+  },
+  "entradas": {
+    "rejillas": {
+      "ruta": "data/rejillas.geojson",
+      "sha256": "dde763af25b2afb38c8b17f9aa66c670c860fae797d1821c9191fd012c55de22"
+    }
+  },
+  "salidas": {
+    "terreno_mut.csv": "a31ec39edbd0f34f9641789d2af3e4e6020c5cf03b4ace1298854cdd87763a92",
+    "street_chains_mut.json": "29aa9fcb38a4d6b1ca05eb2f1384e2f351d21e3075de52a38656408d75c91d92"
+  },
+  "conteos": {
+    "nodos": 2519,
+    "tramos": 3725,
+    "nodos_pozo_dem": 643,
+    "nodos_salida_tras_relleno": 267,
+    "salidas_interiores": 0,
+    "nodos_sin_elevacion": 0,
+    "rejillas_en_red": 541,
+    "rejillas_fuera_de_red": 4,
+    "zona_mut": {
+      "rejillas": 47,
+      "fuera_de_red": 0,
+      "en_alguna_cadena": 45
+    },
+    "cadenas": 210
+  },
+  "script": {
+    "ruta": "pipeline/03_terreno.py",
+    "version": "0.2.0",
+    "sha256": "5702045c5f0469e17b40bc09c62fe527c66d47bca3f9f16f1a1b0395527c65d6"
+  }
+}
