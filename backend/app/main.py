@@ -1,26 +1,72 @@
-import os
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI
+import psycopg
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-app = FastAPI(title="PH26 Team 34 API")
+from app.config import get_settings
+from app.db import DatabaseUnavailable, close_pool, ejecutar_con_plazo, precalentar_pool
+from app.routers import crews, events, formula, missions, observations, scenarios, sim, sumideros
 
-origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+HEALTH_DB_TIMEOUT_S = 3
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    precalentar_pool()  # en segundo plano: no demora el arranque
+    yield
+    close_pool()
+
+
+app = FastAPI(title="Drena API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=get_settings().cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+@app.exception_handler(DatabaseUnavailable)
+async def db_unavailable(_: Request, exc: DatabaseUnavailable):
+    """Cualquier endpoint que necesite la base responde 503 si no está disponible."""
+    return JSONResponse(status_code=503, content={"status": "error", "detail": str(exc)})
+
+
+for r in (scenarios, sumideros, observations, formula, crews, missions, events, sim):
+    app.include_router(r.router)
+
+
 @app.get("/health")
 def health():
+    """Solo indica que la API está viva; no toca la base."""
     return {"status": "ok", "time": datetime.now(timezone.utc).isoformat()}
+
+
+@app.get("/health/db")
+def health_db():
+    """Verifica la conexión a Supabase/Postgres.
+
+    Responde en a lo más HEALTH_DB_TIMEOUT_S segundos pase lo que pase con la base
+    (sin conexión, consulta colgada, commit o cancelación lentos): responde 503.
+    """
+    try:
+        row = ejecutar_con_plazo(_consulta_health, HEALTH_DB_TIMEOUT_S)
+    except (DatabaseUnavailable, psycopg.OperationalError) as e:
+        return JSONResponse(status_code=503, content={"status": "error", "detail": str(e)})
+    return {"status": "ok", "db_time": row["now"].isoformat(), "postgis": row["postgis"]}
+
+
+def _consulta_health(conn):
+    return conn.execute(
+        "select now() as now, exists(select 1 from pg_extension where extname = 'postgis') as postgis"
+    ).fetchone()
 
 
 @app.get("/api/hello")
 def hello():
+    """Endpoint del scaffold original; lo usa la página de prueba del frontend."""
     return {"message": "Hello from FastAPI"}
