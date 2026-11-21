@@ -186,3 +186,26 @@ create table if not exists events (
   ts       timestamptz not null default now()
 );
 create index if not exists events_ts_idx on events (ts);
+
+-- ---------------------------------------------------------------------------
+-- RLS en la misma transacción que crea las tablas: ninguna queda expuesta a la
+-- Data API ni un instante. Sin políticas, el navegador (anon) no lee nada; las
+-- políticas de lectura se agregan en 0002. El backend usa DATABASE_URL y no pasa por RLS.
+-- ---------------------------------------------------------------------------
+alter table intersections     enable row level security;
+alter table sumideros         enable row level security;
+alter table street_chains     enable row level security;
+alter table scenarios         enable row level security;
+alter table observations      enable row level security;
+alter table claude_cache      enable row level security;
+alter table classifications   enable row level security;
+alter table scores            enable row level security;
+alter table cases             enable row level security;
+alter table case_observations enable row level security;
+alter table crews             enable row level security;
+alter table crew_positions    enable row level security;
+alter table missions          enable row level security;
+alter table routes            enable row level security;
+alter table closures          enable row level security;
+alter table cleaning_history  enable row level security;
+alter table events            enable row level security;
