@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { LngLat, Prioridad } from "@/lib/data";
+import { FLUJO_CONFIG } from "@/lib/flujo/config";
 import { BASE_STYLE, loadMapLibre, type MapLibre } from "./maplibre";
 
 export interface MapPin {
@@ -10,7 +11,6 @@ export interface MapPin {
   rank: number | string;
   prio: Prioridad | "anegado";
   faded?: boolean;
-  ring?: "dashed";
   onClick?: () => void;
 }
 
@@ -31,7 +31,10 @@ export interface DrenaMapProps {
   area?: LngLat[] | null;
   gore?: LngLat[] | null;
   comunas?: boolean; // límites de todas las comunas de la RM con su nombre (public/data/comunas_rm.geojson). Por defecto, sí
-  rejillas?: boolean; // catastro de rejillas MOP, agrupadas en zoom bajo (public/data/rejillas.geojson)
+  rejillas?: boolean; // catastro de rejillas MOP, en gris y solo de cerca (public/data/rejillas.geojson)
+  /** Relieve (sombreado del terreno) y, si `tresD`, terreno 3D con edificios. Sin clave: AWS Terrain Tiles y OpenFreeMap. */
+  relieve?: boolean;
+  tresD?: boolean;
   bounds: [LngLat, LngLat];
   padding?: number | { top: number; bottom: number; left: number; right: number };
   attribution?: string;
@@ -43,7 +46,7 @@ export interface DrenaMapProps {
   onMapReady?: (map: MapLibre, ml: MapLibre) => void | (() => void);
 }
 
-const HEX = "M20 3 L34.7 11.5 L34.7 28.5 L20 37 L5.3 28.5 L5.3 11.5 Z";
+const TRIANGULO = "M20 3 L37.5 34 L2.5 34 Z"; // ▲ prioridad alta
 const COLORS: Record<string, string> = {
   alta: "var(--prio-alta)",
   media: "var(--prio-media)",
@@ -53,21 +56,16 @@ const COLORS: Record<string, string> = {
 
 function pinEl(p: MapPin, size: number): HTMLElement {
   const el = document.createElement("div");
-  el.className = "pin" + (p.faded ? " pin--faded" : "") + (p.onClick ? " pin--click" : "");
+  el.className = "pin" + (p.faded ? " pin--faded" : "") + (p.onClick ? " pin--click" : "") + (p.prio === "alta" ? " pin--tri" : "");
   el.style.width = el.style.height = `${size}px`;
   const fill = COLORS[p.prio];
   let shape = "";
-  if (p.prio === "alta") shape = `<path d="${HEX}" fill="${fill}" stroke="var(--bg)" stroke-width="3" stroke-linejoin="round"/>`;
+  if (p.prio === "alta") shape = `<path d="${TRIANGULO}" fill="${fill}" stroke="var(--bg)" stroke-width="3" stroke-linejoin="round"/>`;
   else if (p.prio === "media")
     shape = `<rect x="7" y="7" width="26" height="26" rx="4" transform="rotate(45 20 20)" fill="${fill}" stroke="var(--bg)" stroke-width="3"/>`;
   else shape = `<circle cx="20" cy="20" r="17" fill="${fill}" stroke="var(--bg)" stroke-width="3"/>`;
   const txt = p.prio === "anegado" ? "≋" : String(p.rank);
   el.innerHTML = `<svg viewBox="0 0 40 40" width="${size}" height="${size}">${shape}</svg><span class="pin__n">${txt}</span>`;
-  if (p.ring === "dashed") {
-    const r = document.createElement("span");
-    r.className = "pin__ring";
-    el.appendChild(r);
-  }
   if (p.onClick) {
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -155,18 +153,52 @@ export default function DrenaMap(props: DrenaMapProps) {
           bounds: props.bounds,
           fitBoundsOptions: { padding: props.padding ?? 40 },
           attributionControl: false,
-          dragRotate: false,
-          pitchWithRotate: false,
+          dragRotate: !!props.relieve, // en 3D se puede girar e inclinar con el botón derecho
+          pitchWithRotate: !!props.relieve,
+          maxPitch: 70,
         });
-        map.touchZoomRotate.disableRotation();
+        if (!props.relieve) map.touchZoomRotate.disableRotation();
         mapRef.current = map;
         map.once("style.load", () => {
           const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]) });
           ["esc", "lim", "area", "gore"].forEach(add);
           map.addSource("comunas-rm", { type: "geojson", data: "/data/comunas_rm.geojson" });
-          map.addSource("rejillas", { type: "geojson", data: "/data/rejillas.geojson", cluster: true, clusterMaxZoom: 15, clusterRadius: 40 });
-          map.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-color": "#FF3D0A", "fill-opacity": 0.16 } });
-          map.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-color": "#FF3D0A", "line-width": 2, "line-opacity": 0.9, "line-dasharray": [3, 2] } });
+          map.addSource("rejillas", { type: "geojson", data: "/data/rejillas.geojson", cluster: true, clusterMaxZoom: 16, clusterRadius: 30 });
+          const { agua, gris } = FLUJO_CONFIG.colores;
+          if (props.relieve) {
+            const ter = FLUJO_CONFIG.terreno;
+            // Dos fuentes del mismo DEM: una para el terreno 3D y otra para el sombreado (MapLibre recomienda separarlas)
+            const dem = { type: "raster-dem", tiles: [ter.tiles], encoding: "terrarium", tileSize: 256, maxzoom: 15, attribution: "Terrain Tiles (AWS)" };
+            map.addSource("dem-terreno", dem);
+            map.addSource("dem-sombra", dem);
+            map.addLayer(
+              {
+                id: "relieve",
+                type: "hillshade",
+                source: "dem-sombra",
+                paint: { "hillshade-exaggeration": 0.35, "hillshade-shadow-color": "#5E5E5A", "hillshade-highlight-color": "#FFFFFF", "hillshade-accent-color": "#8A8A86" },
+              },
+              "ref",
+            );
+            map.addSource("ofm", { type: "vector", url: FLUJO_CONFIG.edificios });
+            map.addLayer({
+              id: "edificios",
+              type: "fill-extrusion",
+              source: "ofm",
+              "source-layer": "building",
+              minzoom: 14,
+              layout: { visibility: "none" },
+              filter: ["!=", ["get", "hide_3d"], true],
+              paint: {
+                "fill-extrusion-color": "#F1F1EF",
+                "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
+                "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+                "fill-extrusion-opacity": 0.55,
+              },
+            });
+          }
+          map.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-color": agua, "fill-opacity": 0.12 } });
+          map.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-color": agua, "line-width": 2, "line-opacity": 0.8 } });
           map.addLayer({ id: "lim", type: "line", source: "lim", paint: { "line-color": "#5A5A57", "line-width": 2, "line-opacity": 0.8, "line-dasharray": [4, 3] } });
           const hidden = { visibility: "none" };
           // Límites de todas las comunas: línea fina punteada en --text-3, relleno casi invisible; las 3 del proyecto, algo más marcadas.
@@ -180,32 +212,30 @@ export default function DrenaMap(props: DrenaMapProps) {
             filter: ["==", ["get", "en_proyecto"], true],
             paint: { "line-color": t3, "line-width": 1.8, "line-opacity": 1, "line-dasharray": [3, 2] },
           });
+          // Capas de contexto (catastro completo y GORE): pequeñas, en gris y solo de cerca, para no competir con el agua
+          const zc = FLUJO_CONFIG.zoomContexto;
           map.addLayer({
             id: "rej-cluster",
             type: "circle",
             source: "rejillas",
+            minzoom: zc,
             filter: ["has", "point_count"],
             layout: hidden,
-            // Anillo hueco: no se confunde con los pines de prioridad, que son figuras rellenas con número.
-            paint: {
-              "circle-color": "#FFFFFF",
-              "circle-opacity": 0.25,
-              "circle-stroke-color": "#5A5A57",
-              "circle-stroke-width": 2,
-              "circle-radius": ["step", ["get", "point_count"], 9, 10, 12, 50, 16, 200, 21],
-            },
+            paint: { "circle-color": gris, "circle-opacity": 0.18, "circle-stroke-color": gris, "circle-stroke-width": 1, "circle-radius": ["step", ["get", "point_count"], 6, 10, 8, 50, 10] },
           });
           map.addLayer({
             id: "rej-point",
             type: "circle",
             source: "rejillas",
+            minzoom: zc,
             filter: ["!", ["has", "point_count"]],
             layout: hidden,
-            paint: { "circle-radius": 2.5, "circle-color": "#767672", "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 0.75 },
+            paint: { "circle-radius": 2, "circle-color": gris, "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 0.5 },
           });
-          map.addLayer({ id: "esc-halo", type: "line", source: "esc", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#FF3D0A", "line-width": 9, "line-opacity": 0.14 } });
-          map.addLayer({ id: "esc-line", type: "line", source: "esc", paint: { "line-color": "#FF3D0A", "line-width": 2, "line-opacity": 0.85, "line-dasharray": [2.5, 2.5] } });
-          map.addLayer({ id: "gore", type: "circle", source: "gore", paint: { "circle-radius": 4, "circle-color": "#5A5A57", "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 1.5 } });
+          // Líneas de escurrimiento de ejemplo (ficha y móvil): agua, en azul
+          map.addLayer({ id: "esc-halo", type: "line", source: "esc", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": agua, "line-width": 8, "line-opacity": 0.12 } });
+          map.addLayer({ id: "esc-line", type: "line", source: "esc", layout: { "line-cap": "round" }, paint: { "line-color": agua, "line-width": 2, "line-opacity": 0.8 } });
+          map.addLayer({ id: "gore", type: "circle", source: "gore", minzoom: zc, paint: { "circle-radius": 2.5, "circle-color": gris, "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 0.75 } });
           // Si cambia el esquema de color del sistema, se vuelven a leer los tokens
           const repintar = () => {
             const c = token("--text-3", "#7C7C78");
@@ -231,12 +261,26 @@ export default function DrenaMap(props: DrenaMapProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Encuadre
+  // Terreno 3D y edificios. Va ANTES del encuadre: cambiar el terreno en medio de una animación de cámara congela el
+  // render de MapLibre, así que primero se detiene la cámara, se aplica el terreno y después se mueve.
+  useEffect(() => {
+    if (!ready || !props.relieve) return;
+    const map = mapRef.current;
+    map.stop();
+    map.setTerrain(props.tresD ? { source: "dem-terreno", exaggeration: FLUJO_CONFIG.terreno.exageracion } : null);
+    if (map.getLayer("edificios")) map.setLayoutProperty("edificios", "visibility", props.tresD ? "visible" : "none");
+  }, [ready, props.relieve, props.tresD]);
+
+  // Encuadre (en 3D, con la inclinación y el rumbo de la vista)
   useEffect(() => {
     if (!ready) return;
-    mapRef.current.fitBounds(props.bounds, { padding: props.padding ?? 40, duration: 600 });
+    const map = mapRef.current;
+    const ter = FLUJO_CONFIG.terreno;
+    const bearing = props.tresD ? ter.bearing : 0;
+    const cam = map.cameraForBounds(props.bounds, { padding: props.padding ?? 40, bearing });
+    if (cam) map.easeTo({ ...cam, bearing, pitch: props.tresD ? ter.pitch : 0, duration: 900 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, JSON.stringify(props.bounds)]);
+  }, [ready, JSON.stringify(props.bounds), props.tresD]);
 
   // Capas vectoriales
   useEffect(() => {
