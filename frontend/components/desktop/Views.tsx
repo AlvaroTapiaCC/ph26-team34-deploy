@@ -79,60 +79,48 @@ export function Validacion() {
 }
 
 export function Metodologia() {
-  const pasos = [
-    "Recortar DEM GLO-30 con margen hacia la precordillera",
-    "Rebajar 2–3 m las celdas que son calle en OSM",
-    "pysheds: rellenar depresiones, dirección D8, acumulación C × lluvia",
-    "Repetir solo con celdas fuera de la comuna → % de agua externa",
-    "Máximo de acumulación en 40 m por intersección OSMnx",
-    "Seguir el flujo 3 km → cadena aguas abajo",
+  const fases = [
+    ["Antes", "Priorizar los sumideros que conviene limpiar y preparar las rutas de las cuadrillas."],
+    ["Durante", "Recalcular prioridades y rutas con fotos, reportes escritos e imágenes de la cámara."],
+    ["Después", "Verificar los cierres con fotos y resumir qué funcionó durante el evento."],
   ];
   const datos = [
-    ["Elevación", "Copernicus DEM GLO-30"],
-    ["Calles y límites", "OpenStreetMap · OSMnx"],
-    ["Puntos críticos", "OSM: metro, hospitales, colegios, pasos bajo nivel"],
-    ["Cobertura de suelo", "ESA WorldCover 10 m"],
-    ["Lluvia 13-oct", "DMC · Tobalaba, Quinta Normal, La Reina, Pudahuel"],
-    ["Anegamientos reales", "Prensa y @TTISantiago, armado a mano"],
+    ["Catastro de sumideros", "DOH · SIALL"],
+    ["Elevación y calles", "DEM de 12,5 m · OpenStreetMap y OSMnx"],
+    ["Infraestructura crítica", "OpenStreetMap · Gobierno de Santiago"],
+    ["Cobertura de suelo", "Sentinel-2 · ESA WorldCover"],
+    ["Lluvia y viento", "Open-Meteo"],
   ];
   return (
     <main className="method">
       <div className="method__row method__row--a">
         <section className="formula">
           <Kicker tone="accent">Puntaje de prioridad</Kicker>
-          <div className="formula__eq">puntaje = Q̂rel · (1 + d̂) · w crit</div>
+          <div className="formula__eq">Prioridad = P<sub>ef</sub> × C</div>
           <div className="formula__term">
-            <b>Q̂rel</b>Caudal relativo: suma de C · lluvia · área de las celdas aguas arriba, normalizado 0–1.
+            <b>P<sub>ef</sub></b>Probabilidad efectiva de obstrucción. Considera las observaciones y el arrastre desde aguas arriba.
           </div>
           <div className="formula__term">
-            <b>d̂</b>Profundidad de la depresión rellenada en ese punto: dónde queda atrapada el agua.
+            <b>C</b>Consecuencia estimada según el área que aporta agua al sumidero y la infraestructura crítica cercana.
           </div>
-          <div className="formula__term">
-            <b>w crit</b>1 + 0,5 paso bajo nivel + 0,3 metro + 0,2 hospital o colegio a &lt; 150 m.
-          </div>
-          <p className="formula__ia">La IA solo traduce el resultado a instrucciones; no cambia el orden.</p>
+          <p className="formula__ia">
+            <strong>La fórmula decide. Claude ve, lee y explica.</strong>{" "}
+            Claude clasifica fotos, imágenes de cámara y reportes escritos, y explica por qué se prioriza cada sumidero.
+          </p>
         </section>
         <section className="nots">
-          <Kicker tone="ink">Lo que no hace, a propósito</Kicker>
-          <p className="nots__item">
-            <span>✕</span>No recomienda cerrar o mantener abiertas calles. Un error ahí puede costar una vida.
-          </p>
-          <p className="nots__item">
-            <span>✕</span>No recomienda desviar agua: traslada la inundación a otro barrio.
-          </p>
-          <p className="nots__item">
-            <span>✕</span>No muestra profundidades ni minutos de llegada: un modelo de 30 m no los calcula con precisión.
-          </p>
+          <Kicker tone="ink">Nivel de agua observado</Kicker>
+          <p className="nots__item">Sin agua · En la cuneta · Hasta la vereda · Sobre la vereda · No evaluable</p>
+          <p className="nots__item">Durante la lluvia, el nivel observado ajusta la consecuencia estimada.</p>
         </section>
       </div>
       <div className="method__row method__row--b">
         <section className="card pipeline">
-          <Kicker>Pipeline · se calcula una vez antes de la demo</Kicker>
-          {pasos.map((t, i) => (
-            <div key={i} className="step">
-              <b>{i + 1}</b>
-              {t}
-            </div>
+          <Kicker>Fases del evento</Kicker>
+          {fases.map(([fase, descripcion]) => (
+            <p key={fase} className="step">
+              <span><strong>{fase}.</strong> {descripcion}</span>
+            </p>
           ))}
         </section>
         <section className="card datos">

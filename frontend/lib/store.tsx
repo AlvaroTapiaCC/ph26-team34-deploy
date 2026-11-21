@@ -104,7 +104,7 @@ function reducer(s: State, a: Action): State {
         layers: { ...s.layers, cadena: true },
         toast: null,
         reportes: [
-          { id: "r3", nombre, fuente: a.fuente === "sensor" ? "Sensor ESP32 · 17:44" : "Marcado en sala · 17:44", estado: "anegado", foto: true },
+          { id: "r3", nombre, fuente: a.fuente === "sensor" ? "Reporte simulado · 17:44" : "Marcado en sala · 17:44", estado: "anegado", foto: true },
           { id: "r2", nombre: "Irarrázaval / P. de Valdivia", fuente: "Llamada vecinal · 17:31", estado: "pendiente" },
           REPORTE_BASE,
         ],
