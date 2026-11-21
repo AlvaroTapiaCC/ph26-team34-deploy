@@ -4,6 +4,7 @@ import json
 from types import SimpleNamespace
 
 import pytest
+from pydantic import ValidationError
 from PIL import Image
 
 from app.schemas.claude import ClasificacionCamara, ClasificacionRejilla, LecturaTexto
@@ -100,8 +101,8 @@ def test_senal_camara():
 
 
 def test_schemas_rechazan_valores_fuera_de_lista():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         ClasificacionRejilla(**{**OK, "rejilla": "sucia"})
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         LecturaTexto(tipo="x", gravedad="alta", personas_en_riesgo=False, ubicacion_texto=None,
                      desde_cuando=None, nivel_agua="sin_agua")
