@@ -18,7 +18,7 @@ export function SensorCard() {
           <span className="sensor__ago">{s.sensorAgo || "hace 5 min"}</span>
         </div>
         <h2 className="sensor__title">No llegan datos del sensor</h2>
-        <p className="sensor__body">Usa “Simular reporte” para seguir la demo. Firebase no responde.</p>
+        <p className="sensor__body">“Simular reporte” solo cambia la pantalla; “Disparar reporte” pasa por el simulador del backend. Firebase no responde.</p>
         <div className="row-btns">
           <Button variant="danger" onClick={() => set({ markMode: !s.markMode })}>
             {s.markMode ? "Toca un punto del mapa" : "Marcar anegado"}

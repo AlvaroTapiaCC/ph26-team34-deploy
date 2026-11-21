@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "nombre": "Demo Drena · tarde del 13 de octubre",
+  "nombre": "Demo Drena · temporal de octubre",
   "duracion_s": 90,
   "eventos": [
     {"t": 0,  "tipo": "lluvia", "payload": {"intensidad": "inicio", "nota": "Entra la celda convectiva por el poniente"}},

@@ -1,35 +1,45 @@
 """Línea de tiempo de la demo (issue #46)."""
-from typing import Any
+import hmac
+from typing import Any, Literal
 
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, Header, HTTPException
+from pydantic import BaseModel, Field
 
-from app.services.sim import get_simulador
+from app.config import get_settings
+from app.services.sim import TopeAlcanzado, get_simulador
+
+
+def _exigir_admin(x_admin_token: str | None = Header(default=None)) -> None:
+    """Si hay ADMIN_TOKEN configurado, los controles de la demo exigen X-Admin-Token."""
+    esperado = get_settings().admin_token
+    if esperado and not hmac.compare_digest(x_admin_token or "", esperado):
+        raise HTTPException(401, "Falta o es inválido X-Admin-Token")
+
 
 router = APIRouter(prefix="/sim", tags=["sim"])
 
 
 class ReporteEnVivo(BaseModel):
-    sumidero_id: str | None = None
-    texto: str = "Reporte disparado en vivo durante la demo"
-    fuente: str = "vecino"
-    tipo_obs: str = "texto"
-    media_url: str | None = None
+    sumidero_id: str | None = Field(default=None, max_length=64)
+    texto: str = Field(default="Reporte disparado en vivo durante la demo", max_length=500)
+    fuente: Literal["vecino", "cuadrilla", "camara"] = "vecino"
+    tipo_obs: Literal["foto_rejilla", "foto_agua", "texto", "cuadro_camara"] = "texto"
+    media_url: str | None = Field(default=None, max_length=500)
 
 
-@router.post("/start")
+@router.post("/start", dependencies=[Depends(_exigir_admin)])
 def start() -> dict[str, Any]:
     """Inicia (o reanuda) la simulación; si ya terminó, la parte de cero."""
     return get_simulador().start()
 
 
-@router.post("/stop")
+@router.post("/stop", dependencies=[Depends(_exigir_admin)])
 def stop() -> dict[str, Any]:
     """Pausa la simulación conservando el avance."""
     return get_simulador().stop()
 
 
-@router.post("/reset")
+@router.post("/reset", dependencies=[Depends(_exigir_admin)])
 def reset() -> dict[str, Any]:
     """Vuelve al inicio y borra los eventos aplicados."""
     return get_simulador().reset()
@@ -41,7 +51,10 @@ def status() -> dict[str, Any]:
     return get_simulador().status()
 
 
-@router.post("/trigger")
+@router.post("/trigger", dependencies=[Depends(_exigir_admin)])
 def trigger(reporte: ReporteEnVivo | None = None) -> dict[str, Any]:
     """Dispara un reporte en vivo (botón "Disparar reporte" de /central)."""
-    return get_simulador().disparar((reporte or ReporteEnVivo()).model_dump(exclude_none=True))
+    try:
+        return get_simulador().disparar((reporte or ReporteEnVivo()).model_dump(exclude_none=True))
+    except TopeAlcanzado as exc:
+        raise HTTPException(429, str(exc)) from exc

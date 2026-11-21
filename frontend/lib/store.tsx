@@ -207,7 +207,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       try {
         const r = await fetch(`${api}/sim/trigger`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(process.env.NEXT_PUBLIC_ADMIN_TOKEN ? { "X-Admin-Token": process.env.NEXT_PUBLIC_ADMIN_TOKEN } : {}) },
           body: JSON.stringify({ sumidero_id: p.id, texto: `Reporte en vivo · ${p.nombre}` }),
           signal: AbortSignal.timeout(2500),
         });
