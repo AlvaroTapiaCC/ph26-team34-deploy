@@ -85,7 +85,8 @@ type Action =
   | { type: "set"; patch: Partial<State> }
   | { type: "layer"; key: keyof Layers; value?: boolean }
   | { type: "flood"; id: string; fuente: "sensor" | "manual" }
-  | { type: "addRuta"; id: string };
+  | { type: "addRuta"; id: string }
+  | { type: "resetSim" };
 
 function reducer(s: State, a: Action): State {
   switch (a.type) {
@@ -111,6 +112,8 @@ function reducer(s: State, a: Action): State {
         ],
       };
     }
+    case "resetSim":
+      return { ...s, sensor: "escuchando", anegado: null, sensorAgo: "", markMode: false, reportes: [REPORTE_BASE], layers: { ...s.layers, cadena: false }, toast: "Simulación reiniciada" };
     case "addRuta":
       return { ...s, enRuta: s.enRuta.includes(a.id) ? s.enRuta : [...s.enRuta, a.id], toast: "Agregado a la ruta de la cuadrilla" };
   }
@@ -121,6 +124,7 @@ interface Ctx {
   set: (patch: Partial<State>) => void;
   toggleLayer: (key: keyof Layers, value?: boolean) => void;
   flood: (id: string, fuente?: "sensor" | "manual") => void;
+  dispararReporte: () => Promise<void>;
   addRuta: (id: string) => void;
   reload: () => void;
   ranking: RankedPunto[];
@@ -185,6 +189,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, [s.toast]);
 
+  // Si el simulador se reinicia (/sim/reset), la vista Durante vuelve a su estado inicial
+  const simVisto = useRef(0);
+  useEffect(() => {
+    if (s.modo !== "durante") return;
+    const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const t = setInterval(async () => {
+      try {
+        const r = await fetch(`${api}/sim/status`, { signal: AbortSignal.timeout(2000) });
+        if (!r.ok) return;
+        const n = Number((await r.json()).eventos_aplicados) || 0;
+        if (n === 0 && simVisto.current > 0) {
+          dispatch({ type: "resetSim" });
+        }
+        simVisto.current = n;
+      } catch {
+        /* sin backend: no hay nada que sincronizar */
+      }
+    }, 2500);
+    return () => clearInterval(t);
+  }, [s.modo]);
+
   const ranking = useMemo(() => rankingFor(s.scenario), [s.scenario]);
   const filtered = useMemo(() => (s.comuna === "Todas" ? ranking : ranking.filter((p) => p.comuna === s.comuna)), [ranking, s.comuna]);
   const cadena = useMemo(() => (s.anegado ? (CADENA[s.anegado] ?? []).map((id) => ranking.find((p) => p.id === id)!).filter(Boolean) : []), [s.anegado, ranking]);
@@ -196,6 +221,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     set,
     toggleLayer: (key, value) => dispatch({ type: "layer", key, value }),
     flood: (id, fuente = "sensor") => dispatch({ type: "flood", id, fuente }),
+    // Dispara un reporte en vivo en el simulador (POST /sim/trigger). El backend aún no procesa
+    // observaciones (#28), así que la reacción en pantalla es la del mock local `flood`.
+    dispararReporte: async () => {
+      const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+      const token = process.env.NEXT_PUBLIC_SIM_TOKEN;
+      let enviado = false;
+      let n = 0; // N° de reporte en vivo de esta corrida: elige el punto, así la demo se repite igual
+      try {
+        const r = await fetch(`${api}/sim/trigger`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...(token ? { "X-Sim-Token": token } : {}) },
+          body: JSON.stringify({ texto: "Reporte en vivo desde la sala" }),
+          signal: AbortSignal.timeout(2500),
+        });
+        enviado = r.ok;
+        if (r.ok) n = Number((await r.json())?.payload?.id_en_vivo) || 0;
+      } catch {
+        /* sin backend: sigue la demo con el mock local */
+      }
+      const p = n > 0 ? ranking[(n - 1) % ranking.length] : ranking.find((x) => x.id !== s.anegado);
+      if (!p) return;
+      simVisto.current = Math.max(simVisto.current, 1);
+      dispatch({ type: "flood", id: p.id, fuente: "manual" });
+      if (!enviado) dispatch({ type: "set", patch: { toast: "Simulador sin conexión: reporte simulado solo en pantalla" } });
+    },
     addRuta: (id) => {
       const p = ranking.find((x) => x.id === id);
       if (ruta.paradas.some((x) => x.id === id)) dispatch({ type: "set", patch: { toast: "Ya está en la ruta" } });
