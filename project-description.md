@@ -2,7 +2,7 @@
 
 ## El problema
 
-El 13 de octubre de 2026 una lluvia localizada cayó sobre Santiago oriente. Los sumideros tapados no dieron abasto y solo Providencia recibió más de 1.900 llamadas. Los municipios reaccionan tarde y sin saber a qué sumidero ir primero.
+En octubre de 2026 una lluvia localizada cayó sobre Santiago oriente. Los sumideros tapados no dieron abasto y los vecinos de Providencia llamaron al municipio por inundaciones. Los municipios reaccionan tarde y sin saber a qué sumidero ir primero.
 
 ## Qué hace Drena
 
