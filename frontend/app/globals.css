@@ -25,7 +25,7 @@
   --sh-accent: 0 6px 14px rgba(255, 61, 10, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.3);
   --sh-inset-deep: inset 3px 3px 8px rgba(0, 0, 0, 0.8), inset -2px -2px 6px rgba(255, 255, 255, 0.06);
   --sh-inset-soft: inset 0 1px 3px rgba(0, 0, 0, 0.07);
-  --sh-seg-on: 6px 6px 14px rgba(0, 0, 0, 0.7), -3px -3px 10px rgba(204, 255, 0, 0.18), inset 0 2px 2px rgba(255, 255, 255, 0.45), inset 0 -3px 4px rgba(0, 0, 0, 0.25);
+  --sh-seg-on: 0 1px 2px rgba(0, 0, 0, 0.18);
 
   --font-display: var(--ff-space), "Space Grotesk", system-ui, sans-serif;
   --font-body: var(--ff-geist), "Geist", system-ui, sans-serif;
@@ -202,38 +202,62 @@ p {
   box-shadow: var(--sh-accent);
 }
 
-/* ---------- Selector + menú ---------- */
-.selector-wrap {
-  position: relative;
-}
-.selector {
+/* ---------- Barra superior: control base, grupo y menú desplegable ---------- */
+.barbtn {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 8px;
   height: 44px;
   padding: 0 14px;
   border-radius: 12px;
   background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--line);
+  font-family: var(--font-body);
   font-weight: 500;
   font-size: 14px;
+  line-height: 20px;
+  color: var(--text);
   white-space: nowrap;
+  transition: background 0.15s, box-shadow 0.15s, color 0.15s;
 }
-.selector.is-active {
-  box-shadow: inset 0 0 0 2px var(--lime);
+.barbtn:hover {
+  background: var(--surface-2);
 }
-.selector__chev {
-  font-weight: 700;
-  font-size: 16px;
+.barbtn:focus-visible,
+.menu__item:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 2px;
+}
+.barbtn.is-on {
+  background: var(--lime);
+  color: var(--lime-ink);
+  box-shadow: inset 0 0 0 1px var(--lime);
+}
+.barbtn[aria-expanded="true"] {
+  box-shadow: inset 0 0 0 1px var(--text-3);
+}
+.bargroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.chev {
+  flex: none;
   color: var(--text-2);
-  line-height: 1;
-  transform: translateY(-3px);
+  transition: transform 0.15s;
+}
+.chev.is-open {
+  transform: rotate(180deg);
+}
+.dropdown {
+  position: relative;
 }
 .menu {
   position: absolute;
-  top: 52px;
+  top: calc(100% + 6px);
   left: 0;
-  z-index: 50;
+  z-index: 1000;
   width: 240px;
   padding: 8px;
   display: flex;
@@ -245,6 +269,7 @@ p {
   box-shadow: var(--sh-soft);
 }
 .menu__item {
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -255,7 +280,8 @@ p {
   font-size: 15px;
   text-align: left;
 }
-.menu__item:hover {
+.menu__item:hover,
+.menu__item:focus {
   background: var(--surface-2);
 }
 .menu__item.is-on {
@@ -273,9 +299,8 @@ p {
   color: var(--text-3);
 }
 .menu__check {
+  flex: none;
   color: var(--lime);
-  font-weight: 700;
-  font-size: 14px;
 }
 .menu__foot {
   font-size: 11px;
@@ -623,18 +648,15 @@ p {
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   position: relative;
-  z-index: 20;
+  z-index: 40;
+}
+.topbar__ctrls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .topbar .logo {
   margin-right: 24px;
-}
-.topbar__esc {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.topbar__spacer {
-  flex: 1;
 }
 .bento {
   flex: 1;
