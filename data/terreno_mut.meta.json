@@ -1,22 +1,24 @@
 {
-  "generado_utc": "2026-11-21T18:18:22+00:00",
+  "generado_utc": "2026-11-21T18:52:26+00:00",
   "metodo": "plan B: elevación por nodo (OSMnx) y flujo por el grafo de calles",
   "zona": {
     "centro_lonlat": [
-      -70.601,
-      -33.4178
+      -70.601433,
+      -33.417741
     ],
     "radio_m": 700,
-    "nota": "centro del MUT aproximado"
+    "centro_confirmado": true,
+    "nota": "confirmado con el pin (Av. Apoquindo 2730, Las Condes) el 21-11-2026"
   },
   "red_calles": {
     "fuente": "OpenStreetMap vía OSMnx",
     "network_type": "drive",
     "radio_m": 2500.0,
     "osmnx": "2.2.0",
-    "graphml": "cache/osm/red_drive_mut_2500m.graphml",
-    "sha256": "4b9bc1db9b412b399fbb7dfc192411776362e7c1b21abdff33380b2d518bd667",
-    "descargada_utc": "2026-11-21T18:18:21+00:00"
+    "overpass": "https://maps.mail.ru/osm/tools/overpass/api",
+    "graphml": "cache/osm/red_drive_-33.417741_-70.601433_2500m.graphml",
+    "sha256": "59e4e249c49374478b90c2983f0b9c773602597173bad12e532584e84e901c08",
+    "descargada_utc": "2026-11-21T18:52:25+00:00"
   },
   "dem": {
     "fuente": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_S34_00_W071_00_DEM/Copernicus_DSM_COG_10_S34_00_W071_00_DEM.tif",
@@ -25,7 +27,7 @@
   },
   "parametros": {
     "ancho_aporte_m": 20.0,
-    "pendiente_ref": 0.05634,
+    "pendiente_ref": 0.057,
     "pendiente_ref_regla": "percentil 90 de pendiente_tramo de las rejillas en_zona_mut",
     "snap_max_m": 30.0,
     "cadena_max_m": 3000.0
@@ -37,28 +39,28 @@
     }
   },
   "salidas": {
-    "terreno_mut.csv": "a31ec39edbd0f34f9641789d2af3e4e6020c5cf03b4ace1298854cdd87763a92",
-    "street_chains_mut.json": "29aa9fcb38a4d6b1ca05eb2f1384e2f351d21e3075de52a38656408d75c91d92"
+    "terreno_mut.csv": "da934c7337171f5d93f5cd21d277465d737def126f03b1b9cb1fa9a5529f6378",
+    "street_chains_mut.json": "6ec228e9ad04987c0344111d67382d864204b0332578737e7687a980bb9b5393"
   },
   "conteos": {
-    "nodos": 2519,
-    "tramos": 3725,
-    "nodos_pozo_dem": 643,
-    "nodos_salida_tras_relleno": 267,
+    "nodos": 2497,
+    "tramos": 3692,
+    "nodos_pozo_dem": 639,
+    "nodos_salida_tras_relleno": 264,
     "salidas_interiores": 0,
     "nodos_sin_elevacion": 0,
-    "rejillas_en_red": 541,
-    "rejillas_fuera_de_red": 4,
+    "rejillas_en_red": 536,
+    "rejillas_fuera_de_red": 3,
     "zona_mut": {
-      "rejillas": 47,
+      "rejillas": 46,
       "fuera_de_red": 0,
-      "en_alguna_cadena": 45
+      "en_alguna_cadena": 44
     },
-    "cadenas": 210
+    "cadenas": 209
   },
   "script": {
     "ruta": "pipeline/03_terreno.py",
-    "version": "0.2.0",
-    "sha256": "5702045c5f0469e17b40bc09c62fe527c66d47bca3f9f16f1a1b0395527c65d6"
+    "version": "0.3.0",
+    "sha256": "7f0ca89601f48f5e73df678a78b163db3b17ba3d61e3b9cc11d72b10f82304e6"
   }
 }

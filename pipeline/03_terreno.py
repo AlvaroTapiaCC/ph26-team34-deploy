@@ -47,9 +47,11 @@ from pathlib import Path
 
 import requests
 
-SCRIPT_VERSION = "0.2.0"
+SCRIPT_VERSION = "0.3.0"
 
-CENTRO = (-70.6010, -33.4178)  # MUT, aproximado: confirmar en el mapa (lon, lat)
+# MUT, Av. Apoquindo 2730, Las Condes (lon, lat). Confirmado con el pin el 21-11-2026.
+CENTRO = (-70.601433, -33.417741)
+CENTRO_NOTA = "confirmado con el pin (Av. Apoquindo 2730, Las Condes) el 21-11-2026"
 RADIO_ZONA_M = 700
 UTM = 32719
 
@@ -116,6 +118,8 @@ def main():
     ap.add_argument("--dem", default="cache/dem/" + DEM_TILE + ".tif")
     ap.add_argument("--salida", default="data/terreno_mut.csv")
     ap.add_argument("--refrescar-red", action="store_true", help="vuelve a bajar la red de OSM")
+    ap.add_argument("--overpass", default="https://maps.mail.ru/osm/tools/overpass/api",
+                    help="servidor Overpass (overpass-api.de a veces rechaza conexiones)")
     a = ap.parse_args()
 
     import geopandas as gpd
@@ -130,12 +134,13 @@ def main():
     # 1. Red de calles
     # La red se guarda en cache/ la primera vez y después se reutiliza: OSM cambia con el tiempo,
     # así que la metadata registra el sha256 y la fecha de descarga de la red usada.
-    ruta_red = Path(f"cache/osm/red_drive_mut_{a.buffer:.0f}m.graphml")
+    ruta_red = Path(f"cache/osm/red_drive_{CENTRO[1]:.6f}_{CENTRO[0]:.6f}_{a.buffer:.0f}m.graphml")
     if ruta_red.exists() and not a.refrescar_red:
         print(f"Usando la red guardada {ruta_red}")
         G = ox.load_graphml(ruta_red)
     else:
-        print(f"Bajando red de calles 'drive' a {a.buffer:.0f} m del centro...")
+        ox.settings.overpass_url = a.overpass
+        print(f"Bajando red de calles 'drive' a {a.buffer:.0f} m del centro desde {a.overpass}...")
         G = ox.graph_from_point((CENTRO[1], CENTRO[0]), dist=a.buffer, network_type="drive", simplify=True)
         ruta_red.parent.mkdir(parents=True, exist_ok=True)
         ox.save_graphml(G, ruta_red)
@@ -366,9 +371,10 @@ def main():
     meta = {
         "generado_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "metodo": "plan B: elevación por nodo (OSMnx) y flujo por el grafo de calles",
-        "zona": {"centro_lonlat": list(CENTRO), "radio_m": RADIO_ZONA_M, "nota": "centro del MUT aproximado"},
+        "zona": {"centro_lonlat": list(CENTRO), "radio_m": RADIO_ZONA_M, "centro_confirmado": True,
+                 "nota": CENTRO_NOTA},
         "red_calles": {"fuente": "OpenStreetMap vía OSMnx", "network_type": "drive", "radio_m": a.buffer,
-                       "osmnx": ox.__version__, "graphml": str(ruta_red), "sha256": sha256(ruta_red),
+                       "osmnx": ox.__version__, "overpass": a.overpass, "graphml": str(ruta_red), "sha256": sha256(ruta_red),
                        "descargada_utc": red_descargada},
         "dem": {"fuente": DEM_URL, "sha256": sha256(ruta_dem), "muestreo": "mínimo de 3×3 píxeles por nodo"},
         "parametros": {"ancho_aporte_m": ANCHO_APORTE_M, "pendiente_ref": round(pendiente_ref, 6),

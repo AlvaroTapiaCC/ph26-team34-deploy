@@ -37,9 +37,9 @@ from pathlib import Path
 
 import yaml
 
-SCRIPT_VERSION = "0.1.0"
+SCRIPT_VERSION = "0.2.0"
 UTM = 32719
-CENTRO = (-70.6010, -33.4178)  # debe ser el mismo de 03_terreno.py (se verifica con su metadata)
+CENTRO = (-70.601433, -33.417741)  # MUT confirmado; debe ser el mismo de 03_terreno.py (se verifica)
 
 WORLDCOVER_URL = (
     "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_S36W072_Map.tif"
@@ -132,7 +132,7 @@ def main():
     margen = 0.004
     xmin, ymin, xmax, ymax = rej.total_bounds
     bbox = (xmin - margen, ymin - margen, xmax + margen, ymax + margen)
-    ruta_wc = recorte_worldcover(bbox, "cache/worldcover/worldcover_mut.tif")
+    ruta_wc = recorte_worldcover(bbox, "cache/worldcover/worldcover_" + "_".join(f"{v:.5f}" for v in bbox) + ".tif")
     rej["arboles"] = fraccion_clase(ruta_wc, pts, RADIO_ARBOLES_M, CLASE_ARBOL)
     rej["suelo"] = fraccion_clase(ruta_wc, pts, RADIO_SUELO_M, CLASE_SUELO)
 
