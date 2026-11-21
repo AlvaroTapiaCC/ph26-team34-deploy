@@ -106,3 +106,104 @@ def test_schemas_rechazan_valores_fuera_de_lista():
     with pytest.raises(ValidationError):
         LecturaTexto(tipo="x", gravedad="alta", personas_en_riesgo=False, ubicacion_texto=None,
                      desde_cuando=None, nivel_agua="sin_agua")
+
+
+# --- Revisión de RichiMa en #59 -------------------------------------------------------
+import asyncio  # noqa: E402
+import httpx  # noqa: E402
+import time  # noqa: E402
+
+from fastapi.testclient import TestClient  # noqa: E402
+
+from app.main import app  # noqa: E402
+from app.routers import clasificar as router_clasificar  # noqa: E402
+from app.services.claude_common import ResultadoClaude  # noqa: E402
+
+
+def test_clasificar_foto_no_bloquea_otras_peticiones(monkeypatch):
+    """[P1] Una clasificación lenta no debe frenar el event loop del worker.
+
+    Criterio: /health tiene que TERMINAR mientras la clasificación sigue corriendo. Si el
+    endpoint bloqueara el loop, /health recién podría avanzar cuando la clasificación acaba.
+    """
+    import threading
+
+    empezo = threading.Event()
+    tiempos = {}
+
+    def lenta(data):
+        tiempos["inicio"] = time.perf_counter()
+        empezo.set()
+        time.sleep(0.5)  # Pillow + Postgres + Claude: todo bloqueante
+        tiempos["fin"] = time.perf_counter()
+        return ResultadoClaude(ClasificacionRejilla(**OK), "test", "v", "k")
+
+    monkeypatch.setattr(router_clasificar, "clasificar_rejilla", lenta)
+
+    async def escenario():
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as c:
+            foto = asyncio.create_task(c.post("/clasificar/rejilla", files={"foto": ("x.jpg", _foto(), "image/jpeg")}))
+            await asyncio.to_thread(empezo.wait, 5)  # esperar en un hilo: no depende del loop
+            r = await c.get("/health")
+            tiempos["health"] = time.perf_counter()
+            await foto
+            return r.status_code
+
+    assert asyncio.run(escenario()) == 200
+    assert tiempos["health"] < tiempos["fin"], "/health tuvo que esperar a que terminara la clasificación"
+
+
+def test_imagen_ilegible_responde_422(monkeypatch, sin_db):
+    """[P2] Bytes que no son imagen: 422 claro, no 500, y sin llamar a Claude."""
+    monkeypatch.setattr(claude_common, "get_client", lambda: pytest.fail("no debe llamar a Claude"))
+    c = TestClient(app)
+    for ruta in ("/clasificar/rejilla", "/clasificar/camara"):
+        r = c.post(ruta, files={"foto": ("x.jpg", b"esto no es una imagen", "image/jpeg")})
+        assert r.status_code == 422 and "imagen" in r.json()["detail"]
+
+
+def _sin_clave(monkeypatch):
+    claude_common.get_client.cache_clear()
+    monkeypatch.setattr(claude_common, "get_settings", lambda: SimpleNamespace(
+        anthropic_api_key="", claude_model="claude-test", claude_effort="low"))
+
+
+def test_texto_sin_clave_mantiene_heuristica_de_urgencia(monkeypatch, sin_db):
+    """[P2] Sin ANTHROPIC_API_KEY el texto no da 500: responde con la heurística local."""
+    _sin_clave(monkeypatch)
+    r = TestClient(app).post("/clasificar/texto", json={"texto": "auxilio, hay un adulto mayor atrapado"})
+    claude_common.get_client.cache_clear()
+    assert r.status_code == 200
+    j = r.json()
+    assert j["urgente"] is True and len(j["numeros_emergencia"]) == 3
+    assert j["claude_disponible"] is False and j["fallo"] is True
+
+
+def test_foto_sin_clave_queda_no_evaluable(monkeypatch, sin_db):
+    _sin_clave(monkeypatch)
+    r = TestClient(app).post("/clasificar/rejilla", files={"foto": ("x.jpg", _foto(), "image/jpeg")})
+    claude_common.get_client.cache_clear()
+    assert r.status_code == 200
+    assert r.json()["clasificacion"]["rejilla"] == "no_evaluable" and r.json()["claude_disponible"] is False
+
+
+def test_cache_invalida_vuelve_a_llamar_con_la_foto(monkeypatch, sin_db):
+    """[P2] Entrada de caché que no valida: se regenera CON la imagen (antes iba content=[])."""
+    from app.services import cache as cache_mod
+    from app.services.claude_vision import PROMPT_VERSION_REJILLA
+
+    foto = _foto()
+    sin_db[cache_mod.cache_key(foto, PROMPT_VERSION_REJILLA)] = {"respuesta": {"rejilla": "rara"}, "modelo": "x"}
+    vistos = []
+
+    class Cliente(FakeClient):
+        def _create(self, **kwargs):
+            vistos.append(kwargs["messages"][0]["content"])
+            return super()._create(**kwargs)
+
+    fake = Cliente([json.dumps(OK)])
+    monkeypatch.setattr(claude_common, "get_client", lambda: fake)
+    r = clasificar_rejilla(foto)
+    assert not r.fallo and not r.desde_cache and r.resultado.rejilla == "tapada"
+    assert len(vistos) == 1 and vistos[0][0]["type"] == "image"

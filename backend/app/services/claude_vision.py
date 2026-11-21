@@ -7,7 +7,7 @@ from __future__ import annotations
 import base64
 import io
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 try:  # fotos HEIC de iPhone
     from pillow_heif import register_heif_opener
@@ -110,10 +110,20 @@ SCHEMA_CAMARA = {
 }
 
 
+class ImagenInvalida(ValueError):
+    """Los bytes no son una imagen que se pueda leer."""
+
+
 def preparar_imagen(data: bytes) -> tuple[str, str]:
-    """Corrige la orientación EXIF, achica a MAX_LADO_PX y devuelve (base64 JPEG, media_type)."""
-    img = Image.open(io.BytesIO(data))
-    img = ImageOps.exif_transpose(img).convert("RGB")
+    """Corrige la orientación EXIF, achica a MAX_LADO_PX y devuelve (base64 JPEG, media_type).
+
+    Lanza `ImagenInvalida` si los bytes no son una imagen legible (la API responde 422).
+    """
+    try:
+        img = Image.open(io.BytesIO(data))
+        img = ImageOps.exif_transpose(img).convert("RGB")
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError) as e:
+        raise ImagenInvalida("No se pudo leer la imagen") from e
     img.thumbnail((MAX_LADO_PX, MAX_LADO_PX))
     out = io.BytesIO()
     img.save(out, format="JPEG", quality=88)
@@ -131,10 +141,9 @@ def _contenido(data: bytes, instruccion: str) -> list[dict]:
 def clasificar_rejilla(data: bytes) -> ResultadoClaude[ClasificacionRejilla]:
     """§5.1. `data` son los bytes de la foto (JPEG, PNG, WebP o HEIC)."""
     key = cache.cache_key(data, PROMPT_VERSION_REJILLA)
-    hit = cache.get(key)
-    content = [] if hit else _contenido(data, "Clasifica esta rejilla.")
     return llamar_estructurado(
-        system=SYSTEM_REJILLA, content=content, schema=SCHEMA_REJILLA, modelo_pydantic=ClasificacionRejilla,
+        system=SYSTEM_REJILLA, content=lambda: _contenido(data, "Clasifica esta rejilla."),
+        schema=SCHEMA_REJILLA, modelo_pydantic=ClasificacionRejilla,
         key=key, prompt_version=PROMPT_VERSION_REJILLA,
         no_evaluable=ClasificacionRejilla.no_evaluable("No se pudo clasificar la foto"),
     )
@@ -143,10 +152,9 @@ def clasificar_rejilla(data: bytes) -> ResultadoClaude[ClasificacionRejilla]:
 def clasificar_camara(data: bytes) -> ResultadoClaude[ClasificacionCamara]:
     """§5.2. Cuadro de la cámara fija."""
     key = cache.cache_key(data, PROMPT_VERSION_CAMARA)
-    hit = cache.get(key)
-    content = [] if hit else _contenido(data, "Describe este cuadro de la cámara.")
     return llamar_estructurado(
-        system=SYSTEM_CAMARA, content=content, schema=SCHEMA_CAMARA, modelo_pydantic=ClasificacionCamara,
+        system=SYSTEM_CAMARA, content=lambda: _contenido(data, "Describe este cuadro de la cámara."),
+        schema=SCHEMA_CAMARA, modelo_pydantic=ClasificacionCamara,
         key=key, prompt_version=PROMPT_VERSION_CAMARA,
         no_evaluable=ClasificacionCamara.no_evaluable("No se pudo describir el cuadro"),
     )

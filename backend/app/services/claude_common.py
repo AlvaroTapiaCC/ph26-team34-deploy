@@ -14,6 +14,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from functools import lru_cache
+from collections.abc import Callable
 from typing import Any, Generic, TypeVar
 
 import anthropic
@@ -46,14 +47,20 @@ class ResultadoClaude(Generic[T]):
             "latencia_ms": self.latencia_ms,
             "desde_cache": self.desde_cache,
             "fallo": self.fallo,
+            # False si no se llamó a Claude por no estar configurado (falta ANTHROPIC_API_KEY)
+            "claude_disponible": self.extra.get("motivo") != "claude_no_configurado",
         }
+
+
+class ClaudeNoConfigurado(RuntimeError):
+    """Falta ANTHROPIC_API_KEY: no se puede llamar a Claude."""
 
 
 @lru_cache
 def get_client() -> anthropic.Anthropic:
     key = get_settings().anthropic_api_key
     if not key:
-        raise RuntimeError("Falta ANTHROPIC_API_KEY")
+        raise ClaudeNoConfigurado("Falta ANTHROPIC_API_KEY")
     return anthropic.Anthropic(api_key=key, timeout=60, max_retries=2)
 
 
@@ -64,7 +71,7 @@ def _texto(response: Any) -> str:
 def llamar_estructurado(
     *,
     system: str,
-    content: list[dict[str, Any]],
+    content: list[dict[str, Any]] | Callable[[], list[dict[str, Any]]],
     schema: dict[str, Any],
     modelo_pydantic: type[T],
     key: str,
@@ -72,7 +79,16 @@ def llamar_estructurado(
     no_evaluable: T,
     max_tokens: int = 2048,
 ) -> ResultadoClaude[T]:
-    """Llama a Claude (o usa la caché) y devuelve un resultado siempre válido."""
+    """Llama a Claude (o usa la caché) y devuelve un resultado siempre válido.
+
+    `content` puede ser una función que arma el contenido: se llama solo si de verdad hay
+    que consultar a Claude (no hay caché válida). Así hay UNA sola lectura de caché y la
+    foto se prepara después de saber que no hay resultado reutilizable: una entrada de
+    caché inválida nunca termina en una llamada sin la foto.
+
+    Errores del contenido (p. ej. una imagen ilegible) se propagan a quien llama.
+    Si Claude no está configurado, devuelve `no_evaluable` con `extra.motivo`.
+    """
     settings = get_settings()
     hit = cache.get(key)
     if hit is not None:
@@ -83,16 +99,26 @@ def llamar_estructurado(
         except ValidationError:
             log.warning("entrada de caché inválida para %s; se vuelve a llamar", key)
 
+    contenido = content() if callable(content) else content
+    if not contenido:
+        raise ValueError("llamar_estructurado sin contenido")
+
     modelo = settings.claude_model
+    try:
+        client = get_client()
+    except ClaudeNoConfigurado:
+        log.error("ANTHROPIC_API_KEY no configurada: se responde no_evaluable sin llamar a Claude")
+        return ResultadoClaude(no_evaluable, modelo, prompt_version, key, fallo=True,
+                               extra={"motivo": "claude_no_configurado"})
     crudo: str | None = None
     t0 = time.perf_counter()
     for intento in (1, 2):
         try:
-            response = get_client().beta.messages.create(
+            response = client.beta.messages.create(
                 model=modelo,
                 max_tokens=max_tokens,
                 system=system,
-                messages=[{"role": "user", "content": content}],
+                messages=[{"role": "user", "content": contenido}],
                 output_config={
                     "effort": settings.claude_effort,
                     "format": {"type": "json_schema", "schema": schema},
