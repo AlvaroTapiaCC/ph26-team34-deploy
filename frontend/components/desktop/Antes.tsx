@@ -103,7 +103,7 @@ function Bottom() {
       </div>
       <div className="tile tile--plain">
         <Kicker>Lo que no hace</Kicker>
-        <p className="tile__body">No recomienda cerrar calles ni desviar agua, ni da profundidades.</p>
+        <p className="tile__body">No recomienda cerrar calles ni desviar agua, ni muestra profundidades o minutos de llegada.</p>
       </div>
       <div className="tile tile--grey">
         <Kicker>Ruta de cuadrilla</Kicker>
@@ -148,7 +148,7 @@ function MainMap() {
   const { s, set, toggleLayer } = useStore();
   const { pins, labels } = usePins();
   const L = s.layers;
-  const flujo = useFlujo({ scenario: s.scenario, puntos: PUNTOS_FLUJO, onNiveles: (agua) => set({ agua }), visible: L.escurrimiento });
+  const flujo = useFlujo({ scenario: s.scenario, puntos: PUNTOS_FLUJO, onNiveles: () => {} /* la lluvia supuesta no cambia el orden: lo mueve la evidencia */, visible: L.escurrimiento });
   return (
     <DrenaMap
       className="map--main"
@@ -162,7 +162,7 @@ function MainMap() {
       attribution="Base: Esri, HERE, Garmin, © OpenStreetMap · ubicaciones aproximadas"
       onMapReady={flujo.alMapaListo}
     >
-      <FlujoControles ui={flujo.ui} onAlternar={flujo.alternar} onVelocidad={flujo.setVelocidad} onModo={flujo.setModo} onReiniciar={flujo.reiniciar} />
+      <FlujoControles ui={flujo.ui} onAlternar={flujo.alternar} onVelocidad={flujo.setVelocidad} onReiniciar={flujo.reiniciar} />
       <FlujoAviso desbordados={flujo.ui.desbordados} corriendo={flujo.ui.corriendo} />
       <div className="legend">
         <Kicker>Capas</Kicker>

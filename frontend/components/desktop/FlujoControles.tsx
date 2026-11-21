@@ -1,7 +1,7 @@
 "use client";
 
 import { FLUJO_CONFIG } from "@/lib/flujo/config";
-import type { ModoFlujo, UiFlujo, Velocidad } from "@/lib/flujo/useFlujo";
+import type { UiFlujo, Velocidad } from "@/lib/flujo/useFlujo";
 import { Segmented } from "../ui";
 
 const pad = (n: number) => String(Math.floor(n)).padStart(2, "0");
@@ -19,31 +19,20 @@ export default function FlujoControles({
   ui,
   onAlternar,
   onVelocidad,
-  onModo,
   onReiniciar,
 }: {
   ui: UiFlujo;
   onAlternar: () => void;
   onVelocidad: (v: Velocidad) => void;
-  onModo: (m: ModoFlujo) => void;
   onReiniciar: () => void;
 }) {
+  // Sin opción "Tiempo real": no hay datos en vivo detrás (la lluvia es la del escenario).
   const real = ui.modo === "tiempo_real";
   return (
-    <div className="flujo" role="group" aria-label="Simulación del escurrimiento">
+    <div className="flujo" role="group" aria-label="Flujo estimado por las calles">
       <button className="flujo__play" onClick={onAlternar} disabled={!ui.cargado} aria-label={ui.corriendo ? "Pausar" : "Reproducir"}>
         {ui.corriendo ? "❚❚" : "▶"}
       </button>
-      <Segmented<ModoFlujo>
-        size="md"
-        soft
-        options={[
-          { id: "escenario", label: "Escenario" },
-          { id: "tiempo_real", label: "Tiempo real" },
-        ]}
-        value={ui.modo}
-        onChange={onModo}
-      />
       <Segmented<string>
         soft
         options={FLUJO_CONFIG.velocidades.map((v) => ({ id: String(v), label: `${v}×` }))}
@@ -51,7 +40,7 @@ export default function FlujoControles({
         onChange={(v) => !real && onVelocidad(Number(v) as Velocidad)}
         className={real ? "is-locked" : ""}
       />
-      <div className="flujo__reloj" title={real ? "Hora real" : "Tiempo simulado desde el inicio de la lluvia"}>
+      <div className="flujo__reloj" title={real ? "Hora real" : "Tiempo desde el inicio de la lluvia supuesta del escenario"}>
         <b>{formatoReloj(ui)}</b>
         <small>{ui.terminado ? "fin" : `${ui.lluviaMmH.toFixed(0)} mm/h`}</small>
       </div>
@@ -66,8 +55,8 @@ export default function FlujoControles({
 export function FlujoAviso({ desbordados, corriendo }: { desbordados: number; corriendo: boolean }) {
   return (
     <div className="flujo-aviso">
-      {corriendo && desbordados > 0 && <b>{desbordados} {desbordados === 1 ? "punto desbordado" : "puntos desbordados"} · </b>}
-      Simulación del escurrimiento según pendiente y área de aporte; no es una medición
+      {corriendo && desbordados > 0 && <b>{desbordados} {desbordados === 1 ? "punto con agua (estimado)" : "puntos con agua (estimado)"} · </b>}
+      Flujo estimado por las calles según la pendiente; no es una simulación hidráulica ni una medición. Lluvia y estado de las rejillas: supuestos de la demo.
     </div>
   );
 }
