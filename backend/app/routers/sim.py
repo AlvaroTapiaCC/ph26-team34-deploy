@@ -16,6 +16,17 @@ def _exigir_admin(x_admin_token: str | None = Header(default=None)) -> None:
         raise HTTPException(401, "Falta o es inválido X-Admin-Token")
 
 
+def _exigir_sim(x_admin_token: str | None = Header(default=None), x_sim_token: str | None = Header(default=None)) -> None:
+    """/sim/trigger acepta SIM_TOKEN (el del navegador) o ADMIN_TOKEN. Sin SIM_TOKEN, queda abierto."""
+    cfg = get_settings()
+    if not cfg.sim_token:
+        return
+    ok_sim = hmac.compare_digest(x_sim_token or "", cfg.sim_token)
+    ok_admin = bool(cfg.admin_token) and hmac.compare_digest(x_admin_token or "", cfg.admin_token)
+    if not (ok_sim or ok_admin):
+        raise HTTPException(401, "Falta o es inválido X-Sim-Token")
+
+
 router = APIRouter(prefix="/sim", tags=["sim"])
 
 
@@ -51,7 +62,7 @@ def status() -> dict[str, Any]:
     return get_simulador().status()
 
 
-@router.post("/trigger", dependencies=[Depends(_exigir_admin)])
+@router.post("/trigger", dependencies=[Depends(_exigir_sim)])
 def trigger(reporte: ReporteEnVivo | None = None) -> dict[str, Any]:
     """Dispara un reporte en vivo (botón "Disparar reporte" de /central)."""
     try:

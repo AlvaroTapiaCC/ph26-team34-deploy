@@ -119,13 +119,44 @@ def test_validacion_del_reporte_en_vivo(monkeypatch):
     assert c.post("/sim/trigger", json={"texto": "x" * 501}).status_code == 422
 
 
-def test_controles_exigen_token(monkeypatch):
+def test_controles_exigen_admin_y_trigger_sim_token(monkeypatch):
     from app.config import Settings
 
     monkeypatch.setattr(sim, "_instancia", Simulador(cargar_timeline(), Reloj()))
-    monkeypatch.setattr("app.routers.sim.get_settings", lambda: Settings(admin_token="secreto"))
+    monkeypatch.setattr("app.routers.sim.get_settings", lambda: Settings(admin_token="admin", sim_token="demo"))
     c = TestClient(app)
     for ruta in ("start", "stop", "reset", "trigger"):
         assert c.post(f"/sim/{ruta}").status_code == 401
-    assert c.post("/sim/reset", headers={"X-Admin-Token": "secreto"}).status_code == 200
+    # el token del navegador solo vale para trigger
+    assert c.post("/sim/reset", headers={"X-Sim-Token": "demo"}).status_code == 401
+    assert c.post("/sim/trigger", headers={"X-Sim-Token": "demo"}).status_code == 200
+    assert c.post("/sim/trigger", headers={"X-Admin-Token": "admin"}).status_code == 200
+    assert c.post("/sim/reset", headers={"X-Admin-Token": "admin"}).status_code == 200
     assert c.get("/sim/status").status_code == 200
+
+
+def test_disparar_aplica_antes_lo_vencido():
+    s, reloj = _sim()
+    s.start()
+    reloj.t = 7
+    s.disparar({})
+    assert [e["t"] for e in s.status()["eventos"]] == [0, 6, 7]
+
+
+def test_fin_fijo_y_start_reinicia_en_la_misma_llamada():
+    s, reloj = _sim()
+    s.start()
+    reloj.t = 500
+    st = s.start()  # primera llamada tras vencer: reinicia
+    assert st["estado"] == "corriendo" and st["t"] == 0
+    reloj.t = 900
+    assert s.status()["t"] == 90
+    reloj.t = 5000
+    assert s.status()["t"] == 90
+
+
+def test_arranca_solo_con_backend(tmp_path):
+    from app.services.sim import TIMELINE_PATH
+    from app.config import BACKEND_DIR
+
+    assert TIMELINE_PATH.is_relative_to(BACKEND_DIR) and TIMELINE_PATH.exists()

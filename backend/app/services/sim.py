@@ -1,6 +1,6 @@
 """Simulador de la línea de tiempo de la demo (issue #46).
 
-Reproduce `data/demo_timeline.json` con un reloj propio. El estado se calcula a partir del
+Reproduce `backend/data/demo_timeline.json` con un reloj propio. El estado se calcula a partir del
 tiempo transcurrido (no hay hilos), así que la demo es repetible: el mismo timeline y los
 mismos instantes dan siempre la misma secuencia de eventos.
 
@@ -26,9 +26,10 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from app.config import REPO_DIR
+from app.config import BACKEND_DIR
 
-TIMELINE_PATH = REPO_DIR / "data" / "demo_timeline.json"
+# Dentro de backend/ para que viaje con el despliegue de Render (rootDir: backend)
+TIMELINE_PATH = BACKEND_DIR / "data" / "demo_timeline.json"
 
 MAX_EN_VIVO = 50  # tope de reportes en vivo por corrida
 log = logging.getLogger(__name__)
@@ -83,12 +84,14 @@ class Simulador:
             evento = eventos[self._siguiente]
             self._siguiente += 1  # antes de emitir: el evento nunca se repite
             self._emitir(dict(evento))
-        if self._siguiente >= len(eventos) and t >= self._timeline.get("duracion_s", 0):
-            self._acumulado, self._desde = t, None
+        fin = max(self._timeline.get("duracion_s", 0), eventos[-1]["t"] if eventos else 0)
+        if self._siguiente >= len(eventos) and t >= fin:
+            self._acumulado, self._desde = fin, None  # el tiempo final no depende de cuándo se consulte
             self.estado = "terminada"
 
     def start(self) -> dict[str, Any]:
         with self._lock:
+            self._avanzar()  # si ya venció, queda "terminada" y esta misma llamada reinicia
             if self.estado == "terminada":
                 self._reset()
             if self.estado in ("detenida", "pausada"):
@@ -112,6 +115,7 @@ class Simulador:
     def disparar(self, payload: Evento) -> Evento:
         """Inyecta un reporte en vivo, fuera del timeline (no altera su repetibilidad)."""
         with self._lock:
+            self._avanzar()  # primero lo vencido del timeline: así los tiempos quedan en orden
             if self._en_vivo >= MAX_EN_VIVO:
                 raise TopeAlcanzado(f"Máximo {MAX_EN_VIVO} reportes en vivo por corrida")
             self._en_vivo += 1
