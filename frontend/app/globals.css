@@ -874,17 +874,17 @@ p {
   background: var(--lime);
 }
 
-/* Fila inferior (Antes) */
+/* Tarjetas inferiores: título arriba; la cifra y su texto en la misma línea base */
 .bottom {
-  height: 124px;
+  height: 120px;
   flex: none;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1.35fr;
+  grid-template-columns: 1fr 1fr 1fr 1.25fr;
   gap: 12px;
 }
 .tile {
   border-radius: var(--r-24);
-  padding: 12px 16px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -892,15 +892,22 @@ p {
   min-width: 0;
   overflow: hidden;
 }
-.tile .kicker {
-  font-size: 11px;
-  line-height: 14px;
-  letter-spacing: 0.08em;
+.tile__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 20px;
+}
+.tile__t {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 18px;
 }
 .tile__row {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: baseline;
+  gap: 10px;
   min-width: 0;
 }
 .tile__big {
@@ -909,25 +916,37 @@ p {
   font-weight: 700;
   font-size: 40px;
   line-height: 44px;
+  letter-spacing: -0.02em;
+}
+.tile__big small {
+  margin-left: 2px;
+  font-size: 0.55em;
+  font-weight: 600;
+}
+.tile__badge {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 16px;
 }
 .tile__p {
+  flex: 1;
+  min-width: 0;
   font-size: 12px;
   line-height: 16px;
-  min-width: 0;
 }
-.tile__body {
-  font-weight: 500;
-  font-size: 13px;
-  line-height: 17px;
-  min-width: 0;
-}
-.tile__row .tile__body {
-  flex: 1;
+.tile__p .is-accent {
+  color: var(--lime);
 }
 .tile__btn {
   flex: none;
-  height: 44px;
-  padding: 0 16px;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
   white-space: nowrap;
 }
 .tile--accent {
@@ -945,19 +964,36 @@ p {
   background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--line);
 }
+.tile--plain .tile__p {
+  color: var(--text-2);
+}
 .tile--grey {
   background: var(--surface-3);
 }
 
-/* Mapa Antes */
+/* Mapa principal */
 .map--main {
   flex: 1;
   min-height: 0;
 }
-.map--main .legend {
-  top: 20px;
-  right: 20px;
-  width: 251px;
+.map--main .legend--capas {
+  top: 16px;
+  left: 16px;
+  width: 212px;
+  padding: 12px;
+  gap: 8px;
+}
+.legend--capas.is-closed {
+  width: auto;
+  padding: 8px 12px;
+}
+.legend__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 24px;
 }
 
 /* Ficha */
@@ -2100,26 +2136,21 @@ p {
   line-height: 15px;
   color: var(--text-2);
 }
-.flujo-aviso b {
-  color: var(--lime);
-}
 
-/* Pantallas de hasta 1400 px (1280 y 1366): las tarjetas inferiores quedan más angostas y se compactan para no cortarse */
+/* Pantallas de hasta 1400 px (1280 y 1366): tarjetas y paneles del mapa más compactos para no cortarse */
 @media (max-width: 1400px) {
   .tile {
-    padding: 10px 12px;
+    padding: 12px;
   }
-  .tile .kicker {
-    font-size: 10px;
-    line-height: 12px;
-    letter-spacing: 0.04em;
+  .tile__t {
+    font-size: 13px;
+    line-height: 16px;
   }
   .tile__big {
     font-size: 32px;
     line-height: 36px;
   }
-  .tile__p,
-  .tile__body {
+  .tile__p {
     font-size: 11px;
     line-height: 14px;
   }
@@ -2127,8 +2158,26 @@ p {
     gap: 8px;
   }
   .tile__btn {
-    padding: 0 12px;
+    height: 32px;
+    padding: 0 10px;
     font-size: 13px;
+  }
+  .map--main .legend--capas {
+    width: 188px;
+  }
+  .map--main .legend--capas.is-closed {
+    width: auto;
+  }
+  .col--l {
+    width: 520px;
+  }
+  .hero .stat__v {
+    font-size: 26px;
+    white-space: nowrap;
+  }
+  .bottom {
+    grid-template-columns: 1fr 1fr 1fr 1.15fr;
+    gap: 10px;
   }
 }
 
