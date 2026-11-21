@@ -2444,3 +2444,26 @@ p {
   max-width: calc(100% - 32px);
   white-space: normal;
 }
+
+/* Nombres de comuna sobre el mapa: Geist Mono, mayúsculas, gris; solo desde el zoom 11 (clase is-on) */
+.comuna-label {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  text-shadow: 0 0 3px var(--bg), 0 0 3px var(--bg), 0 0 6px var(--bg);
+}
+.comuna-label--proy {
+  color: var(--text-2);
+  font-weight: 600;
+}
+.comuna-label.is-on {
+  opacity: 1;
+}

@@ -25,7 +25,7 @@ export default function TopBar() {
         value={s.comuna}
         active={s.comuna !== "Todas"}
         options={COMUNAS.map((c) => ({ id: c.id, label: c.id, meta: c.total.toLocaleString("es-CL") }))}
-        onChange={(comuna) => set({ comuna, ficha: null, layers: { ...s.layers, limites: comuna !== "Todas" } })}
+        onChange={(comuna) => set({ comuna, ficha: null })}
         footer="intersecciones evaluadas"
       />
       <Selector

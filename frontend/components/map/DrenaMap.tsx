@@ -33,7 +33,7 @@ export interface DrenaMapProps {
   area?: LngLat[] | null;
   celda?: { poly: LngLat[]; rayos: LngLat[]; link: [LngLat, LngLat] } | null;
   gore?: LngLat[] | null;
-  comunas?: boolean; // límites comunales reales (public/data/comunas.geojson)
+  comunas?: boolean; // límites de todas las comunas de la RM con su nombre (public/data/comunas_rm.geojson). Por defecto, sí
   rejillas?: boolean; // catastro de rejillas MOP, agrupadas en zoom bajo (public/data/rejillas.geojson)
   reales?: { coord: LngLat; conTop: boolean }[] | null;
   bounds: [LngLat, LngLat];
@@ -100,6 +100,35 @@ function labelEl(l: MapLabel): HTMLElement {
   return el;
 }
 
+// Colores de los tokens de globals.css. MapLibre no lee variables CSS: se resuelven al crear el mapa y cada vez
+// que cambia el esquema de color, así las capas siguen al tema (claro u oscuro) sin repetir los hex aquí.
+function token(name: string, fallback: string): string {
+  if (typeof window === "undefined") return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
+interface ComunaRm {
+  comuna: string;
+  enProyecto: boolean;
+  coord: LngLat;
+}
+let comunasRmPromise: Promise<ComunaRm[]> | null = null;
+function cargarComunasRm(): Promise<ComunaRm[]> {
+  comunasRmPromise ??= fetch("/data/comunas_rm.geojson")
+    .then((r) => r.json())
+    .then((g: { features: { properties: { comuna: string; en_proyecto: boolean; lon: number; lat: number } }[] }) =>
+      g.features.map((f) => ({ comuna: f.properties.comuna, enProyecto: f.properties.en_proyecto, coord: [f.properties.lon, f.properties.lat] as LngLat })),
+    )
+    .catch(() => {
+      comunasRmPromise = null;
+      return [];
+    });
+  return comunasRmPromise;
+}
+
+// Las etiquetas de comuna aparecen desde este zoom
+export const ZOOM_ETIQUETAS_COMUNA = 11;
+
 const fc = (features: unknown[]) => ({ type: "FeatureCollection", features });
 const line = (c: LngLat[]) => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: c } });
 const poly = (c: LngLat[]) => ({ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[...c, c[0]]] } });
@@ -109,6 +138,8 @@ export default function DrenaMap(props: DrenaMapProps) {
   const mapRef = useRef<MapLibre>(null);
   const libRef = useRef<MapLibre>(null);
   const markers = useRef<MapLibre[]>([]);
+  const comunaMarkers = useRef<{ el: HTMLElement; marker: MapLibre }[]>([]);
+  const unsubTema = useRef<() => void>(() => {});
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const size = props.pinSize ?? 40;
@@ -134,7 +165,7 @@ export default function DrenaMap(props: DrenaMapProps) {
         map.once("style.load", () => {
           const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]) });
           ["esc", "chain", "lim", "area", "celda", "celda-link", "gore"].forEach(add);
-          map.addSource("comunas", { type: "geojson", data: "/data/comunas.geojson" });
+          map.addSource("comunas-rm", { type: "geojson", data: "/data/comunas_rm.geojson" });
           map.addSource("rejillas", { type: "geojson", data: "/data/rejillas.geojson", cluster: true, clusterMaxZoom: 15, clusterRadius: 40 });
           map.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-color": "#FF3D0A", "fill-opacity": 0.16 } });
           map.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-color": "#FF3D0A", "line-width": 2, "line-opacity": 0.9, "line-dasharray": [3, 2] } });
@@ -142,9 +173,18 @@ export default function DrenaMap(props: DrenaMapProps) {
           map.addLayer({ id: "celda-line", type: "line", source: "celda", paint: { "line-color": "#1B1B1B", "line-width": 2, "line-dasharray": [3, 2] } });
           map.addLayer({ id: "celda-link", type: "line", source: "celda-link", paint: { "line-color": "#1B1B1B", "line-width": 3, "line-opacity": 0.8, "line-dasharray": [1.5, 1.5] } });
           map.addLayer({ id: "lim", type: "line", source: "lim", paint: { "line-color": "#5A5A57", "line-width": 2, "line-opacity": 0.8, "line-dasharray": [4, 3] } });
-          // Colores = tokens de globals.css (--text-2, --prio-baja, --surface-3, --surface); MapLibre no lee variables CSS.
           const hidden = { visibility: "none" };
-          map.addLayer({ id: "comunas-line", type: "line", source: "comunas", layout: hidden, paint: { "line-color": "#5A5A57", "line-width": 1.75, "line-opacity": 0.9 } });
+          // Límites de todas las comunas: línea fina punteada en --text-3, relleno casi invisible; las 3 del proyecto, algo más marcadas.
+          const t3 = token("--text-3", "#7C7C78");
+          map.addLayer({ id: "rm-fill", type: "fill", source: "comunas-rm", paint: { "fill-color": t3, "fill-opacity": 0.035 } });
+          map.addLayer({ id: "rm-line", type: "line", source: "comunas-rm", paint: { "line-color": t3, "line-width": 0.9, "line-opacity": 0.85, "line-dasharray": [2, 2] } });
+          map.addLayer({
+            id: "rm-line-proy",
+            type: "line",
+            source: "comunas-rm",
+            filter: ["==", ["get", "en_proyecto"], true],
+            paint: { "line-color": t3, "line-width": 1.8, "line-opacity": 1, "line-dasharray": [3, 2] },
+          });
           map.addLayer({
             id: "rej-cluster",
             type: "circle",
@@ -173,12 +213,24 @@ export default function DrenaMap(props: DrenaMapProps) {
           map.addLayer({ id: "chain-halo", type: "line", source: "chain", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#FF3D0A", "line-width": 14, "line-opacity": 0.2 } });
           map.addLayer({ id: "chain-line", type: "line", source: "chain", paint: { "line-color": "#FF3D0A", "line-width": 3, "line-dasharray": [1.5, 1.5] } });
           map.addLayer({ id: "gore", type: "circle", source: "gore", paint: { "circle-radius": 4, "circle-color": "#5A5A57", "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 1.5 } });
+          // Si cambia el esquema de color del sistema, se vuelven a leer los tokens
+          const repintar = () => {
+            const c = token("--text-3", "#7C7C78");
+            ["rm-fill"].forEach((id) => map.setPaintProperty(id, "fill-color", c));
+            ["rm-line", "rm-line-proy"].forEach((id) => map.setPaintProperty(id, "line-color", c));
+          };
+          const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+          mq?.addEventListener?.("change", repintar);
+          unsubTema.current = () => mq?.removeEventListener?.("change", repintar);
           setReady(true);
         });
       })
       .catch(() => !cancelled && setFailed(true));
     return () => {
       cancelled = true;
+      unsubTema.current();
+      comunaMarkers.current.forEach((c) => c.marker.remove());
+      comunaMarkers.current = [];
       markers.current.forEach((m) => m.remove());
       mapRef.current?.remove();
       mapRef.current = null;
@@ -212,9 +264,42 @@ export default function DrenaMap(props: DrenaMapProps) {
     if (!ready) return;
     const map = mapRef.current;
     const vis = (ids: string[], on?: boolean) => ids.forEach((id) => map.setLayoutProperty(id, "visibility", on ? "visible" : "none"));
-    vis(["comunas-line"], props.comunas);
+    vis(["rm-fill", "rm-line", "rm-line-proy"], props.comunas ?? true);
     vis(["rej-cluster", "rej-point"], props.rejillas);
   }, [ready, props.comunas, props.rejillas]);
+
+  // Nombres de comuna: HTML en Geist Mono (el estilo base no tiene glifos para una capa de texto). Visibles desde el zoom 11.
+  useEffect(() => {
+    if (!ready) return;
+    const ml = libRef.current;
+    const map = mapRef.current;
+    let vivo = true;
+    const actualizar = () => {
+      const z = map.getZoom();
+      const on = (props.comunas ?? true) && z >= ZOOM_ETIQUETAS_COMUNA;
+      comunaMarkers.current.forEach(({ el }) => el.classList.toggle("is-on", on));
+      // Con los nombres de comuna a la vista, los del mapa base se atenúan para no pisarse
+      map.setPaintProperty("ref", "raster-opacity", on ? (z >= 15 ? 0.75 : 0.2) : 0.75);
+    };
+    cargarComunasRm().then((lista) => {
+      if (!vivo) return;
+      comunaMarkers.current.forEach((c) => c.marker.remove());
+      comunaMarkers.current = lista.map((c) => {
+        const el = document.createElement("div");
+        el.className = `comuna-label${c.enProyecto ? " comuna-label--proy" : ""}`;
+        el.textContent = c.comuna;
+        const marker = new ml.Marker({ element: el, anchor: "center" }).setLngLat(c.coord).addTo(map);
+        return { el, marker };
+      });
+      actualizar();
+    });
+    map.on("zoom", actualizar);
+    actualizar();
+    return () => {
+      vivo = false;
+      map.off("zoom", actualizar);
+    };
+  }, [ready, props.comunas]);
 
   // Marcadores HTML
   useEffect(() => {
