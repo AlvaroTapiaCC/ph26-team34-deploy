@@ -12,7 +12,7 @@ def test_health():
 
 
 def test_stub_routes_mounted():
-    assert client.get("/crews").status_code == 501
+    assert client.get("/crews/x/next/audio").status_code == 501  # voz: issue #39
 
 
 def test_formula_weights_sum_to_one():
