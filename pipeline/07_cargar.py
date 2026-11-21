@@ -304,10 +304,15 @@ def escribir(conn, datos: dict[str, Any]) -> dict[str, int]:
             """,
             [(c["street_id"], c["nombre"], c["sumidero_ids"], c["distancias_m"]) for c in datos["cadenas"]],
         )
+        # Una recarga corrige la anterior: las esquinas que ya no tienen sumideros se borran
+        huerfanas = cur.execute(
+            "delete from intersections i where not exists (select 1 from sumideros s where s.intersection_id = i.id)"
+        ).rowcount
         sobrantes = cur.execute(
             "select count(*) as n from sumideros where fuente = 'doh' and not (id = any(%s))", (list(sumideros),)
         ).fetchone()
-    return {"intersecciones": len(inters), "sumideros": len(sumideros), "cadenas": len(datos["cadenas"]),
+    return {"intersecciones": len(inters), "intersecciones_huerfanas_borradas": huerfanas,
+            "sumideros": len(sumideros), "cadenas": len(datos["cadenas"]),
             "sumideros_doh_que_no_vienen": (sobrantes["n"] if isinstance(sobrantes, dict) else sobrantes[0])}
 
 
