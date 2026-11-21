@@ -32,8 +32,12 @@ def test_p_pred_clampa_features_fuera_de_rango():
 def test_lo_confirmado_manda():
     s = SumideroInput("a", {"arboles": 1, "feria": 1}, rejilla_observada="limpia", reportes_texto=3)
     p, pp, po, det = p_final(s, CFG)
-    assert p == 0 and po == 0 and pp > 0 and det["fuente_p"] == "foto"
-    assert p_final(SumideroInput("b", {}, rejilla_observada="tapada"), CFG)[0] == 1
+    limpia = CFG["observado"]["limpia"]
+    assert p == pytest.approx(limpia) and po == pytest.approx(limpia) and det["fuente_p"] == "foto"
+    assert pp > limpia  # la foto manda aunque la predicción diga otra cosa
+    assert p_final(SumideroInput("b", {}, rejilla_observada="tapada"), CFG)[0] == pytest.approx(
+        CFG["observado"]["tapada"]
+    )
     assert p_final(SumideroInput("c", {}, rejilla_observada="parcial"), CFG)[0] == pytest.approx(0.6)
 
 

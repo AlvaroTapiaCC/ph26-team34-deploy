@@ -1,0 +1,8 @@
+# Siempre LF: los sha256 de las metadatas (data/*.meta.json, predicción congelada)
+# se calculan sobre los bytes del archivo y no deben depender del sistema operativo.
+*.py       text eol=lf
+*.yaml     text eol=lf
+*.json     text eol=lf
+*.geojson  text eol=lf
+*.csv      text eol=lf
+*.md       text eol=lf
