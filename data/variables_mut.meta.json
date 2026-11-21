@@ -1,0 +1,107 @@
+{
+  "generado_utc": "2026-11-21T18:28:32+00:00",
+  "zona": {
+    "centro_lonlat": [
+      -70.601,
+      -33.4178
+    ],
+    "radio_m": 700,
+    "nota": "centro del MUT aproximado"
+  },
+  "rejillas": 47,
+  "variables": {
+    "arboles": "fracción WorldCover clase 10 a < 15 m",
+    "suelo": "fracción WorldCover clase 60 a < 100 m",
+    "feria": "max(0, 1 - d/300 m) al amenity=marketplace más cercano",
+    "obras": "1 si landuse/building=construction a <= 100 m",
+    "criticidad": "máximo peso de consecuencia.criticidad a <= 200 m (sin puntos críticos del Gobierno)"
+  },
+  "fuentes": {
+    "worldcover": {
+      "url": "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_S36W072_Map.tif",
+      "version": "v200 (2021)",
+      "recorte": "cache/worldcover/worldcover_mut.tif",
+      "sha256_recorte": "9e7b3f7809834917925cea19497a57da740befb6a799b161351ab1c8250d409a"
+    },
+    "osm": {
+      "via": "OSMnx 2.2.0 features_from_point",
+      "overpass": "https://maps.mail.ru/osm/tools/overpass/api",
+      "radio_m": 1200,
+      "tags": {
+        "amenity": [
+          "marketplace",
+          "hospital",
+          "school"
+        ],
+        "landuse": "construction",
+        "building": "construction",
+        "railway": [
+          "station",
+          "subway_entrance"
+        ],
+        "tunnel": "yes"
+      },
+      "descargado_utc": "2026-11-21T18:28:32+00:00",
+      "archivo": "osm_mut.geojson",
+      "sha256": "b1a0c106a662f462a2fa725067e1d1675b2136e179e609eb8b8f404dffb416a5",
+      "por_tipo": {
+        "metro": 29,
+        "paso_bajo_nivel": 20,
+        "obra": 15,
+        "colegio": 13,
+        "feria": 2,
+        "hospital": 1
+      }
+    }
+  },
+  "entradas": {
+    "terreno": {
+      "ruta": "data/terreno_mut.csv",
+      "sha256": "a31ec39edbd0f34f9641789d2af3e4e6020c5cf03b4ace1298854cdd87763a92"
+    },
+    "rejillas": {
+      "ruta": "data/rejillas.geojson",
+      "sha256": "dde763af25b2afb38c8b17f9aa66c670c860fae797d1821c9191fd012c55de22"
+    },
+    "config": {
+      "ruta": "backend/config/formula_validacion.yaml",
+      "sha256": "fde77019056cd4a9fcb88d5ad58dabd85f5c25462cd8faf95d648322a6f3e848"
+    }
+  },
+  "resumen": {
+    "arboles": {
+      "media": 0.4153,
+      "max": 1.0,
+      "no_cero": 32
+    },
+    "suelo": {
+      "media": 0.0262,
+      "max": 0.1253,
+      "no_cero": 45
+    },
+    "feria": {
+      "media": 0.0585,
+      "max": 0.4624,
+      "no_cero": 10
+    },
+    "obras": {
+      "media": 0.1064,
+      "max": 1.0,
+      "no_cero": 5
+    },
+    "criticidad": {
+      "media": 0.4489,
+      "max": 1.0,
+      "no_cero": 25
+    }
+  },
+  "salida": {
+    "archivo": "variables_mut.csv",
+    "sha256": "69cc12ea0e957a97b1ff9ad7cbc3c29f1e6e84e2019c42f3dcba222bcfd2d018"
+  },
+  "script": {
+    "ruta": "pipeline/04_variables.py",
+    "version": "0.1.0",
+    "sha256": "b72d4047159714822d077c8b6291a029777b517f844ed0021aae0a6f83ba70b0"
+  }
+}
