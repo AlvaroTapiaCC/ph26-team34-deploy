@@ -1,7 +1,7 @@
 import math
+from itertools import pairwise
 
 import pytest
-from itertools import pairwise
 
 from app.config import get_formula_config
 from app.services.formula import (
@@ -200,3 +200,10 @@ def test_features_invalidas_cuentan_como_cero(valor):
 def test_clamp_nan():
     from app.services.formula import clamp
     assert clamp(float("nan")) == 0.0
+
+
+def test_cadena_con_distancias_como_texto_usa_los_valores_convertidos():
+    """Revisión 2 de #58: validar y calcular con la misma lista (antes daba TypeError)."""
+    p = {"a": 1.0, "b": 0.0}
+    p_ef, aporte = efecto_cadena(p, [StreetChain("texto", ["a", "b"], ["0", "10"])], CFG)
+    assert aporte["b"] > 0 and p_ef["b"] > 0

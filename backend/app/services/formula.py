@@ -17,9 +17,9 @@ from __future__ import annotations
 
 import logging
 import math
-from itertools import pairwise
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from itertools import pairwise
 from typing import Any
 
 log = logging.getLogger(__name__)
@@ -129,16 +129,27 @@ def p_final(s: SumideroInput, cfg: Mapping[str, Any]) -> tuple[float, float, flo
 # ---------------------------------------------------------------------------
 # Paso 2: efecto en cadena (§6.2)
 # ---------------------------------------------------------------------------
-def cadena_valida(ch: StreetChain) -> bool:
-    """Mismo largo de ids y distancias, distancias finitas y no decrecientes (de arriba a abajo)."""
+def distancias_validas(ch: StreetChain) -> list[float] | None:
+    """Distancias de la cadena como float, o None si la cadena es inválida.
+
+    Válida = mismo largo de ids y distancias, distancias numéricas, finitas y no
+    decrecientes (de arriba a abajo). El cálculo usa ESTA lista convertida, así la
+    validación y el cálculo nunca ven valores distintos (p. ej. números guardados como texto).
+    """
     ids, dist = list(ch.sumidero_ids), list(ch.distancias_m)
     if len(ids) != len(dist):
-        return False
+        return None
     try:
         d = [float(x) for x in dist]
     except (TypeError, ValueError):
-        return False
-    return all(math.isfinite(x) for x in d) and all(b >= a for a, b in pairwise(d))
+        return None
+    if all(math.isfinite(x) for x in d) and all(b >= a for a, b in pairwise(d)):
+        return d
+    return None
+
+
+def cadena_valida(ch: StreetChain) -> bool:
+    return distancias_validas(ch) is not None
 
 
 def efecto_cadena(
@@ -158,12 +169,12 @@ def efecto_cadena(
     confirmados = confirmados or set()
     aporte: dict[str, float] = {}
     for ch in chains:
-        ids, dist = list(ch.sumidero_ids), list(ch.distancias_m)
-        if not cadena_valida(ch):
+        ids, dist = list(ch.sumidero_ids), distancias_validas(ch)
+        if dist is None:
             # Datos mal cargados: se ignora esta calle (sin efecto en cadena) en vez de romper
             # el recálculo. Se registra para corregir el pipeline.
             log.warning("street_chain %s inválida (largos %d/%d o distancias no crecientes); se ignora",
-                        ch.street_id, len(ids), len(dist))
+                        ch.street_id, len(ids), len(list(ch.distancias_m)))
             continue
         for i, sid in enumerate(ids):
             if sid not in p:

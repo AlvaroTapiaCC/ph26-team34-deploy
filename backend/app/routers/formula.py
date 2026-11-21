@@ -30,31 +30,32 @@ def recompute(
       Sin parámetros recalcula todos los escenarios y modos.
     - Con `incluir_simulados=false` (prueba de campo, §8.1) calcula sin datos simulados y
       devuelve el ranking SIN guardarlo, para no pisar la tabla de la demo. Requiere `scenario_id`.
+      Respuesta: `resultados[modo]` con la lista ordenada; sin `modo`, ambos modos.
 
     Síncrono: con los ~cientos de sumideros de la demo tarda menos de un segundo.
     """
     _exigir_admin(x_admin_token)
     with get_conn() as conn:
+        modos = [modo] if modo else ["antes", "durante"]
         if not incluir_simulados:
             if scenario_id is None:
                 raise HTTPException(422, "incluir_simulados=false requiere scenario_id")
             try:
-                scores = calcular(conn, scenario_id, modo or "antes", incluir_simulados=False)
+                resultados = {m: calcular(conn, scenario_id, m, incluir_simulados=False) for m in modos}
             except KeyError:
                 raise HTTPException(404, f"Escenario {scenario_id} no existe") from None
             return {
                 "guardado": False,
                 "scenario_id": scenario_id,
-                "modo": modo or "antes",
-                "items": [
-                    {"rank": s.rank, "sumidero_id": s.sumidero_id, "p_pred": s.p_pred, "p_ef": s.p_ef,
-                     "c": s.c, "prioridad": s.prioridad, "detalle": s.detalle}
-                    for s in scores
-                ],
+                # Igual que el recálculo normal: sin `modo`, ambos modos
+                "resultados": {
+                    m: [{"rank": s.rank, "sumidero_id": s.sumidero_id, "p_pred": s.p_pred, "p_ef": s.p_ef,
+                         "c": s.c, "prioridad": s.prioridad, "detalle": s.detalle} for s in scores]
+                    for m, scores in resultados.items()
+                },
             }
         if scenario_id is None:
             return {"guardado": True, "recalculado": recalcular_todo(conn)}
-        modos = [modo] if modo else ["antes", "durante"]
         try:
             return {"guardado": True,
                     "recalculado": {f"{scenario_id}/{m}": len(recalcular(conn, scenario_id, m)) for m in modos}}
