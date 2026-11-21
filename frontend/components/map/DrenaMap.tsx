@@ -289,7 +289,7 @@ export default function DrenaMap(props: DrenaMapProps) {
       const on = (props.comunas ?? true) && z >= ZOOM_ETIQUETAS_COMUNA;
       comunaMarkers.current.forEach(({ el }) => el.classList.toggle("is-on", on));
       // Con los nombres de comuna a la vista, los del mapa base se atenúan para no pisarse
-      map.setPaintProperty("ref", "raster-opacity", on ? (z >= 15 ? 0.75 : 0.2) : 0.75);
+      map.setPaintProperty("ref", "raster-opacity", on ? (z >= 15 ? 0.75 : 0.08) : 0.75);
     };
     cargarComunasRm().then((lista) => {
       if (!vivo) return;
