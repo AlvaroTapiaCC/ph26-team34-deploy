@@ -17,12 +17,12 @@ export function CriticidadPill({ text }: { text: string }) {
   );
 }
 
-/** Variables de la fórmula de un punto real (GET /sumideros/{id}): qué pesa en la probabilidad de tapa. */
+/** Variables de la fórmula de un punto real (GET /sumideros/{id}): qué pesa en el puntaje. */
 export function VariablesReales() {
   const { fichaReal, fichaEstado } = useStore();
   return (
     <div>
-      <Kicker>Qué pesa en la probabilidad de tapa</Kicker>
+      <Kicker>Qué pesa en el puntaje</Kicker>
       {fichaEstado === "cargando" && <p className="downstream">Cargando variables…</p>}
       {fichaEstado === "error" && <p className="downstream">No se pudo cargar el detalle de este punto.</p>}
       {fichaReal && fichaReal.variables.length === 0 && <p className="downstream">Sin variables cargadas para este sumidero todavía.</p>}

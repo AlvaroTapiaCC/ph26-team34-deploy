@@ -118,7 +118,7 @@ export const NOMBRE_VARIABLE: Record<string, string> = {
   suelo: "Suelo desnudo aguas arriba",
   pendiente: "Arrastre por pendiente",
   clima: "Viento y lluvia",
-  dias_sin_limpieza: "Días sin limpieza",
+  dias_sin_limpieza: "Días sin limpieza (simulado)",
   camara: "Señal de cámara",
 };
 

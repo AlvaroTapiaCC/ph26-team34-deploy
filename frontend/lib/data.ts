@@ -168,6 +168,8 @@ export const fmt = (n: number, d = 2) => n.toFixed(d).replace(".", ",");
 export const pad2 = (n: number) => String(n).padStart(2, "0");
 
 export const pct = (x: number | null | undefined) => (x == null ? "—" : `${Math.round(x * 100)} %`);
+/** Puntaje entre 0 y 1 con dos decimales (no es una probabilidad: no se muestra como %). */
+export const punt01 = (x: number | null | undefined) => (x == null ? "—" : fmt(x, 2));
 const nSum = (p: Punto) => `${p.real!.sumideros.length} ${p.real!.sumideros.length === 1 ? "sumidero" : "sumideros"}`;
 
 export function motivo(p: Punto) {
@@ -181,7 +183,7 @@ export function statsPunto(p: RankedPunto): { value: string; label: string }[] {
   if (p.real) {
     return [
       { value: String(p.real.sumideros.length), label: p.real.sumideros.length === 1 ? "sumidero en la esquina" : "sumideros en la esquina" },
-      { value: pct(p.real.pEf ?? p.real.p), label: "probabilidad de tapa" },
+      { value: punt01(p.real.pEf ?? p.real.p), label: "puntaje de obstrucción (0 a 1)" },
       { value: fmt(p.score, 3), label: "puntaje (P × C)" },
     ];
   }
@@ -193,7 +195,7 @@ export function statsPunto(p: RankedPunto): { value: string; label: string }[] {
 }
 
 export function cita(p: Punto) {
-  if (p.real) return `“${p.real.explicacion ?? `${nSum(p)} en ${p.nombre}. Prioridad = probabilidad de tapa × consecuencia. Revisar y limpiar antes de que empiece la lluvia.`}”`;
+  if (p.real) return `“${p.real.explicacion ?? `${nSum(p)} en ${p.nombre}. Prioridad = puntaje de obstrucción × consecuencia. Revisar y limpiar antes de que empiece la lluvia.`}”`;
   return `“Recibe el agua de ${fmt(p.area)} km², el ${p.pctExterno} % desde ${p.origen ?? p.comuna}. ${p.cercaFrase} Limpiar los sumideros de la esquina antes de que empiece la lluvia.”`;
 }
 
