@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { cercaResumen, cita, fmt, GORE, MAP_BOUNDS, motivo, pad2, PUNTOS, SCENARIOS, TOTAL_INTERSECCIONES, type RankedPunto } from "@/lib/data";
+import { cita, fmt, GORE, MAP_BOUNDS, motivo, pad2, PUNTOS, statsPunto, type RankedPunto } from "@/lib/data";
 import { useFlujo } from "@/lib/flujo/useFlujo";
+import { boundsDe } from "@/lib/real";
 import { useStore } from "@/lib/store";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Button, Check, Kicker, PrioChip, Stat } from "../ui";
@@ -10,7 +11,6 @@ import FlujoControles, { FlujoAviso } from "./FlujoControles";
 
 export function Hero({ p }: { p: RankedPunto }) {
   const { set, addRuta, scenarioLabel } = useStore();
-  const cerca = cercaResumen(p);
   return (
     <section className="card hero">
       <div className="hero__head">
@@ -24,9 +24,9 @@ export function Hero({ p }: { p: RankedPunto }) {
         </div>
       </div>
       <div className="stats3">
-        <Stat value={`${p.pctExterno} %`} label={`del agua viene de ${p.origen ?? p.comuna}`} accent />
-        <Stat value={`${fmt(p.area)} km²`} label="área de aporte" />
-        <Stat value={cerca.valor} label={cerca.etiqueta} />
+        {statsPunto(p).map((st, i) => (
+          <Stat key={st.label} value={st.value} label={st.label} accent={i === 0} />
+        ))}
       </div>
       <p className="hero__quote">{cita(p)}</p>
       <div className="row-btns">
@@ -48,18 +48,32 @@ export function RankRow({ p, onClick }: { p: RankedPunto; onClick: () => void })
         <span className="rrow__why">{motivo(p)}</span>
       </span>
       <span className="rrow__num rrow__pct">
-        <b>{p.pctExterno} %</b>
-        <small>externo</small>
+        {p.real ? (
+          <>
+            <b>{p.real.sumideros.length}</b>
+            <small>{p.real.sumideros.length === 1 ? "sumidero" : "sumideros"}</small>
+          </>
+        ) : (
+          <>
+            <b>{p.pctExterno} %</b>
+            <small>externo</small>
+          </>
+        )}
       </span>
       <PrioChip prio={p.prio} />
     </button>
   );
 }
 
-function Table({ rows }: { rows: RankedPunto[] }) {
-  const { s, set } = useStore();
+const FILAS_MAX = 100; // con datos reales hay ~2.000 intersecciones: la tabla muestra las primeras
+
+function Table({ rows: todas }: { rows: RankedPunto[] }) {
+  const { s, set, totalPuntos } = useStore();
   const cut = s.cuadrillas * 2;
-  const meta = s.comuna === "Todas" ? `${rows.length + 1} de ${TOTAL_INTERSECCIONES.toLocaleString("es-CL")} intersecciones` : `${rows.length + 1} puntos en ${s.comuna}`;
+  const rows = todas.slice(0, FILAS_MAX);
+  const total = todas.length + 1;
+  const mostradas = total > FILAS_MAX ? ` · primeras ${FILAS_MAX}` : "";
+  const meta = (s.comuna === "Todas" ? `${total} de ${totalPuntos.toLocaleString("es-CL")} intersecciones` : `${total} puntos en ${s.comuna}`) + mostradas;
   return (
     <section className="card table">
       <div className="table__head">
@@ -83,24 +97,47 @@ function Table({ rows }: { rows: RankedPunto[] }) {
 }
 
 function Bottom() {
-  const { s, set, ruta } = useStore();
-  const sc = SCENARIOS.find((x) => x.id === s.scenario)!;
+  const { s, set, ruta, escenarios, ranking } = useStore();
+  const sc = escenarios.find((x) => x.id === s.scenario) ?? escenarios[0];
+  const real = ranking[0]?.real ? ranking : null;
+  const nSumideros = real ? real.reduce((a, p) => a + p.real!.sumideros.length, 0) : 0;
   return (
     <div className="bottom">
-      <div className="tile tile--accent">
-        <Kicker tone="light">Agua que viene de otra comuna</Kicker>
-        <div className="tile__row">
-          <div className="tile__big">{sc.aguaExterna} %</div>
-          <p className="tile__p">promedio del top 30</p>
-        </div>
-      </div>
-      <div className="tile tile--dark">
-        <Kicker tone="accent">Puntos críticos en el top 30</Kicker>
-        <div className="tile__row">
-          <div className="tile__big">{sc.criticosTop30}</div>
-          <p className="tile__p">metro, pasos bajo nivel, hospitales, colegios</p>
-        </div>
-      </div>
+      {real ? (
+        <>
+          <div className="tile tile--accent">
+            <Kicker tone="light">Sumideros evaluados</Kicker>
+            <div className="tile__row">
+              <div className="tile__big">{nSumideros.toLocaleString("es-CL")}</div>
+              <p className="tile__p">en {real.length.toLocaleString("es-CL")} intersecciones</p>
+            </div>
+          </div>
+          <div className="tile tile--dark">
+            <Kicker tone="accent">Intersecciones de prioridad alta</Kicker>
+            <div className="tile__row">
+              <div className="tile__big">{real.filter((p) => p.prio === "alta").length}</div>
+              <p className="tile__p">el 10 % más alto del ranking del escenario</p>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="tile tile--accent">
+            <Kicker tone="light">Agua que viene de otra comuna</Kicker>
+            <div className="tile__row">
+              <div className="tile__big">{sc.aguaExterna} %</div>
+              <p className="tile__p">promedio del top 30</p>
+            </div>
+          </div>
+          <div className="tile tile--dark">
+            <Kicker tone="accent">Puntos críticos en el top 30</Kicker>
+            <div className="tile__row">
+              <div className="tile__big">{sc.criticosTop30}</div>
+              <p className="tile__p">metro, pasos bajo nivel, hospitales, colegios</p>
+            </div>
+          </div>
+        </>
+      )}
       <div className="tile tile--plain">
         <Kicker>Lo que no hace</Kicker>
         <p className="tile__body">No recomienda cerrar calles ni desviar agua, ni muestra profundidades o minutos de llegada.</p>
@@ -120,13 +157,18 @@ function Bottom() {
   );
 }
 
+const PINS_MAX = 100;
+const TOP_ENCUADRE = 30; // el mapa se ajusta a las primeras intersecciones de la lista
+
 export function usePins(opts: { labelsTop?: number; ring?: boolean; onPin?: (id: string) => void } = {}) {
   const { s, ranking, set } = useStore();
   return useMemo(() => {
     const top = opts.labelsTop ?? 3;
     const inComuna = (p: RankedPunto) => s.comuna === "Todas" || p.comuna === s.comuna;
     const visible = ranking.filter(inComuna);
-    const pins: MapPin[] = ranking.map((p) => ({
+    // con datos reales (~2.000 intersecciones) se dibujan las más prioritarias para que el mapa responda
+    const dibujar = ranking.length > PINS_MAX ? [...visible.slice(0, PINS_MAX), ...ranking.filter((p) => !inComuna(p)).slice(0, 30)] : ranking;
+    const pins: MapPin[] = dibujar.map((p) => ({
       id: p.id,
       coord: p.coord,
       rank: p.rank,
@@ -145,20 +187,23 @@ export function usePins(opts: { labelsTop?: number; ring?: boolean; onPin?: (id:
 const PUNTOS_FLUJO = Object.values(PUNTOS).map((p) => ({ id: p.id, coord: p.coord }));
 
 function MainMap() {
-  const { s, set, toggleLayer } = useStore();
+  const { s, toggleLayer, filtered, ranking } = useStore();
   const { pins, labels } = usePins();
   const L = s.layers;
+  const real = !!ranking[0]?.real;
+  // Con datos reales el mapa se ajusta a las primeras intersecciones; GORE es un dibujo de los mocks y no se muestra.
+  const bounds = useMemo(() => (real ? boundsDe(filtered.slice(0, TOP_ENCUADRE)) : MAP_BOUNDS), [real, filtered]);
   const flujo = useFlujo({ scenario: s.scenario, puntos: PUNTOS_FLUJO, onNiveles: () => {} /* la lluvia supuesta no cambia el orden: lo mueve la evidencia */, visible: L.escurrimiento });
   return (
     <DrenaMap
       className="map--main"
-      bounds={MAP_BOUNDS}
+      bounds={bounds}
       padding={{ top: 30, bottom: 30, left: 60, right: 60 }}
       pins={L.prioridad ? pins : []}
       labels={L.prioridad ? labels : []}
       comunas={L.limites}
       rejillas={L.rejillas}
-      gore={L.gore ? GORE : null}
+      gore={L.gore && !real ? GORE : null}
       attribution="Base: Esri, HERE, Garmin, © OpenStreetMap · ubicaciones aproximadas"
       onMapReady={flujo.alMapaListo}
     >
@@ -167,9 +212,9 @@ function MainMap() {
       <div className="legend">
         <Kicker>Capas</Kicker>
         <Check on={L.prioridad} label="Puntos por prioridad" onClick={() => toggleLayer("prioridad")} />
-        <Check on={L.escurrimiento} label="Flujo de agua" onClick={() => toggleLayer("escurrimiento")} />
+        <Check on={L.escurrimiento} label="Flujo de agua (estimado)" onClick={() => toggleLayer("escurrimiento")} />
         <Check on={L.limites} label="Límites comunales" onClick={() => toggleLayer("limites")} />
-        <Check on={L.gore} label="175 puntos críticos GORE" onClick={() => toggleLayer("gore")} />
+        {!real && <Check on={L.gore} label="175 puntos críticos GORE" onClick={() => toggleLayer("gore")} />}
         <Check on={L.rejillas} label="Rejillas (catastro MOP)" onClick={() => toggleLayer("rejillas")} />
         <div className="legend__chips">
           <PrioChip prio="alta" />
@@ -183,7 +228,8 @@ function MainMap() {
 
 export default function Antes({ vacio }: { vacio: React.ReactNode }) {
   const { filtered } = useStore();
-  const hasAlta = filtered.some((p) => p.prio === "alta");
+  // Con datos reales siempre hay lista (aunque todavía no haya prioridades altas); el aviso de "sin alta" es del diseño de ejemplo
+  const hasAlta = filtered.length > 0 && (!!filtered[0].real || filtered.some((p) => p.prio === "alta"));
   if (!hasAlta) {
     return (
       <main className="bento">

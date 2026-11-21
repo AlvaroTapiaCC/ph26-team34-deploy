@@ -1,8 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
+import { getEscenarios, getFicha, getRanking } from "./api";
+import { buildRuta, CADENA, COMUNAS, PUNTOS, rankingFor, SCENARIOS, TOTAL_INTERSECCIONES, type Comuna, type RankedPunto, type RutaCuadrilla, type Scenario, type ScenarioId } from "./data";
 import type { NivelAgua } from "./flujo/config";
-import { buildRuta, CADENA, PUNTOS, rankingFor, SCENARIOS, type Comuna, type RankedPunto, type RutaCuadrilla, type ScenarioId } from "./data";
+import { aEscenario, aFichaReal, aRankingReal, type FichaReal, type RankingReal } from "./real";
+
+// De dónde salen los datos del modo Antes: servidor real o respaldo de ejemplo (lib/data.ts)
+export type Fuente = "cargando" | "api" | "ejemplo";
 
 export type Modo = "antes" | "durante";
 export type Vista = "main" | "validacion" | "metodologia";
@@ -139,6 +144,14 @@ interface Ctx {
   cadena: RankedPunto[];
   ruta: RutaCuadrilla;
   scenarioLabel: string;
+  // Datos del servidor (modo Antes)
+  fuente: Fuente;
+  despertando: boolean; // el servidor tarda: probablemente Render está despertando (~50 s)
+  escenarios: Scenario[];
+  comunas: { id: "Todas" | Comuna; total: number }[];
+  totalPuntos: number;
+  fichaReal: FichaReal | null;
+  fichaEstado: "cargando" | "ok" | "error" | null;
 }
 
 const StoreCtx = createContext<Ctx | null>(null);
@@ -171,6 +184,82 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const set = useCallback((patch: Partial<State>) => dispatch({ type: "set", patch }), []);
   const loadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // --- Datos reales del modo Antes (GET /scenarios, /scenarios/{id}/ranking, /sumideros/{id}) ---
+  const [fuente, setFuente] = useState<Fuente>("cargando");
+  const [despertando, setDespertando] = useState(false);
+  const [escenarios, setEscenarios] = useState<Scenario[]>(SCENARIOS);
+  const [rankings, setRankings] = useState<Record<string, RankingReal>>({});
+  const pedido = useRef<{ escenario: string | null; ficha: string | null }>({ escenario: null, ficha: null });
+  const enVuelo = useRef(new Set<string>());
+
+  const cargarRanking = useCallback(async (id: string) => {
+    if (enVuelo.current.has(id)) return;
+    enVuelo.current.add(id);
+    dispatch({ type: "set", patch: { status: "loading" } });
+    try {
+      const r = await getRanking(id, { onLento: () => setDespertando(true) });
+      setRankings((prev) => ({ ...prev, [id]: aRankingReal(r) }));
+      dispatch({ type: "set", patch: { status: "ok" } });
+    } catch {
+      setFuente("ejemplo");
+      setEscenarios(SCENARIOS);
+      dispatch({ type: "set", patch: { scenario: SCENARIOS[0].id, ficha: null, status: "ok" } });
+    } finally {
+      enVuelo.current.delete(id);
+      setDespertando(false);
+    }
+  }, []);
+
+  // Carga inicial: escenarios y ranking del primero (o del pedido en ?escenario=)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const q = new URLSearchParams(window.location.search);
+      pedido.current = { escenario: q.get("escenario"), ficha: q.get("ficha") };
+      if (q.get("estado") === "error" || q.get("estado") === "cargando") {
+        setFuente("ejemplo"); // pantallas de estado de diseño: no tocar la red
+        return;
+      }
+    }
+    let vivo = true;
+    (async () => {
+      dispatch({ type: "set", patch: { status: "loading" } });
+      try {
+        const lista = await getEscenarios({ onLento: () => setDespertando(true) });
+        if (!vivo) return;
+        if (lista.length === 0) throw new Error("sin escenarios");
+        const reales = lista.map(aEscenario);
+        const pedidoEsc = pedido.current.escenario;
+        const elegido = reales.find((x) => x.id === pedidoEsc)?.id ?? reales[0].id;
+        setEscenarios(reales);
+        setFuente("api");
+        dispatch({ type: "set", patch: { scenario: elegido } });
+      } catch {
+        if (!vivo) return;
+        setFuente("ejemplo");
+        dispatch({ type: "set", patch: { status: "ok" } });
+      } finally {
+        if (vivo) setDespertando(false);
+      }
+    })();
+    return () => {
+      vivo = false;
+    };
+  }, []);
+
+  // Ranking del escenario elegido (una vez por escenario)
+  useEffect(() => {
+    if (fuente === "api" && !rankings[s.scenario] && escenarios.some((x) => x.id === s.scenario)) cargarRanking(s.scenario);
+  }, [fuente, s.scenario, rankings, escenarios, cargarRanking]);
+
+  // ?ficha= con ids reales: se aplica cuando llega el ranking
+  useEffect(() => {
+    const f = pedido.current.ficha;
+    if (f && rankings[s.scenario]?.puntos.some((p) => p.id === f)) {
+      pedido.current.ficha = null;
+      dispatch({ type: "set", patch: { ficha: f } });
+    }
+  }, [rankings, s.scenario]);
+
   const simulateLoad = useCallback(() => {
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("estado") === "cargando") return; // fijo para revisar el estado
     if (loadTimer.current) clearTimeout(loadTimer.current);
@@ -181,13 +270,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Carga inicial y al cambiar escenario
   const first = useRef(true);
   useEffect(() => {
+    if (fuente !== "ejemplo") return; // con datos reales, el estado de carga lo marca la red (cargarRanking)
     if (first.current) {
       first.current = false;
       if (s.status === "error") return;
     }
     simulateLoad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.scenario]);
+  }, [s.scenario, fuente]);
 
   // Toast efímero
   useEffect(() => {
@@ -217,11 +307,42 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(t);
   }, [s.modo]);
 
-  const ranking = useMemo(() => rankingFor(s.scenario, s.agua), [s.scenario, s.agua]);
+  // Modo Antes con datos del servidor; Durante (#36) sigue con los datos de ejemplo
+  const real = fuente === "api" && s.modo === "antes" ? (rankings[s.scenario] ?? null) : null;
+  const ranking = useMemo(() => (real ? real.puntos : rankingFor(s.scenario, s.agua)), [real, s.scenario, s.agua]);
   const filtered = useMemo(() => (s.comuna === "Todas" ? ranking : ranking.filter((p) => p.comuna === s.comuna)), [ranking, s.comuna]);
   const cadena = useMemo(() => (s.anegado ? (CADENA[s.anegado] ?? []).map((id) => ranking.find((p) => p.id === id)!).filter(Boolean) : []), [s.anegado, ranking]);
   const ruta = useMemo(() => buildRuta(ranking, s.comuna, s.cuadrillas, s.enRuta), [ranking, s.comuna, s.cuadrillas, s.enRuta]);
-  const scenarioLabel = SCENARIOS.find((x) => x.id === s.scenario)!.label;
+  const scenarioLabel = (escenarios.find((x) => x.id === s.scenario) ?? SCENARIOS.find((x) => x.id === s.scenario) ?? SCENARIOS[0]).label;
+  const comunas = useMemo(() => {
+    if (!real) return COMUNAS;
+    const n = (c: Comuna) => real.puntos.filter((p) => p.comuna === c).length;
+    return [{ id: "Todas" as const, total: real.puntos.length }, ...(["Providencia", "Ñuñoa", "Las Condes"] as Comuna[]).map((c) => ({ id: c, total: n(c) }))];
+  }, [real]);
+  const totalPuntos = real ? real.puntos.length : TOTAL_INTERSECCIONES;
+
+  // Ficha real: GET /sumideros/{id} del mejor sumidero de la esquina (variables, cadena, explicación)
+  const [ficha, setFicha] = useState<{ id: string; escenario: string; datos: FichaReal | null; estado: "cargando" | "ok" | "error" } | null>(null);
+  useEffect(() => {
+    const p = real && s.ficha ? real.puntos.find((x) => x.id === s.ficha) : null;
+    if (!real || !p?.real) {
+      setFicha(null);
+      return;
+    }
+    let vivo = true;
+    setFicha({ id: p.id, escenario: s.scenario, datos: null, estado: "cargando" });
+    getFicha(p.real.mejorSumidero, s.scenario, { onLento: () => setDespertando(true) })
+      .then((f) => {
+        if (!vivo) return;
+        const nombres = (pid: string) => real.puntos.find((x) => x.id === pid)?.nombre;
+        setFicha({ id: p.id, escenario: s.scenario, datos: aFichaReal(f, real.sumideroAPunto, nombres), estado: "ok" });
+      })
+      .catch(() => vivo && setFicha({ id: p.id, escenario: s.scenario, datos: null, estado: "error" }))
+      .finally(() => vivo && setDespertando(false));
+    return () => {
+      vivo = false;
+    };
+  }, [real, s.ficha, s.scenario]);
 
   const value: Ctx = {
     s,
@@ -265,6 +386,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     cadena,
     ruta,
     scenarioLabel,
+    fuente,
+    despertando,
+    escenarios,
+    comunas,
+    totalPuntos,
+    fichaReal: ficha && ficha.id === s.ficha ? ficha.datos : null,
+    fichaEstado: ficha && ficha.id === s.ficha ? ficha.estado : null,
   };
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }

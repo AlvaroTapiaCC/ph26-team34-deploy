@@ -1,11 +1,11 @@
 "use client";
 
-import { COMUNAS, SCENARIOS, type ScenarioId } from "@/lib/data";
+import type { ScenarioId } from "@/lib/data";
 import { useStore, type Modo } from "@/lib/store";
 import { Button, Logo, Segmented, Selector } from "../ui";
 
 export default function TopBar() {
-  const { s, set } = useStore();
+  const { s, set, escenarios, comunas } = useStore();
   const go = (vista: "validacion" | "metodologia") => set({ vista: s.vista === vista ? "main" : vista, ficha: null });
   return (
     <header className="topbar">
@@ -15,7 +15,7 @@ export default function TopBar() {
       <div className="topbar__esc">
         <span className="kicker">Escenario</span>
         <Segmented<ScenarioId>
-          options={SCENARIOS.map((x) => ({ id: x.id, label: x.label }))}
+          options={escenarios.map((x) => ({ id: x.id, label: x.label }))}
           value={s.scenario}
           onChange={(scenario) => set({ scenario, ficha: null })}
         />
@@ -24,7 +24,7 @@ export default function TopBar() {
         label={`Comuna: ${s.comuna}`}
         value={s.comuna}
         active={s.comuna !== "Todas"}
-        options={COMUNAS.map((c) => ({ id: c.id, label: c.id, meta: c.total.toLocaleString("es-CL") }))}
+        options={comunas.map((c) => ({ id: c.id, label: c.id, meta: c.total.toLocaleString("es-CL") }))}
         onChange={(comuna) => set({ comuna, ficha: null })}
         footer="intersecciones evaluadas"
       />
