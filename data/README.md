@@ -22,6 +22,24 @@ python pipeline/publicar_front.py # copia liviana para el mapa (frontend/public/
 - `data/rejillas.meta.json` registra fecha de descarga, servicio, conteos (incluido el de 700 m del MUT),
   sha256 del GeoJSON y versión y sha256 del script. Si se vuelve a correr el script, cambian la fecha y el hash.
 
+## Lluvia y viento del replay (`data/escenarios/`)
+
+Serie horaria real de Open-Meteo para cada evento candidato del replay (#86), desde un día antes
+hasta un día después del evento. Se regenera desde la raíz con:
+
+```bash
+python pipeline/11_clima_historico.py                     # 2026-10-13 y 2026-07-16_17
+python pipeline/11_clima_historico.py --lat … --lon …     # si #86 elige otro centro de sector
+```
+
+- **Horas en UTC** (`hora_utc`) y en Santiago (`hora_santiago`) para mostrar. La lluvia de una hora es la acumulada en la hora anterior.
+- **Observado:** Historical Forecast API (`best_match`). **Pronóstico ya emitido:** Previous Runs API
+  (`precipitation_previous_day1`), así el modo «tormenta inminente» de cada hora solo usa información que existía en ese momento.
+- `clima` (0-1) y `modo` (`seco`, `tormenta_inminente`, `durante`, `despues`, `sin_dato`) salen de
+  `backend/config/clima.yaml` con `backend/app/services/clima_serie.py`. Los umbrales se fijaron antes de mirar el replay.
+  Un dato faltante deja `clima` nulo y el modo en `sin_dato`, nunca un 0.
+- `<evento>.meta.json` registra las URLs de consulta, la celda de la grilla usada, la fecha de descarga y el sha256 de la salida, de la config y del script.
+
 ## Obsoleto
 
 `data/sumideros_nunoa.geojson` y `pipeline/01_sumideros.py` quedan solo como referencia: no los usa nadie.
