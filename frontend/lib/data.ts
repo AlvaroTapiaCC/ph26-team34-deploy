@@ -3,7 +3,7 @@
 
 export type Comuna = "Providencia" | "Ñuñoa" | "Las Condes";
 export type Prioridad = "alta" | "media" | "baja";
-export type ScenarioId = "13oct" | "poniente" | "pareja";
+export type ScenarioId = string; // "13oct" | "poniente" | "pareja" en los datos de ejemplo; ids reales de GET /scenarios
 export type LngLat = [number, number];
 
 export interface Punto {
@@ -20,6 +20,20 @@ export interface Punto {
   motivo?: string; // motivo alternativo para la tabla
   criticidad: string[];
   aguasAbajo: string[];
+  real?: PuntoReal; // presente cuando viene del backend (GET /scenarios/{id}/ranking)
+}
+
+// Intersección real: agrupa los sumideros que comparten `intersection_id`.
+export interface PuntoReal {
+  sumideros: string[]; // ids, del mejor al peor ranking
+  mejorSumidero: string; // el de mayor prioridad: de ahí sale la ficha
+  p: number | null;
+  pEf: number | null;
+  c: number | null;
+  urgente: boolean;
+  explicacion: string | null;
+  aportes: Record<string, number>;
+  areaFaltante: boolean;
 }
 
 export const PUNTOS: Record<string, Punto> = {
@@ -109,6 +123,7 @@ export interface Scenario {
   ranking: [string, number][]; // [puntoId, puntaje]
   aguaExterna: number;
   criticosTop30: number;
+  real?: boolean; // escenario del backend: su ranking sale de GET /scenarios/{id}/ranking
 }
 
 export const SCENARIOS: Scenario[] = [
@@ -145,23 +160,47 @@ export function prioFromRank(rank: number): Prioridad {
 }
 
 export function rankingFor(sc: ScenarioId): RankedPunto[] {
-  const s = SCENARIOS.find((x) => x.id === sc)!;
+  const s = SCENARIOS.find((x) => x.id === sc) ?? SCENARIOS[0]; // ids reales (p. ej. "base") no existen en los datos de ejemplo
   return s.ranking.map(([id, score], i) => ({ ...PUNTOS[id], rank: i + 1, score, prio: prioFromRank(i + 1) }));
 }
 
 export const fmt = (n: number, d = 2) => n.toFixed(d).replace(".", ",");
 export const pad2 = (n: number) => String(n).padStart(2, "0");
 
+export const pct = (x: number | null | undefined) => (x == null ? "—" : `${Math.round(x * 100)} %`);
+/** Puntaje entre 0 y 1 con dos decimales (no es una probabilidad: no se muestra como %). */
+export const punt01 = (x: number | null | undefined) => (x == null ? "—" : fmt(x, 2));
+const nSum = (p: Punto) => `${p.real!.sumideros.length} ${p.real!.sumideros.length === 1 ? "sumidero" : "sumideros"}`;
+
 export function motivo(p: Punto) {
+  if (p.real) return `${p.comuna} · ${nSum(p)}${p.real.urgente ? " · urgente" : ""}`;
   if (p.motivo) return p.motivo;
   return `${p.comuna} · ${p.pctExterno} % del agua viene de ${p.origen}`;
 }
 
+/** Las tres cifras del héroe y la ficha: de ejemplo (agua externa, área) o reales (sumideros, P, puntaje). */
+export function statsPunto(p: RankedPunto): { value: string; label: string }[] {
+  if (p.real) {
+    return [
+      { value: String(p.real.sumideros.length), label: p.real.sumideros.length === 1 ? "sumidero en la esquina" : "sumideros en la esquina" },
+      { value: punt01(p.real.pEf ?? p.real.p), label: "puntaje de obstrucción (0 a 1)" },
+      { value: fmt(p.score, 3), label: "puntaje (P × C)" },
+    ];
+  }
+  return [
+    { value: `${p.pctExterno} %`, label: `del agua viene de ${p.origen ?? p.comuna}` },
+    { value: `${fmt(p.area)} km²`, label: "área de aporte" },
+    { value: fmt(p.score), label: "puntaje" },
+  ];
+}
+
 export function cita(p: Punto) {
+  if (p.real) return `“${p.real.explicacion ?? `${nSum(p)} en ${p.nombre}. Prioridad = puntaje de obstrucción × consecuencia. Revisar y limpiar antes de que empiece la lluvia.`}”`;
   return `“Recibe el agua de ${fmt(p.area)} km², el ${p.pctExterno} % desde ${p.origen ?? p.comuna}. ${p.cercaFrase} Limpiar los sumideros de la esquina antes de que empiece la lluvia.”`;
 }
 
 export function instruccion(p: RankedPunto) {
+  if (p.real) return p.real.explicacion ?? `Prioridad ${p.rank}. Revisar ${nSum(p)} de la esquina y despejar las rejillas antes de la lluvia.`;
   return `Prioridad ${p.rank}. Recibe el agua de ${fmt(p.area)} km², el ${p.pctExterno} % desde ${p.origen ?? p.comuna}, ${p.cerca.toLowerCase().startsWith("metro a") ? `a ${p.cerca.slice(8)} de la estación de metro` : p.cerca.toLowerCase()}. Limpiar los sumideros de la esquina antes de las 14:00.`;
 }
 
