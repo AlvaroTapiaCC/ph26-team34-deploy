@@ -192,9 +192,11 @@ def test_cierre_con_foto(escena, monkeypatch):
     monkeypatch.setattr(storage, "url_firmada", lambda ruta, expira_s=3600: f"https://firmada/{ruta}")
     m = str(escena.m3)
 
-    # No se puede cerrar desde pendiente; la foto subida no queda huérfana
+    monkeypatch.setattr("app.routers.missions.clasificar_rejilla", lambda data: None)  # Claude caído: sin verificar
+
+    # No se puede cerrar desde pendiente: se responde antes de subir la foto (ni de llamar a Claude)
     r = client.post(f"/missions/{m}/close", files={"foto": ("x.jpg", _jpeg(), "image/jpeg")})
-    assert r.status_code == 409 and borradas == [subidas[0][0]]
+    assert r.status_code == 409 and subidas == [] and borradas == []
 
     client.post(f"/missions/{m}/status", json={"estado": "en_camino"})
     r = client.post(f"/missions/{m}/close", files={"foto": ("x.jpg", _jpeg(), "image/jpeg")})

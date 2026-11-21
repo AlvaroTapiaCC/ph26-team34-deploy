@@ -189,9 +189,29 @@ def cambiar_estado(conn: Connection, mission_id: str, nuevo: str) -> dict[str, A
     return mision
 
 
-def cerrar_mision(conn: Connection, mission_id: str, foto_ruta: str) -> dict[str, Any]:
-    """Cierra la misión registrando la foto (ya subida). La verificación con Claude es #42:
-    hasta entonces `verificado = false`."""
+def mision_cerrable(conn: Connection, mission_id: str) -> dict[str, Any]:
+    """Misión que se puede cerrar ahora (sin bloquearla). Lanza `NoEncontrado` o `TransicionInvalida`.
+
+    Se consulta antes de llamar a Claude para no gastar una clasificación en un cierre imposible;
+    el UPDATE condicionado de `cerrar_mision` vuelve a comprobarlo por si otra petición ganó."""
+    fila = conn.execute(
+        "select m.id, m.crew_id, m.case_id, m.sumidero_id, m.estado, st_y(s.geom) as lat, st_x(s.geom) as lon"
+        "  from missions m left join sumideros s on s.id = m.sumidero_id where m.id = %s",
+        (mission_id,),
+    ).fetchone()
+    if fila is None:
+        raise NoEncontrado(f"Misión {mission_id} no existe")
+    if fila["estado"] not in CERRABLE_DESDE:
+        raise TransicionInvalida(fila["estado"], "cerrada")
+    return fila
+
+
+def cerrar_mision(conn: Connection, mission_id: str, foto_ruta: str, clasificacion: dict[str, Any] | None = None,
+                  verificado: bool = False) -> dict[str, Any]:
+    """Cierra la misión registrando la foto (ya subida) y su clasificación (#42).
+
+    `verificado` es true solo si Claude vio la rejilla `limpia`; en ese caso también queda la
+    limpieza en `cleaning_history`. Con la foto no evaluable o Claude caído se cierra igual, sin verificar."""
     with conn.transaction():
         mision = conn.execute(
             "update missions set estado = 'cerrada', cerrada_at = now() where id = %s and estado = any(%s)"
@@ -201,14 +221,41 @@ def cerrar_mision(conn: Connection, mission_id: str, foto_ruta: str) -> dict[str
         if mision is None:
             raise TransicionInvalida(_estado_actual(conn, mission_id), "cerrada")
         cierre = conn.execute(
-            "insert into closures (mission_id, foto_url, verificado) values (%s, %s, false)"
-            " returning id, mission_id, foto_url, verificado, created_at",
-            (mission_id, foto_ruta),
+            "insert into closures (mission_id, foto_url, clasificacion, verificado) values (%s, %s, %s, %s)"
+            " returning id, mission_id, foto_url, clasificacion, verificado, created_at",
+            (mission_id, foto_ruta, Jsonb(clasificacion) if clasificacion is not None else None, verificado),
         ).fetchone()
+        if verificado and mision["sumidero_id"]:
+            conn.execute(
+                "insert into cleaning_history (sumidero_id, fecha, is_simulated)"
+                " select %s, (now() at time zone 'America/Santiago')::date, coalesce(c.is_simulated, false)"
+                "   from (select 1) x left join crews c on c.id = %s",
+                (mision["sumidero_id"], mision["crew_id"]),
+            )
         _sincronizar(conn, mision)
         _evento(conn, "mision_cerrada", {"mission_id": str(mission_id), "closure_id": str(cierre["id"]),
-                                         "crew_id": mision["crew_id"], "verificado": False})
+                                         "crew_id": mision["crew_id"], "verificado": verificado})
     return {"mision": mision, "cierre": cierre}
+
+
+def rechazar_cierre(conn: Connection, mission_id: str, foto_ruta: str, clasificacion: dict[str, Any],
+                    motivo: str) -> dict[str, Any]:
+    """La foto muestra la rejilla `parcial` o `tapada`: la misión sigue abierta (#42).
+
+    No se crea un `closures` (no hubo cierre); el intento queda en `events` con la foto."""
+    with conn.transaction():
+        mision = conn.execute(
+            "select id, crew_id, case_id, sumidero_id, estado from missions where id = %s for update",
+            (mission_id,),
+        ).fetchone()
+        if mision is None:
+            raise NoEncontrado(f"Misión {mission_id} no existe")
+        if mision["estado"] not in CERRABLE_DESDE:
+            raise TransicionInvalida(mision["estado"], "cerrada")
+        _evento(conn, "cierre_rechazado", {"mission_id": str(mission_id), "crew_id": mision["crew_id"],
+                                           "foto_url": foto_ruta, "rejilla": clasificacion.get("rejilla"),
+                                           "motivo": motivo})
+    return {"mision": mision, "cierre": None}
 
 
 def existe_mision(conn: Connection, mission_id: str) -> None:
