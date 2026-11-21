@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
-import { CADENA, rankingFor, SCENARIOS, type Comuna, type RankedPunto, type ScenarioId } from "./data";
+import { buildRuta, CADENA, PUNTOS, rankingFor, SCENARIOS, type Comuna, type RankedPunto, type RutaCuadrilla, type ScenarioId } from "./data";
 
 export type Modo = "antes" | "durante";
 export type Vista = "main" | "validacion" | "metodologia";
@@ -111,7 +111,7 @@ function reducer(s: State, a: Action): State {
       };
     }
     case "addRuta":
-      return s.enRuta.includes(a.id) ? { ...s, toast: "Ya está en la ruta" } : { ...s, enRuta: [...s.enRuta, a.id], toast: "Agregado a la ruta de la cuadrilla" };
+      return { ...s, enRuta: s.enRuta.includes(a.id) ? s.enRuta : [...s.enRuta, a.id], toast: "Agregado a la ruta de la cuadrilla" };
   }
 }
 
@@ -125,6 +125,7 @@ interface Ctx {
   ranking: RankedPunto[];
   filtered: RankedPunto[];
   cadena: RankedPunto[];
+  ruta: RutaCuadrilla;
   scenarioLabel: string;
 }
 
@@ -148,7 +149,8 @@ function initFromUrl(): State {
     s.sensorAgo = "hace 5 min";
   }
   if (q.get("estado") === "error") s.status = "error";
-  if (q.get("ficha")) s.ficha = q.get("ficha");
+  const f = q.get("ficha");
+  if (f && Object.prototype.hasOwnProperty.call(PUNTOS, f)) s.ficha = f;
   return s;
 }
 
@@ -185,6 +187,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const ranking = useMemo(() => rankingFor(s.scenario), [s.scenario]);
   const filtered = useMemo(() => (s.comuna === "Todas" ? ranking : ranking.filter((p) => p.comuna === s.comuna)), [ranking, s.comuna]);
   const cadena = useMemo(() => (s.anegado ? (CADENA[s.anegado] ?? []).map((id) => ranking.find((p) => p.id === id)!).filter(Boolean) : []), [s.anegado, ranking]);
+  const ruta = useMemo(() => buildRuta(ranking, s.comuna, s.cuadrillas, s.enRuta), [ranking, s.comuna, s.cuadrillas, s.enRuta]);
   const scenarioLabel = SCENARIOS.find((x) => x.id === s.scenario)!.label;
 
   const value: Ctx = {
@@ -192,11 +195,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     set,
     toggleLayer: (key, value) => dispatch({ type: "layer", key, value }),
     flood: (id, fuente = "sensor") => dispatch({ type: "flood", id, fuente }),
-    addRuta: (id) => dispatch({ type: "addRuta", id }),
+    addRuta: (id) => (ruta.paradas.some((p) => p.id === id) ? dispatch({ type: "set", patch: { toast: "Ya está en la ruta" } }) : dispatch({ type: "addRuta", id })),
     reload: simulateLoad,
     ranking,
     filtered,
     cadena,
+    ruta,
     scenarioLabel,
   };
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;

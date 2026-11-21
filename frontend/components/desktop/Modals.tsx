@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { googleMapsUrl, PUNTOS, RUTA, RUTA_KM, SIMULABLES, textoWhatsApp } from "@/lib/data";
+import { googleMapsUrl, PUNTOS, SIMULABLES, textoWhatsApp } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { Button, CloseBtn, FakeQR, Kicker, Modal, PrioChip, Stat } from "../ui";
 
@@ -21,21 +21,24 @@ export async function copy(text: string) {
 }
 
 function RutaModal() {
-  const { set, scenarioLabel } = useStore();
+  const { s, set, scenarioLabel, ruta } = useStore();
   const close = () => set({ modal: null });
+  const n = ruta.paradas.length;
   return (
     <Modal onClose={close} width={1040}>
       <div className="modal__head">
         <div>
           <Kicker tone="accent">Ruta de cuadrilla · {scenarioLabel}</Kicker>
-          <h2 className="modal__title">Providencia · 8 puntos en orden</h2>
+          <h2 className="modal__title">
+            {s.comuna === "Todas" ? "Todas las comunas" : s.comuna} · {n} {n === 1 ? "punto" : "puntos"} en orden
+          </h2>
         </div>
         <CloseBtn onClick={close} />
       </div>
       <div className="ruta">
         <div className="ruta__list">
-          {RUTA.map((r, i) => (
-            <div key={r.nombre} className="ruta__row">
+          {ruta.paradas.map((r, i) => (
+            <div key={r.id} className="ruta__row">
               <span className={`ruta__n ${i === 0 ? "is-first" : ""}`}>{i + 1}</span>
               <span className="ruta__name">{r.nombre}</span>
               <PrioChip prio={r.prio} />
@@ -45,21 +48,21 @@ function RutaModal() {
         </div>
         <div className="ruta__side">
           <div className="ruta__stats">
-            <Stat value={RUTA_KM.replace(" ", "\n")} label="distancia total" accent />
-            <Stat value="8" label="puntos" />
+            <Stat value={ruta.km.replace(" ", "\n")} label="distancia total" accent />
+            <Stat value={String(n)} label="puntos" />
           </div>
           <div className="qrbox">
             <FakeQR size={200} />
             <p>Escanea para abrir en Google Maps</p>
             <small>QR ilustrativo · se genera con qrcode</small>
           </div>
-          <Button variant="primary" className="btn--block" onClick={() => window.open(googleMapsUrl(), "_blank", "noopener")}>
+          <Button variant="primary" className="btn--block" onClick={() => window.open(googleMapsUrl(ruta.paradas), "_blank", "noopener")}>
             Abrir en Google Maps
           </Button>
           <Button
             className="btn--block"
             onClick={async () => {
-              await copy(textoWhatsApp(scenarioLabel, { comuna: true, prio: true }));
+              await copy(textoWhatsApp(ruta.paradas, scenarioLabel, s.comuna, { prio: true }));
               set({ modal: "whatsapp", copied: true, toast: "Lista copiada · pégala en el grupo de la cuadrilla" });
             }}
           >
@@ -67,14 +70,14 @@ function RutaModal() {
           </Button>
         </div>
       </div>
-      <p className="ruta__foot">Orden calculado antes de la demo. Sin tiempos de llegada: el modelo no los calcula con precisión.</p>
+      <p className="ruta__foot">Orden por prioridad; distancias en línea recta. Sin tiempos de llegada: el modelo no los calcula con precisión.</p>
     </Modal>
   );
 }
 
 function WhatsAppModal() {
-  const { s, set, scenarioLabel } = useStore();
-  const text = textoWhatsApp(scenarioLabel, { comuna: true, prio: true });
+  const { s, set, scenarioLabel, ruta } = useStore();
+  const text = textoWhatsApp(ruta.paradas, scenarioLabel, s.comuna, { prio: true });
   const close = () => set({ modal: null, copied: false });
   return (
     <Modal onClose={close} width={760}>

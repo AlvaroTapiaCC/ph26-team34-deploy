@@ -8,7 +8,7 @@ import Mobile from "./mobile/Mobile";
 function useIsMobile() {
   const [m, setM] = useState<boolean | null>(null);
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 820px)");
+    const mq = window.matchMedia("(max-width: 1099px)");
     const on = () => setM(mq.matches);
     on();
     mq.addEventListener("change", on);

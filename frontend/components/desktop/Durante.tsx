@@ -110,8 +110,8 @@ function Cadena() {
         </div>
       ))}
       <p className="chain__note">Muestra el orden del recorrido, no minutos de llegada: el modelo de 30 m no los calcula con precisión.</p>
-      <Button variant="primary" className="btn--block" onClick={() => set({ toast: `Aviso enviado a cuadrillas · ${cadena.length} puntos` })}>
-        Avisar a cuadrillas de estos {cadena.length} puntos
+      <Button variant="primary" className="btn--block" onClick={() => set({ toast: `Simulación: no se envió ningún aviso real · ${cadena.length} puntos` })}>
+        Simular aviso a cuadrillas de estos {cadena.length} puntos
       </Button>
     </section>
   );

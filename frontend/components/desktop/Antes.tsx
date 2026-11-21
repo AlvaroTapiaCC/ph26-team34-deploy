@@ -84,7 +84,7 @@ function Table({ rows }: { rows: RankedPunto[] }) {
 }
 
 function Bottom() {
-  const { s, set } = useStore();
+  const { s, set, ruta } = useStore();
   const sc = SCENARIOS.find((x) => x.id === s.scenario)!;
   return (
     <div className="bottom">
@@ -104,7 +104,7 @@ function Bottom() {
       </div>
       <div className="tile tile--grey">
         <Kicker>Ruta de cuadrilla</Kicker>
-        <p className="tile__body">Primeros 8 puntos de {s.comuna === "Todas" ? "Providencia" : s.comuna}, en orden.</p>
+        <p className="tile__body">{ruta.paradas.length} {ruta.paradas.length === 1 ? "punto" : "puntos"} de {s.comuna === "Todas" ? "todas las comunas" : s.comuna} ({s.cuadrillas} {s.cuadrillas === 1 ? "cuadrilla" : "cuadrillas"}), en orden.</p>
         <Button variant="primary" className="btn--block" onClick={() => set({ modal: "ruta" })}>
           Generar ruta
         </Button>

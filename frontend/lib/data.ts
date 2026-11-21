@@ -167,31 +167,56 @@ export function instruccion(p: RankedPunto) {
 
 export const PRIO_LABEL: Record<Prioridad, string> = { alta: "▲ Alta", media: "◆ Media", baja: "● Baja" };
 
-// Ruta de cuadrilla (precalculada antes de la demo)
-export const RUTA: { nombre: string; prio: Prioridad; dist: string; coord: LngLat }[] = [
-  { nombre: "Pedro de Valdivia / Bilbao", prio: "alta", dist: "inicio", coord: [-70.6085, -33.4388] },
-  { nombre: "Tobalaba / Providencia", prio: "alta", dist: "+2,1 km", coord: [-70.6013, -33.418] },
-  { nombre: "Tobalaba / Bilbao", prio: "media", dist: "+1,6 km", coord: [-70.5935, -33.4335] },
-  { nombre: "Providencia / Manuel Montt", prio: "media", dist: "+2,4 km", coord: [-70.62, -33.429] },
-  { nombre: "Pocuro / Antonio Varas", prio: "baja", dist: "+1,0 km", coord: [-70.614, -33.434] },
-  { nombre: "Los Leones / Bilbao", prio: "media", dist: "+1,3 km", coord: [-70.6015, -33.437] },
-  { nombre: "Providencia / Ricardo Lyon", prio: "baja", dist: "+0,9 km", coord: [-70.6095, -33.4225] },
-  { nombre: "Eliodoro Yáñez / Antonio Varas", prio: "baja", dist: "+0,7 km", coord: [-70.6155, -33.4305] },
-];
-export const RUTA_KM = "10,0 km";
-
-export function googleMapsUrl() {
-  const pts = RUTA.map((r) => `${r.coord[1]},${r.coord[0]}`);
-  const origin = pts[0];
-  const dest = pts[pts.length - 1];
-  const way = pts.slice(1, -1).join("|");
-  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&waypoints=${encodeURIComponent(way)}&travelmode=driving`;
+// Ruta de cuadrilla: derivada del escenario, la comuna, las cuadrillas y los puntos agregados.
+// La vista, el enlace de Google Maps y el texto de WhatsApp consumen esta misma lista.
+export interface Parada {
+  id: string;
+  nombre: string;
+  prio: Prioridad;
+  dist: string; // "inicio" o "+x,x km" desde la parada anterior (línea recta)
+  coord: LngLat;
+}
+export interface RutaCuadrilla {
+  paradas: Parada[];
+  km: string;
 }
 
-export function textoWhatsApp(scenarioLabel: string, opts: { comuna?: boolean; prio?: boolean; link?: string } = {}) {
-  const head = `*Drena · Ruta Cuadrilla 1${opts.comuna ? " · Providencia" : ""}*`;
-  const lines = RUTA.map((r, i) => `${i + 1}. ${r.nombre}${opts.prio ? ` (${r.prio})` : ""}`);
-  return [head, `Escenario: ${scenarioLabel}`, "", ...lines, "", opts.link ?? "Google Maps: [enlace de la ruta]"].join("\n");
+function kmEntre(a: LngLat, b: LngLat) {
+  const rad = Math.PI / 180;
+  const dLat = (b[1] - a[1]) * rad;
+  const dLng = (b[0] - a[0]) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * rad) * Math.cos(b[1] * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+
+export function buildRuta(ranking: RankedPunto[], comuna: "Todas" | Comuna, cuadrillas: number, enRuta: string[]): RutaCuadrilla {
+  const base = (comuna === "Todas" ? ranking : ranking.filter((p) => p.comuna === comuna)).slice(0, cuadrillas * 2);
+  const ids = new Set(base.map((p) => p.id));
+  const extra = enRuta.filter((id) => !ids.has(id)).map((id) => ranking.find((p) => p.id === id)).filter((p): p is RankedPunto => !!p);
+  const puntos = [...base, ...extra].sort((a, b) => a.rank - b.rank);
+  let total = 0;
+  const paradas = puntos.map((p, i) => {
+    const d = i === 0 ? 0 : kmEntre(puntos[i - 1].coord, p.coord);
+    total += d;
+    return { id: p.id, nombre: p.nombre, prio: p.prio, dist: i === 0 ? "inicio" : `+${fmt(d, 1)} km`, coord: p.coord };
+  });
+  return { paradas, km: `${fmt(total, 1)} km` };
+}
+
+export function googleMapsUrl(paradas: Parada[]) {
+  const pts = paradas.map((r) => `${r.coord[1]},${r.coord[0]}`);
+  if (pts.length === 0) return "https://www.google.com/maps";
+  const base = "https://www.google.com/maps/dir/?api=1&travelmode=driving";
+  if (pts.length === 1) return `${base}&destination=${pts[0]}`;
+  const way = pts.slice(1, -1).join("|");
+  return `${base}&origin=${pts[0]}&destination=${pts[pts.length - 1]}${way ? `&waypoints=${encodeURIComponent(way)}` : ""}`;
+}
+
+// Mismo texto para copiar y para enviar: siempre lleva el enlace real.
+export function textoWhatsApp(paradas: Parada[], scenarioLabel: string, comuna: string, opts: { prio?: boolean } = {}) {
+  const head = `*Drena · Ruta Cuadrilla 1 · ${comuna === "Todas" ? "Todas las comunas" : comuna}*`;
+  const lines = paradas.map((r, i) => `${i + 1}. ${r.nombre}${opts.prio ? ` (${r.prio})` : ""}`);
+  return [head, `Escenario: ${scenarioLabel}`, "", ...lines, "", `Google Maps: ${googleMapsUrl(paradas)}`].join("\n");
 }
 
 // Modo Durante: cadena aguas abajo por punto anegado (ids de PUNTOS)

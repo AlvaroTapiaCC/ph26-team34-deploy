@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { COMUNAS, ESCURRIMIENTO, fmt, googleMapsUrl, pad2, PUNTOS, RUTA, RUTA_KM, SCENARIOS, textoWhatsApp, type LngLat, type ScenarioId } from "@/lib/data";
+import { COMUNAS, ESCURRIMIENTO, fmt, googleMapsUrl, pad2, PUNTOS, SCENARIOS, textoWhatsApp, type LngLat, type ScenarioId } from "@/lib/data";
 import { useStore, type MobileTab } from "@/lib/store";
 import { copy } from "../desktop/Modals";
 import { CriticidadPill } from "../desktop/Ficha";
@@ -285,29 +285,32 @@ function Filtros() {
 }
 
 function Ruta() {
-  const { s, set, scenarioLabel } = useStore();
-  const done = s.hechos;
+  const { s, set, scenarioLabel, ruta } = useStore();
+  const paradas = ruta.paradas;
+  const done = Math.min(s.hechos, paradas.length);
   return (
     <>
       <div className="mob__body">
         <div className="mtitle">
           <Kicker tone="accent">Cuadrilla 1 · {scenarioLabel}</Kicker>
           <h1>Ruta de hoy</h1>
-          <p>8 puntos en orden · {RUTA_KM}</p>
+          <p>
+            {paradas.length} {paradas.length === 1 ? "punto" : "puntos"} en orden · {ruta.km}
+          </p>
         </div>
         <div className="progress">
           <div className="progress__bar">
-            <span style={{ width: `${(done / RUTA.length) * 100}%` }} />
+            <span style={{ width: `${paradas.length ? (done / paradas.length) * 100 : 0}%` }} />
           </div>
           <small>
-            {done} de {RUTA.length} hechos
+            {done} de {paradas.length} hechos
           </small>
         </div>
         <div className="mlist" style={{ paddingTop: 8 }}>
-          {RUTA.map((r, i) => {
+          {paradas.map((r, i) => {
             const st = i < done ? "done" : i === done ? "next" : "todo";
             return (
-              <div key={r.nombre} className={`stop is-${st}`}>
+              <div key={r.id} className={`stop is-${st}`}>
                 <span className="stop__n">{st === "done" ? "✓" : i + 1}</span>
                 <div>
                   <span className="mrow__name">{r.nombre}</span>
@@ -320,10 +323,10 @@ function Ruta() {
         </div>
       </div>
       <div className="mob__cta--stack">
-        <Button variant="primary" size="lg" className="btn--block" onClick={() => window.open(googleMapsUrl(), "_blank", "noopener")}>
+        <Button variant="primary" size="lg" className="btn--block" onClick={() => window.open(googleMapsUrl(paradas), "_blank", "noopener")}>
           Abrir en Google Maps
         </Button>
-        {done < RUTA.length ? (
+        {done < paradas.length ? (
           <Button size="lg" className="btn--block" onClick={() => set({ hechos: done + 1 })}>
             Marcar punto {done + 1} como limpio
           </Button>
@@ -341,13 +344,13 @@ function Ruta() {
 }
 
 function Compartir() {
-  const { set, scenarioLabel } = useStore();
-  const text = textoWhatsApp(scenarioLabel, { link: "Maps: [enlace]" });
+  const { s, set, scenarioLabel, ruta } = useStore();
+  const text = textoWhatsApp(ruta.paradas, scenarioLabel, s.comuna);
   return (
     <>
       <div className="mob__body">
         <div className="mtitle">
-          <Kicker tone="accent">Ruta · Providencia</Kicker>
+          <Kicker tone="accent">Ruta · {s.comuna === "Todas" ? "Todas las comunas" : s.comuna}</Kicker>
           <h1>Compartir lista</h1>
         </div>
         <pre className="share">{text}</pre>
@@ -357,7 +360,7 @@ function Compartir() {
           variant="primary"
           size="lg"
           className="btn--block"
-          onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(text.replace("Maps: [enlace]", `Maps: ${googleMapsUrl()}`))}`, "_blank", "noopener")}
+          onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener")}
         >
           Enviar por WhatsApp
         </Button>
