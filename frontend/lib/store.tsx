@@ -24,6 +24,7 @@ export interface Layers {
   escurrimiento: boolean;
   limites: boolean;
   gore: boolean;
+  rejillas: boolean;
   cadena: boolean;
   rayos: boolean;
   feed: boolean;
@@ -67,7 +68,7 @@ export const initialState: State = {
   modal: null,
   toast: null,
   status: "loading",
-  layers: { prioridad: true, escurrimiento: true, limites: false, gore: false, cadena: false, rayos: false, feed: true, reales: true },
+  layers: { prioridad: true, escurrimiento: true, limites: false, gore: false, rejillas: false, cadena: false, rayos: false, feed: true, reales: true },
   sensor: "escuchando",
   anegado: null,
   sensorAgo: "",
