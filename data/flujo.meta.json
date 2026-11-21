@@ -25,8 +25,8 @@
   },
   "salida": {
     "archivo": "frontend/public/data/flujo.geojson",
-    "sha256": "3af76661e9dff639163e4f0881060d9fa2e6afef83c33f0d3f9d1b606371a78f",
-    "bytes": 655447
+    "sha256": "2f8c6c3b52077fd90c38dd6ecad1895d6b3a30cc14cf171f5e1c1ad6bbd56106",
+    "bytes": 692609
   },
   "script": {
     "ruta": "pipeline/04_flujo.py",
@@ -34,7 +34,7 @@
     "sha256": "cb1d9d414b2336f18f9e573871d8289d1790846e6407cc172d48c5df7479c643"
   },
   "pendientes": {
-    "generado_utc": "2026-11-21T21:55:43+00:00",
+    "generado_utc": "2026-11-21T22:56:19+00:00",
     "fuente": "Copernicus DEM GLO-30, elevación por nodo de pipeline/04_flujo.py (PR #75)",
     "fuente_respaldo": {
       "url": "https://api.opentopodata.org/v1/srtm30m",
@@ -50,10 +50,14 @@
       "de": 1606,
       "regla": "mediana de la pendiente de los tramos vecinos que bajan (entrantes y siguiente), con piso y tope"
     },
+    "nombres_calles": {
+      "fuente": "OpenStreetMap (red de 04_flujo.py en caché)",
+      "tramos_con_nombre": 1530
+    },
     "script": {
       "ruta": "pipeline/flujo/pendientes.py",
-      "version": "0.1.0",
-      "sha256": "3401839144e21be866257effcae3c148599a8a58c484fbde6396c3dce91baeae"
+      "version": "0.2.0",
+      "sha256": "b5c347568a42a213076592423ea7fe86c2b73b10e190171150779ee4f3117efe"
     }
   }
 }

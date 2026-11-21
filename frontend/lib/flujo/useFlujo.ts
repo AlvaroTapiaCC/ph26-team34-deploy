@@ -1,6 +1,7 @@
 "use client";
 
-// Une el motor, la capa del mapa y el reloj. Corre con requestAnimationFrame y se pausa si la pestaña no está visible.
+// Une el motor, la capa del mapa y el reloj. Dibuja con requestAnimationFrame (se pausa si la pestaña no está visible);
+// el cálculo avanza con ▶ (parte solo al cargar la red). En pausa el trazo se congela, pero los cambios de rejilla se ven al instante.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LngLat, ScenarioId } from "../data";
 import type { MapLibre } from "../../components/map/maplibre";
@@ -17,18 +18,18 @@ export interface UiFlujo {
   error: boolean;
   corriendo: boolean;
   velocidad: Velocidad;
-  /** Segundos simulados desde el inicio del escenario. */
+  /** Segundos de cálculo desde el último reinicio. */
   t: number;
-  terminado: boolean;
-  /** Lluvia de ahora (mm/h) y valor del slider: intensidad máxima del escenario, escalable. */
+  /** Lluvia supuesta (mm/h), la del slider. */
   lluviaMmH: number;
-  lluviaPico: number;
   lecturas: Lecturas;
-  /** Rejilla del gráfico: la seleccionada o, si no hay, la que recibe más agua. */
-  grafico: { id: string; nombre: string; caudal: number; serie: [number, number][]; elegida: boolean } | null;
-  /** Rejillas tapadas (estado efectivo) y total, por comuna. */
+  /** Rejilla elegida en el mapa y su caudal en el tiempo ([minutos, L/s]); null si no hay ninguna elegida. */
+  grafico: { id: string; nombre: string; estado: EstadoRejilla; caudal: number; serie: [number, number][] } | null;
+  /** Rejillas tapadas (estado efectivo) y total, por comuna ("Todas" incluida). */
   tapadas: Record<string, number>;
   total: Record<string, number>;
+  /** Caja de la red de calles con flujo (para encuadrar la vista en el agua). */
+  caja: [LngLat, LngLat] | null;
 }
 
 let grafoPromesa: Promise<Grafo> | null = null;
@@ -46,7 +47,7 @@ function cargarGrafo(): Promise<Grafo> {
   return grafoPromesa;
 }
 
-const LECTURAS0: Lecturas = { caudalTransito: 0, desbordados: 0, desbordadosPorComuna: {}, metrosSobreCuneta: 0, maxSumidero: null, maxCaudal: 0 };
+const LECTURAS0: Lecturas = { caudalTransito: 0, desbordados: 0, desbordadosPorComuna: {}, metrosSobreCuneta: 0 };
 
 export interface PuntoNombrado {
   id: string;
@@ -76,13 +77,12 @@ export function useFlujo(opts: {
     corriendo: false,
     velocidad: 10,
     t: 0,
-    terminado: false,
-    lluviaMmH: 0,
-    lluviaPico: picoEscenario(scenario),
+    lluviaMmH: picoEscenario(scenario),
     lecturas: LECTURAS0,
     grafico: null,
     tapadas: {},
     total: {},
+    caja: null,
   }));
   const uiRef = useRef(ui);
   uiRef.current = ui;
@@ -103,9 +103,11 @@ export function useFlujo(opts: {
 
   const parche = useCallback((p: Partial<UiFlujo>) => setUi((u) => ({ ...u, ...p })), []);
 
-  /** Nombre legible de una rejilla: el punto del ranking más cercano (< 250 m) o su id del catastro. */
+  /** Nombre legible de una rejilla: su calle (OSM) y el punto del ranking más cercano, si está a menos de 250 m. */
   const nombreRejilla = useCallback((i: number) => {
-    const s = motor.current!.grafo.sumideros[i];
+    const m = motor.current!;
+    const s = m.grafo.sumideros[i];
+    const calle = s.tramo !== null ? m.grafo.tramos[s.tramo].nombre : null;
     let mejor: PuntoNombrado | null = null;
     let d = 250;
     for (const p of puntosRef.current) {
@@ -115,7 +117,7 @@ export function useFlujo(opts: {
         mejor = p;
       }
     }
-    return mejor ? `Cerca de ${mejor.nombre}` : `Rejilla ${s.id}`;
+    return calle ?? (mejor ? `Cerca de ${mejor.nombre}` : `Rejilla ${s.id}`);
   }, []);
 
   /** Lee el motor y actualiza lo que muestra la interfaz (lecturas, gráfico, conteos). */
@@ -136,18 +138,18 @@ export function useFlujo(opts: {
         }
       });
       const sel = seleccionRef.current;
-      const iSel = sel !== null ? m.idx.get(sel) : undefined;
-      const i = iSel ?? lect.maxSumidero;
+      const i = sel !== null ? m.idx.get(sel) : undefined;
       let grafico: UiFlujo["grafico"] = null;
-      if (i !== null && i !== undefined) {
+      if (i !== undefined) {
         const id = m.grafo.sumideros[i].id;
         if (serie.current.id !== id) serie.current = { id, puntos: [] };
         const pts = serie.current.puntos;
-        if (!pts.length || m.t > pts[pts.length - 1][0]) pts.push([m.t, m.llega[i]]);
+        const min = m.t / 60;
+        if (!pts.length || min > pts[pts.length - 1][0]) pts.push([min, m.llega[i]]);
         if (pts.length > FLUJO_CONFIG.serieMax) pts.splice(0, pts.length - FLUJO_CONFIG.serieMax);
-        grafico = { id, nombre: nombreRejilla(i), caudal: m.llega[i], serie: [...pts], elegida: iSel !== undefined };
+        grafico = { id, nombre: nombreRejilla(i), estado: m.estadoRejilla(i), caudal: m.llega[i], serie: [...pts] };
       }
-      setUi((x) => ({ ...x, t: m.t, lluviaMmH: m.lluviaBaseMmH(), lecturas: lect, grafico, tapadas, total, ...extra }));
+      setUi((x) => ({ ...x, t: m.t, lluviaMmH: m.intensidadMmH, lecturas: lect, grafico, tapadas, total, ...extra }));
     },
     [nombreRejilla],
   );
@@ -183,7 +185,13 @@ export function useFlujo(opts: {
         if (!vivo) return;
         motor.current = new MotorFlujo(g);
         motor.current.setEstadosManuales(estadosRef.current);
-        parche({ cargado: true, error: false });
+        const xs = g.tramos.flatMap((t) => [t.coords[0][0], t.coords[t.coords.length - 1][0]]);
+        const ys = g.tramos.flatMap((t) => [t.coords[0][1], t.coords[t.coords.length - 1][1]]);
+        const caja: [LngLat, LngLat] = [
+          [Math.min(...xs), Math.min(...ys)],
+          [Math.max(...xs), Math.max(...ys)],
+        ];
+        parche({ cargado: true, error: false, caja, corriendo: true }); // parte sola: el agua se ve apenas abre la página
         montar();
       })
       .catch(() => vivo && parche({ error: true }));
@@ -192,19 +200,19 @@ export function useFlujo(opts: {
     };
   }, [montar, parche]);
 
-  // Escenario y puntos del ranking: vuelve al inicio y el slider parte de la lluvia del escenario
+  // Escenario y puntos del ranking: vuelve al inicio y la lluvia parte de la máxima del escenario
   useEffect(() => {
     const m = motor.current;
     if (!m) return;
     m.asociarPuntos(JSON.parse(puntosKey).map(([id, coord]: [string, LngLat]) => ({ id, coord })));
     m.setEscenario(scenario);
-    m.factorLluvia = 1;
+    m.intensidadMmH = picoEscenario(scenario);
     serie.current = { id: null, puntos: [] };
     capa.current?.actualizarEstado();
-    leerMotor({ terminado: false, lluviaPico: picoEscenario(scenario) });
+    leerMotor();
   }, [scenario, puntosKey, ui.cargado, leerMotor]);
 
-  // Estados de rejilla del operador: se aplican al instante, también con la simulación en pausa
+  // Estados de rejilla del operador: se aplican al instante, también con el flujo en pausa
   useEffect(() => {
     const m = motor.current;
     if (!m) return;
@@ -231,9 +239,9 @@ export function useFlujo(opts: {
     };
   }, [fuente, scenario, ui.cargado, puntosKey]);
 
-  // Reloj: un cuadro por requestAnimationFrame
+  // Dibujo: un cuadro por requestAnimationFrame; el cálculo avanza solo con ▶
   useEffect(() => {
-    if (!ui.corriendo) return;
+    if (!ui.cargado) return;
     let raf = 0;
     let ultimo = performance.now();
     let ultimoUi = 0;
@@ -242,15 +250,15 @@ export function useFlujo(opts: {
       const m = motor.current;
       const c = capa.current;
       if (!m || !c) return;
-      const dt = Math.min(1, (ahora - ultimo) / 1000); // si los cuadros son lentos el reloj sigue al tiempo real
+      const dt = Math.min(0.1, (ahora - ultimo) / 1000);
       ultimo = ahora;
-      m.avanzar(dt * uiRef.current.velocidad);
-      c.cuadro(dt, ahora / 1000);
-      if (ahora - ultimoUi > 250) {
+      const u = uiRef.current;
+      if (u.corriendo) m.avanzar(dt * u.velocidad);
+      c.cuadro(u.corriendo ? dt : 0, ahora / 1000);
+      if (u.corriendo && ahora - ultimoUi > 250) {
         ultimoUi = ahora;
         c.actualizarEstado();
-        const fin = m.t >= m.duracionS() + 1800;
-        leerMotor(fin ? { corriendo: false, terminado: true } : {});
+        leerMotor();
       }
     };
     // Con la pestaña oculta no se anima: se retoma al volver (sin saltos de tiempo)
@@ -267,7 +275,7 @@ export function useFlujo(opts: {
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", visibilidad);
     };
-  }, [ui.corriendo, leerMotor]);
+  }, [ui.cargado, leerMotor]);
 
   // Mapa
   const alMapaListo = useCallback(
@@ -288,15 +296,14 @@ export function useFlujo(opts: {
     motor.current?.reiniciar();
     serie.current = { id: null, puntos: [] };
     capa.current?.actualizarEstado();
-    capa.current?.cuadro(0, 0);
-    leerMotor({ terminado: false });
+    leerMotor();
   }, [leerMotor]);
 
-  const setLluviaPico = useCallback(
+  const setLluvia = useCallback(
     (mmh: number) => {
       const m = motor.current;
-      if (m) m.factorLluvia = mmh / picoEscenario(m.scenario);
-      leerMotor({ lluviaPico: mmh });
+      if (m) m.intensidadMmH = mmh;
+      leerMotor({ lluviaMmH: mmh });
     },
     [leerMotor],
   );
@@ -305,13 +312,16 @@ export function useFlujo(opts: {
     ui,
     seleccion,
     alMapaListo,
-    alternar: () => {
-      if (ui.terminado) reiniciar(); // al terminar, ▶ vuelve a empezar
-      parche({ corriendo: !ui.corriendo || ui.terminado });
-    },
+    alternar: () => parche({ corriendo: !uiRef.current.corriendo }),
+    reproducir: (velocidad?: Velocidad) => parche({ corriendo: true, ...(velocidad ? { velocidad } : {}) }),
     setVelocidad: (velocidad: Velocidad) => parche({ velocidad }),
-    setLluviaPico,
+    setLluvia,
     reiniciar,
+    seleccionar: setSeleccion,
+    /** Anillo breve sobre una rejilla (al cambiar su estado). */
+    pulsar: (id: string) => capa.current?.pulsar(id),
+    /** El mapa de MapLibre (para la cámara del recorrido). */
+    mapa: (): MapLibre | null => mapa.current,
     /** Ids de las rejillas de la red, con su comuna (para los botones del panel). */
     rejillas: (): { id: string; comuna: string | null }[] => motor.current?.grafo.sumideros.map((s) => ({ id: s.id, comuna: s.comuna })) ?? [],
     /** Estado efectivo de una rejilla (operador, observado, escenario o limpia). */
@@ -319,6 +329,18 @@ export function useFlujo(opts: {
       const m = motor.current;
       const i = m?.idx.get(id);
       return m && i !== undefined ? m.estadoRejilla(i) : null;
+    },
+    /** Rejilla del recorrido guiado: tapada deja agua fuera de la calle; con su posición y la calle hacia donde se va. */
+    candidataRecorrido: (cerca: LngLat[]): { id: string; coord: LngLat; calle: string | null; destino: LngLat } | null => {
+      const m = motor.current;
+      if (!m) return null;
+      const i = m.candidataRecorrido(cerca);
+      if (i === null) return null;
+      const s = m.grafo.sumideros[i];
+      const t = s.tramo !== null ? m.grafo.tramos[s.tramo] : null;
+      const sig = t && t.sig !== null ? m.grafo.tramos[t.sig] : null;
+      const destino = sig ? sig.coords[sig.coords.length - 1] : t ? t.coords[t.coords.length - 1] : s.coord;
+      return { id: s.id, coord: s.coord, calle: sig?.nombre ?? t?.nombre ?? null, destino };
     },
   };
 }

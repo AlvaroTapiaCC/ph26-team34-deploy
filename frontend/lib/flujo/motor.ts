@@ -1,18 +1,19 @@
-// Motor de la simulación hidráulica: el agua avanza por los tramos de la calle, de aguas arriba a aguas abajo.
+// Motor del flujo estimado: el agua avanza por los tramos de la calle, de aguas arriba a aguas abajo.
 //
-// - Caudal de entrada por tramo (método racional): Q = C · i · A, con C de escorrentía urbana, i la lluvia del
-//   escenario en esa hora (escalada por el slider) y A el área de aporte propia del tramo. Se acumula aguas abajo.
+// - Caudal de entrada por tramo (método racional): Q = C · i · A, con C de escorrentía urbana, i la lluvia supuesta
+//   (slider, en mm/h) y A el área de aporte propia del tramo. Se acumula aguas abajo.
 // - Velocidad por tramo: Manning simplificado según la pendiente (grafo.ts). El caudal de cada tramo se acerca a su
 //   valor de régimen con una constante de tiempo = largo / velocidad, así la onda viaja por la calle.
 // - Rejillas: tragan hasta su capacidad según el estado (limpia 100 %, parcial 50 %, tapada 5 %). El excedente sigue
-//   aguas abajo y se acumula; si lo que no traga ya no cabe en la calzada (sube a la vereda), la rejilla se desborda.
+//   aguas abajo y se acumula; si lo que no traga ya no cabe en la calzada, el punto queda "con agua" (se pinta en accent)
+//   y ese volumen se acumula para dibujar su columna.
 // - Estado de cada rejilla: lo que marcó el operador manda; después lo observado (FuenteObservaciones); después el
 //   supuesto del escenario; si no hay nada, limpia.
 //
-// Modelo simplificado; es una simulación, no una medición. Módulo puro: no toca el DOM ni el mapa.
+// Flujo estimado; no es una simulación hidráulica ni una medición. Módulo puro: no toca el DOM ni el mapa.
 import type { LngLat, ScenarioId } from "../data";
 import { capacidadCalzada, capacidadCuneta, distM, type Grafo } from "./grafo";
-import { estadosDe, FLUJO_CONFIG, lluviaDe, RADIO_PUNTO_M, type EstadoRejilla, type NivelAgua } from "./config";
+import { estadosDe, FLUJO_CONFIG, lluviaDe, picoEscenario, RADIO_PUNTO_M, type EstadoRejilla, type NivelAgua } from "./config";
 import type { ObservacionPunto } from "./fuentes";
 
 export const NIVELES: NivelAgua[] = ["sin_agua", "cuneta", "hasta_vereda", "sobre_vereda"];
@@ -21,35 +22,33 @@ const rango = (n: NivelAgua) => Math.max(0, NIVELES.indexOf(n));
 export interface Lecturas {
   /** Lluvia que escurre ahora por las calles de la red: Σ C · i · A (L/s). */
   caudalTransito: number;
-  /** Rejillas desbordadas. */
+  /** Puntos con agua (estimado): rejillas donde lo que no traga ya no cabe en la calzada. */
   desbordados: number;
   desbordadosPorComuna: Record<string, number>;
   /** Metros de calle con más agua de la que cabe en la cuneta. */
   metrosSobreCuneta: number;
-  /** Rejilla a la que le llega más agua ahora (índice en grafo.sumideros) y su caudal (L/s). */
-  maxSumidero: number | null;
-  maxCaudal: number;
 }
 
 export class MotorFlujo {
   readonly grafo: Grafo;
   private cfg: typeof FLUJO_CONFIG;
   scenario: ScenarioId = "13oct";
-  /** Segundos simulados desde el inicio del escenario. */
+  /** Segundos de cálculo desde el último reinicio. */
   t = 0;
-  /** Escala la intensidad del escenario (slider de lluvia): 1 = la del escenario. */
-  factorLluvia = 1;
+  /** Lluvia supuesta (mm/h), pareja en el tiempo; la celda del escenario la reparte en el espacio. */
+  intensidadMmH: number;
 
   // Por tramo
   readonly q: Float32Array; // caudal que llega al final del tramo (L/s)
-  readonly qExc: Float32Array; // parte del caudal que viene de un desborde en este tramo o en el anterior (L/s), para dibujar
+  readonly qExc: Float32Array; // parte del caudal que viene de un punto con agua en este tramo o en el anterior (L/s), para dibujar
   readonly qSal: Float32Array; // caudal que sigue al siguiente tramo, tras las rejillas del tramo
   private readonly qExcSal: Float32Array;
   // Por rejilla
   readonly llega: Float32Array;
   readonly captado: Float32Array;
   readonly exceso: Float32Array;
-  readonly nivel: Uint8Array; // índice en NIVELES (simulado)
+  readonly volumen: Float32Array; // m³ que no entraron a la rejilla mientras el punto estuvo con agua (para la columna)
+  readonly nivel: Uint8Array; // índice en NIVELES (estimado)
   private local: Float32Array; // rejillas sin tramo: caudal local suavizado
   private readonly capCunetaSum: Float32Array;
   private readonly capCalzadaSum: Float32Array;
@@ -64,6 +63,7 @@ export class MotorFlujo {
   constructor(grafo: Grafo, cfg = FLUJO_CONFIG) {
     this.grafo = grafo;
     this.cfg = cfg;
+    this.intensidadMmH = picoEscenario(this.scenario);
     const nt = grafo.tramos.length;
     const ns = grafo.sumideros.length;
     this.q = new Float32Array(nt);
@@ -73,6 +73,7 @@ export class MotorFlujo {
     this.llega = new Float32Array(ns);
     this.captado = new Float32Array(ns);
     this.exceso = new Float32Array(ns);
+    this.volumen = new Float32Array(ns);
     this.nivel = new Uint8Array(ns);
     this.local = new Float32Array(ns);
     this.capCunetaSum = new Float32Array(ns);
@@ -125,33 +126,17 @@ export class MotorFlujo {
 
   reiniciar() {
     this.t = 0;
-    for (const a of [this.q, this.qExc, this.qSal, this.qExcSal, this.llega, this.captado, this.exceso, this.local]) a.fill(0);
+    for (const a of [this.q, this.qExc, this.qSal, this.qExcSal, this.llega, this.captado, this.exceso, this.volumen, this.local]) a.fill(0);
     this.nivel.fill(0);
     this.aplicarEstadosEscenario();
   }
 
   // ---- Lluvia ----
-  duracionS(): number {
-    return lluviaDe(this.scenario).perfilMmH.length * 3600;
-  }
-
-  /** Intensidad de lluvia (mm/h) del escenario, sin celda, en el instante `t` y con el factor del slider. */
-  lluviaBaseMmH(t = this.t): number {
-    const l = lluviaDe(this.scenario);
-    const h = t / 3600;
-    const i = Math.floor(h);
-    if (i < 0 || i >= l.perfilMmH.length) return 0;
-    const a = l.perfilMmH[i];
-    const b = l.perfilMmH[i + 1] ?? 0;
-    return (a + (b - a) * (h - i)) * this.factorLluvia;
-  }
-
-  /** Intensidad de lluvia (mm/h) en un punto y en el instante `t`. */
-  lluviaMmH(coord: LngLat, t = this.t): number {
-    const base = this.lluviaBaseMmH(t);
+  /** Intensidad de lluvia (mm/h) en un punto: la del slider, repartida por la celda del escenario si la hay. */
+  lluviaMmH(coord: LngLat): number {
     const c = lluviaDe(this.scenario).celda;
-    if (!c) return base;
-    return base * (distM(coord, c.centro) <= c.radioM ? c.dentro : c.fuera);
+    if (!c) return this.intensidadMmH;
+    return this.intensidadMmH * (distM(coord, c.centro) <= c.radioM ? c.dentro : c.fuera);
   }
 
   // ---- Rejillas ----
@@ -160,10 +145,10 @@ export class MotorFlujo {
     return this.manual.get(id) ?? this.obs.get(id)?.rejilla ?? this.estadoEscenario.get(id) ?? this.cfg.estadoPorDefecto;
   }
 
-  private capacidad(i: number): number {
-    let f = this.cfg.factorEstado[this.estadoRejilla(i)];
+  private capacidad(i: number, estado = this.estadoRejilla(i)): number {
+    let f = this.cfg.factorEstado[estado];
     if (!this.manual.has(this.grafo.sumideros[i].id)) {
-      // Lo observado corrige la simulación: con agua sobre la vereda la rejilla no está tragando; sin agua, sí.
+      // Lo observado corrige la estimación: con agua sobre la vereda la rejilla no está tragando; sin agua, sí.
       const n = this.obs.get(this.grafo.sumideros[i].id)?.nivelAgua;
       if (n === "hasta_vereda" || n === "sobre_vereda") f = Math.min(f, this.cfg.factorEstado.tapada);
       else if (n === "sin_agua") return Number.POSITIVE_INFINITY;
@@ -171,7 +156,7 @@ export class MotorFlujo {
     return this.cfg.capacidadRejillaLs * f;
   }
 
-  /** Nivel de agua en la rejilla `i` según lo que no traga: comparado con la calzada (desborde) y con la cuneta. */
+  /** Nivel de agua en la rejilla `i` según lo que no traga: comparado con la calzada (punto con agua) y con la cuneta. */
   private nivelDeExceso(ex: number, i: number): number {
     const u = this.cfg.umbralesExceso;
     const calzada = ex / Math.max(this.capCalzadaSum[i], 1e-6);
@@ -180,7 +165,7 @@ export class MotorFlujo {
     return ex / Math.max(this.capCunetaSum[i], 1e-6) >= u.cuneta ? 1 : 0;
   }
 
-  /** Nivel de agua que se muestra en una rejilla: lo observado manda sobre lo simulado (salvo que el operador la haya marcado). */
+  /** Nivel de agua que se muestra en una rejilla: lo observado manda sobre lo estimado (salvo que el operador la haya marcado). */
   nivelMostrado(i: number): NivelAgua {
     if (!this.manual.has(this.grafo.sumideros[i].id)) {
       const o = this.obs.get(this.grafo.sumideros[i].id)?.nivelAgua;
@@ -193,7 +178,7 @@ export class MotorFlujo {
     return rango(this.nivelMostrado(i)) >= rango(this.cfg.nivelDesborde);
   }
 
-  // ---- Paso de simulación ----
+  // ---- Paso de cálculo ----
   avanzar(dtS: number) {
     let resto = dtS;
     while (resto > 1e-6) {
@@ -203,7 +188,7 @@ export class MotorFlujo {
     }
   }
 
-  /** Recalcula lo que tragan las rejillas sin avanzar el reloj (tras cambiar un estado con la simulación en pausa). */
+  /** Recalcula lo que tragan las rejillas sin avanzar el reloj (tras cambiar un estado con el flujo en pausa). */
   recalcular() {
     this.paso(0);
   }
@@ -211,6 +196,7 @@ export class MotorFlujo {
   private paso(dt: number) {
     const { tramos, sumideros, orden, sumPorTramo } = this.grafo;
     const coef = this.cfg.coefEscorrentia / 3600;
+    const vaciado = Math.exp(-dt / this.cfg.vaciadoS);
     this.t += dt;
     for (const i of orden) {
       const tr = tramos[i];
@@ -228,7 +214,7 @@ export class MotorFlujo {
 
       // Rejillas del tramo, de aguas arriba a aguas abajo
       let flujo = this.q[i];
-      let desbLocal = 0; // lo que se desborda en este tramo: se marca aquí y en el tramo siguiente, no más allá
+      let desbLocal = 0; // lo que no cabe en la calle en este tramo: se marca aquí y en el tramo siguiente, no más allá
       for (const s of sumPorTramo.get(i) ?? []) {
         const traga = Math.min(flujo, this.capacidad(s));
         const ex = flujo - traga;
@@ -236,6 +222,7 @@ export class MotorFlujo {
         this.captado[s] = traga;
         this.exceso[s] = ex;
         this.nivel[s] = this.nivelDeExceso(ex, s);
+        this.acumular(s, ex, dt, vaciado);
         desbLocal = this.nivel[s] >= 2 ? ex : flujo > 0 ? (desbLocal * ex) / flujo : 0;
         flujo = ex;
       }
@@ -253,7 +240,14 @@ export class MotorFlujo {
       this.captado[i] = traga;
       this.exceso[i] = this.local[i] - traga;
       this.nivel[i] = this.nivelDeExceso(this.exceso[i], i);
+      this.acumular(i, this.exceso[i], dt, vaciado);
     });
+  }
+
+  /** Volumen (m³) que no entra a la rejilla mientras el punto está con agua; se vacía cuando deja de estarlo. */
+  private acumular(i: number, ex: number, dt: number, vaciado: number) {
+    if (this.desborda(i)) this.volumen[i] += (ex * dt) / 1000;
+    else this.volumen[i] *= vaciado;
   }
 
   // ---- Resumen para la interfaz ----
@@ -268,19 +262,35 @@ export class MotorFlujo {
     }
     let desbordados = 0;
     const desbordadosPorComuna: Record<string, number> = {};
-    let maxSumidero: number | null = null;
-    let maxCaudal = 0;
     sumideros.forEach((s, i) => {
       if (s.tramo === null) caudalTransito += s.ap * coef * this.lluviaMmH(s.coord);
       if (this.desborda(i)) {
         desbordados++;
         if (s.comuna) desbordadosPorComuna[s.comuna] = (desbordadosPorComuna[s.comuna] ?? 0) + 1;
       }
-      if (this.llega[i] > maxCaudal) {
-        maxCaudal = this.llega[i];
-        maxSumidero = i;
+    });
+    return { caudalTransito, desbordados, desbordadosPorComuna, metrosSobreCuneta };
+  }
+
+  /**
+   * Rejilla para el recorrido guiado: limpia hoy no deja agua fuera de la calle, pero tapada sí. Entre esas, la que
+   * recibe más agua cerca de los puntos `cerca` (los primeros del ranking). Si ninguna cumple, la que más se acerca.
+   */
+  candidataRecorrido(cerca: LngLat[]): number | null {
+    const { sumideros } = this.grafo;
+    let mejor: number | null = null;
+    let puntaje = -Infinity;
+    sumideros.forEach((s, i) => {
+      if (s.tramo === null || this.desborda(i)) return;
+      const exTapada = this.llega[i] - this.capacidad(i, "tapada");
+      const margen = exTapada / Math.max(this.capCalzadaSum[i], 1e-6); // ≥ 1: tapada deja agua fuera de la calle
+      const d = cerca.length ? Math.min(...cerca.map((c) => distM(c, s.coord))) : 0;
+      const p = (margen >= 1.1 ? 10 : margen) - d / 2000;
+      if (p > puntaje) {
+        puntaje = p;
+        mejor = i;
       }
     });
-    return { caudalTransito, desbordados, desbordadosPorComuna, metrosSobreCuneta, maxSumidero, maxCaudal };
+    return mejor;
   }
 }

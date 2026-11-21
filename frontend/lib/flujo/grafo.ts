@@ -20,6 +20,8 @@ export interface Tramo {
   v: number; // velocidad del agua (m/s), Manning simplificado
   capCuneta: number; // caudal (L/s) que cabe en la cuneta sin salirse
   capCalzada: number; // caudal (L/s) que cabe en la calzada hasta la solera
+  vc: 0 | 1 | 2; // velocidad del trazo animado: lenta, media o rápida
+  nombre: string | null; // calle en OpenStreetMap
   entrantes: number[];
 }
 
@@ -67,7 +69,7 @@ export function capacidadCalzada(pendiente: number, cfg = FLUJO_CONFIG): number 
 }
 
 interface FeatureTramo {
-  properties: { kind: "tramo"; id: number; a: number; b: number; L: number; s: number; sp?: number; r: number; ap: number; acc: number; sig: number | null };
+  properties: { kind: "tramo"; id: number; a: number; b: number; L: number; s: number; sp?: number; n?: string; r: number; ap: number; acc: number; sig: number | null };
   geometry: { coordinates: LngLat[] };
 }
 interface FeatureSumidero {
@@ -86,7 +88,9 @@ export function construirGrafo(geojson: { features: (FeatureTramo | FeatureSumid
       for (let i = 1; i < coords.length; i++) cum.push(cum[i - 1] + distM(coords[i - 1], coords[i]));
       const m = coords[Math.floor(coords.length / 2)];
       const sp = p.sp ?? p.s;
-      tramos[p.id] = { id: p.id, a: p.a, b: p.b, L: p.L, s: p.s, sp, relleno: p.r === 1, ap: p.ap, acc: p.acc, sig: p.sig, coords, cum, mid: m, v: velocidad(sp), capCuneta: capacidadCuneta(sp), capCalzada: capacidadCalzada(sp), entrantes: [] };
+      const v = velocidad(sp);
+      const [l1, l2] = FLUJO_CONFIG.trazoLimitesV;
+      tramos[p.id] = { id: p.id, a: p.a, b: p.b, L: p.L, s: p.s, sp, relleno: p.r === 1, ap: p.ap, acc: p.acc, sig: p.sig, coords, cum, mid: m, v, capCuneta: capacidadCuneta(sp), capCalzada: capacidadCalzada(sp), vc: v < l1 ? 0 : v < l2 ? 1 : 2, nombre: p.n ?? null, entrantes: [] };
     } else {
       const p = (f as FeatureSumidero).properties;
       sumideros.push({ id: p.id, coord: (f as FeatureSumidero).geometry.coordinates, tramo: p.tramo, pos: p.pos, ap: p.ap, s: p.s, drena: p.drena, comuna: p.comuna });

@@ -1,8 +1,7 @@
-// Parámetros de la simulación hidráulica. Todo lo que se pueda ajustar vive aquí, no en el motor ni en el mapa.
+// Parámetros del flujo estimado y de su dibujo. Todo lo que se pueda ajustar vive aquí, no en el motor ni en el mapa.
 //
-// Modelo simplificado (método racional + pendiente de un DEM de 30 m); es una simulación, NO una medición.
-// Las intensidades de lluvia y los estados de rejilla de cada escenario son SUPUESTOS ilustrativos de la demo
-// (no datos medidos): se marcan como tales en la interfaz.
+// Flujo estimado por las calles según la pendiente (método racional + pendiente de un DEM de 30 m). No es una
+// simulación hidráulica ni una medición. La lluvia y el estado de las rejillas son SUPUESTOS de la demo.
 import type { LngLat, ScenarioId } from "../data";
 
 export type EstadoRejilla = "limpia" | "parcial" | "tapada";
@@ -10,7 +9,7 @@ export type NivelAgua = "sin_agua" | "cuneta" | "hasta_vereda" | "sobre_vereda" 
 export const ESTADOS: EstadoRejilla[] = ["limpia", "parcial", "tapada"];
 
 export interface LluviaEscenario {
-  /** Intensidad en mm/h para cada hora desde el inicio del escenario; se interpola entre horas. */
+  /** Intensidad (mm/h) del escenario por hora; el slider parte de la máxima. */
   perfilMmH: number[];
   /** Si existe, la lluvia no es pareja: dentro de la celda cae `dentro` veces la intensidad y fuera `fuera` veces. */
   celda?: { centro: LngLat; radioM: number; dentro: number; fuera: number };
@@ -41,37 +40,63 @@ export const FLUJO_CONFIG = {
   estadoPorDefecto: "limpia" as EstadoRejilla,
   /** Nivel de agua en una rejilla según lo que no traga: "cuneta" en fracción de la cuneta; los otros, de la calzada. */
   umbralesExceso: { cuneta: 0.05, hasta_vereda: 1, sobre_vereda: 2 },
-  /** Una rejilla "se desborda" desde este nivel: lo que no traga ya no cabe en la calzada y sube a la vereda. */
+  /** Desde este nivel el agua ya no cabe en la calzada: se marca en accent ("punto con agua"). */
   nivelDesborde: "hasta_vereda" as NivelAgua,
+  /** El volumen que no entra a la rejilla se acumula mientras dura y se vacía con esta constante de tiempo (s simulados). */
+  vaciadoS: 600,
 
   // --- Reloj ---
   velocidades: [1, 10, 60] as const,
-  /** Paso máximo de simulación por cuadro (s simulados): evita saltos bruscos a 60×. */
+  /** Paso máximo de cálculo por cuadro (s): evita saltos bruscos a 60×. */
   pasoMaxSimS: 20,
-  /** Puntos que guarda el gráfico de caudal del punto seleccionado. */
+  /** Puntos que guarda el gráfico de caudal de la rejilla elegida. */
   serieMax: 120,
   /** Tope del slider de lluvia (mm/h). */
-  lluviaMaxMmH: 120,
+  lluviaMaxMmH: 80,
 
-  // --- Dibujo ---
-  particulasMax: 2200,
-  /** Una partícula por cada tanto de caudal (L/s) en un tramo de 100 m. */
-  lsPorParticula: 12,
-  /** Escala visual: metros de pantalla por cada m/s de agua (las partículas avanzan según la velocidad del tramo). */
-  escalaVisual: 14,
-  /** Caudal (L/s) a partir del cual el trazo llega a su grosor máximo (escala logarítmica). */
+  // --- Dibujo: código de color estricto ---
+  /** Bajo este caudal (L/s) la calle no se pinta: solo se ve el agua que importa. */
+  caudalMinimoLs: 30,
+  /** Caudal (L/s) con el que el trazo llega a su grosor y azul máximos (escala logarítmica). */
   caudalGrosorMaxLs: 2000,
-  /** Debajo de este caudal el tramo no se dibuja. */
-  caudalMinimoLs: 0.5,
   colores: {
-    agua: "#5F7F9A", // azul grisáceo
-    aguaClaro: "#9DB4C7",
-    desborde: "#FF3D0A", // accent
+    agua: "#2F6FDE", // agua circulando, poco caudal
+    aguaHondo: "#0B3D91", // agua circulando, mucho caudal
+    brillo: "#8FB4F5", // brillo suave del trazo animado
+    desborde: "#FF3D0A", // accent: solo donde el agua no cabe en la calle
+    gris: "#8A8A86", // capas de contexto (catastro, GORE)
   },
+  /** Velocidad del trazo animado (pasos del patrón por segundo) para calles lentas, medias y rápidas. */
+  trazoPasosPorS: [5, 9, 15],
+  /** Límites de velocidad (m/s) entre calles lentas, medias y rápidas. */
+  trazoLimitesV: [0.7, 1.3],
+
+  // --- Columnas de agua que no entra a la rejilla (fill-extrusion) ---
+  columnaLadoM: 15,
+  /** Metros de alto por m³ acumulado, con tope. */
+  columnaMPorM3: 1.2,
+  columnaAltoMaxM: 220,
+  columnasMax: 40,
+
+  // --- Capas de contexto ---
+  zoomContexto: 15, // catastro y GORE solo desde este zoom
+  zoomRejillas: 14, // rejillas de la red desde este zoom (las tapadas, siempre)
+  zoomIconos: 17, // ícono de rejilla desde este zoom; antes, un círculo de 6 px
+  topPrioridad: 10, // pines de prioridad en el mapa
+
+  // --- Vista 3D (MapLibre, sin clave) ---
+  terreno: {
+    tiles: "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+    exageracion: 1.5,
+    pitch: 55,
+    bearing: 90, // mirando al oriente: la cordillera queda arriba y el agua baja hacia el poniente (abajo)
+  },
+  edificios: "https://tiles.openfreemap.org/planet", // OpenFreeMap: teselas vectoriales gratuitas y sin clave
+
   intervaloFuenteMs: 10_000,
 };
 
-// Perfiles ilustrativos por escenario (mm/h por hora, contadas desde que empieza la lluvia). No son registros de la DMC.
+// Lluvia supuesta por escenario (mm/h por hora). No son registros de la DMC.
 export const LLUVIA_ESCENARIO: Record<ScenarioId, LluviaEscenario> = {
   "13oct": { perfilMmH: [20, 36, 30, 14, 4, 0] },
   poniente: { perfilMmH: [14, 40, 34, 12, 3, 0], celda: { centro: [-70.625, -33.425], radioM: 1800, dentro: 1.7, fuera: 0.35 } },
@@ -84,7 +109,7 @@ export const ESCENARIO_POR_DEFECTO: ScenarioId = "pareja";
 /** Lluvia supuesta del escenario; si el id no tiene perfil (escenario real), la del escenario por defecto. */
 export const lluviaDe = (id: ScenarioId): LluviaEscenario => LLUVIA_ESCENARIO[id] ?? LLUVIA_ESCENARIO[ESCENARIO_POR_DEFECTO];
 
-/** Intensidad máxima del perfil del escenario: punto de partida del slider de lluvia. */
+/** Intensidad máxima del perfil del escenario: valor inicial del slider de lluvia. */
 export const picoEscenario = (id: ScenarioId) => Math.max(...lluviaDe(id).perfilMmH);
 
 /** Estado supuesto de las rejillas cercanas a cada punto del ranking, por escenario. Supuesto de la demo, no observación. */
@@ -99,6 +124,9 @@ export const estadosDe = (id: ScenarioId): Record<string, EstadoRejilla> => ESTA
 
 /** Radio (m) para asociar un punto del ranking con las rejillas del catastro que lo rodean. */
 export const RADIO_PUNTO_M = 90;
+
+/** Lluvia del recorrido guiado (mm/h). */
+export const LLUVIA_RECORRIDO = 30;
 
 /** Aviso visible junto al mapa (revisión de #99: no se presenta como simulación hidráulica). */
 export const AVISO_MODELO =

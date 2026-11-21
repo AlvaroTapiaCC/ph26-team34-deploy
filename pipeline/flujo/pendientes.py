@@ -24,6 +24,9 @@ relleno de una depresión, r = 1) o tener pendiente 0. Ahí la velocidad sería 
 "sp" toma la mediana de la pendiente de los tramos vecinos que sí bajan (los que le entregan agua y el
 siguiente), con un piso de PENDIENTE_MIN. La dirección aguas abajo NO cambia: es la de 04_flujo.py.
 
+Nombre de la calle: si está la red de calles en caché (cache/osm/red_drive_mut_2500m.graphml, la misma de
+04_flujo.py), cada tramo lleva también "n", el nombre de la calle en OpenStreetMap (sin consultar ninguna API).
+
 Uso (desde la raíz del repo, después de 04_flujo.py; solo usa la biblioteca estándar):
     python pipeline/flujo/pendientes.py
 
@@ -37,10 +40,11 @@ import json
 import statistics
 import time
 import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 
-SCRIPT_VERSION = "0.1.0"
+SCRIPT_VERSION = "0.2.0"
 PENDIENTE_MIN = 0.003  # m/m: piso para calles "planas" (una calle urbana rara vez baja menos de 0,3 %)
 PENDIENTE_MAX = 0.25  # m/m: tope; más que esto en una calle es un error del DEM (bordes de taludes, puentes)
 OTD_URL = "https://api.opentopodata.org/v1/srtm30m"
@@ -118,11 +122,33 @@ def suavizar(tramos):
     return {i: round(min(PENDIENTE_MAX, max(PENDIENTE_MIN, v if v is not None else PENDIENTE_MIN)), 4) for i, v in sp.items()}
 
 
+def nombres_calles(ruta_graphml):
+    """{(u, v): nombre} de las aristas de la red de OSMnx guardada en GraphML (en los dos sentidos)."""
+    ns = {"g": "http://graphml.graphdrawing.org/xmlns"}
+    raiz = ET.parse(ruta_graphml).getroot()
+    clave = next((k.get("id") for k in raiz.findall("g:key", ns) if k.get("for") == "edge" and k.get("attr.name") == "name"), None)
+    out = {}
+    if clave is None:
+        return out
+    for e in raiz.iter("{http://graphml.graphdrawing.org/xmlns}edge"):
+        d = e.find(f"g:data[@key='{clave}']", ns)
+        if d is None or not d.text:
+            continue
+        nombre = d.text.strip()
+        if nombre.startswith("["):  # OSMnx guarda varias calles como "['A', 'B']": se usa la primera
+            nombre = nombre.strip("[]").split(",")[0].strip().strip("'\"")
+        u, v = int(e.get("source")), int(e.get("target"))
+        out.setdefault((u, v), nombre)
+        out.setdefault((v, u), nombre)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--flujo", default="frontend/public/data/flujo.geojson")
     ap.add_argument("--meta", default="data/flujo.meta.json")
     ap.add_argument("--cache", default="cache/opentopodata/srtm30m.json")
+    ap.add_argument("--red", default="cache/osm/red_drive_mut_2500m.graphml", help="red de 04_flujo.py, para el nombre de las calles")
     a = ap.parse_args()
 
     ruta = Path(a.flujo)
@@ -155,6 +181,19 @@ def main():
     n_suav = sum(1 for p in props if necesita_suavizado(p))
     print(f"Suavizados {n_suav} de {len(props)} tramos (en contra del DEM, planos o con pendiente > {PENDIENTE_MAX})")
 
+    # 3) Nombre de la calle de cada tramo (opcional: solo si está la red en caché)
+    n_nombres = 0
+    if Path(a.red).exists():
+        nombres = nombres_calles(a.red)
+        for p in props:
+            nombre = nombres.get((p["a"], p["b"]))
+            if nombre:
+                p["n"] = nombre
+                n_nombres += 1
+        print(f"{n_nombres} de {len(props)} tramos con nombre de calle")
+    else:
+        print(f"Sin {a.red}: los tramos quedan sin nombre de calle")
+
     texto = json.dumps(g, ensure_ascii=False, separators=(",", ":"))
     ruta.write_text(texto, encoding="utf-8")
 
@@ -167,6 +206,7 @@ def main():
         "fuente_respaldo": {"url": OTD_URL, "lote": OTD_LOTE, "pausa_s": OTD_PAUSA_S, "max_consultas_dia": OTD_MAX_DIA, "puntos_consultados": consultadas},
         "suavizado": {"pendiente_min": PENDIENTE_MIN, "pendiente_max": PENDIENTE_MAX, "tramos_suavizados": n_suav, "de": len(props),
                       "regla": "mediana de la pendiente de los tramos vecinos que bajan (entrantes y siguiente), con piso y tope"},
+        "nombres_calles": {"fuente": "OpenStreetMap (red de 04_flujo.py en caché)", "tramos_con_nombre": n_nombres},
         "script": {"ruta": "pipeline/flujo/pendientes.py", "version": SCRIPT_VERSION, "sha256": sha256(__file__)},
     }
     meta_ruta.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
