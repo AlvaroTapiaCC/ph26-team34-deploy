@@ -1177,6 +1177,88 @@
       "en_flujo": false
     }
   ],
+  "rejillas_eje": [
+    {
+      "rank": 12,
+      "total_rankeado": 562,
+      "top_porcentaje": 3,
+      "ID_IDE": "AL13SU012988",
+      "calle": "Camino El Alba",
+      "lon": -70.544252,
+      "lat": -33.406522,
+      "prioridad": 0.839992
+    },
+    {
+      "rank": 31,
+      "total_rankeado": 562,
+      "top_porcentaje": 6,
+      "ID_IDE": "AL13SU012991",
+      "calle": "Camino El Alba",
+      "lon": -70.543532,
+      "lat": -33.406256,
+      "prioridad": 0.750172
+    },
+    {
+      "rank": 39,
+      "total_rankeado": 562,
+      "top_porcentaje": 7,
+      "ID_IDE": "AL13SU014951",
+      "calle": "General Blanche",
+      "lon": -70.541761,
+      "lat": -33.40905,
+      "prioridad": 0.670626
+    },
+    {
+      "rank": 49,
+      "total_rankeado": 562,
+      "top_porcentaje": 9,
+      "ID_IDE": "AL13SU012961",
+      "calle": "Camino El Alba",
+      "lon": -70.541735,
+      "lat": -33.405757,
+      "prioridad": 0.639143
+    },
+    {
+      "rank": 68,
+      "total_rankeado": 562,
+      "top_porcentaje": 13,
+      "ID_IDE": "AL13SU014952",
+      "calle": "General Blanche",
+      "lon": -70.541633,
+      "lat": -33.409035,
+      "prioridad": 0.575677
+    },
+    {
+      "rank": 72,
+      "total_rankeado": 562,
+      "top_porcentaje": 13,
+      "ID_IDE": "AL13SU014923",
+      "calle": "La Escuela",
+      "lon": -70.53531,
+      "lat": -33.407615,
+      "prioridad": 0.561572
+    },
+    {
+      "rank": 83,
+      "total_rankeado": 562,
+      "top_porcentaje": 15,
+      "ID_IDE": "AL13SU012960",
+      "calle": "Camino El Alba",
+      "lon": -70.541628,
+      "lat": -33.405802,
+      "prioridad": 0.534093
+    },
+    {
+      "rank": 96,
+      "total_rankeado": 562,
+      "top_porcentaje": 18,
+      "ID_IDE": "AL13SU014925",
+      "calle": "General Blanche",
+      "lon": -70.534185,
+      "lat": -33.406955,
+      "prioridad": 0.505086
+    }
+  ],
   "cobertura_flujo": {
     "total_sumideros": 562,
     "total_flujo": 32,

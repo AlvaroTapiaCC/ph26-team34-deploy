@@ -1,5 +1,5 @@
 {
-  "generado_utc": "2026-11-22T07:53:15.017321+00:00",
+  "generado_utc": "2026-11-22T07:55:17.693977+00:00",
   "etiqueta": "Reconstrucción · datos reproducidos",
   "entradas": [
     {
@@ -64,11 +64,11 @@
     },
     {
       "ruta": "pipeline/15_caso_san_carlos.py",
-      "sha256": "db4a4ec3976c6fbb6c59fbe7136fc3e61090af590f363b3e049abb271e825453"
+      "sha256": "762c517ac9cf9221c796d0497fd3590d55468dfdc9ecea5c16967949d9e227ce"
     }
   ],
   "salida": {
     "ruta": "data/validacion/san_carlos/caso.json",
-    "sha256": "9f56d4caedf7f6dae033bd8ab2aa3297e8e074a97bd5528a430a0ebcd22f4e71"
+    "sha256": "d3d3283f28fd09406555c3a38cc80a7daacbc4aaaf7e186d23f582ffb7a8a6c5"
   }
 }

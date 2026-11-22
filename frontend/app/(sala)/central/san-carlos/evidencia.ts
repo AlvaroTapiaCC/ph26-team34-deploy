@@ -13,6 +13,7 @@ export type Caso = {
   horas: { hora_utc: string; hora_santiago: string; lluvia_mm: number; lluvia_pronosticada_mm: number; modo: string }[];
   antecedentes: { fecha: string; titulo: string; detalle: string; fuente_url: string }[];
   misiones: { rank: number; ID_IDE: string; calle: string; lon: number; lat: number; prioridad: number; en_flujo: boolean }[];
+  rejillas_eje: { rank: number; total_rankeado: number; top_porcentaje: number; ID_IDE: string; calle: string; lon: number; lat: number; prioridad: number }[];
   cobertura_flujo: { total_sumideros: number; total_flujo: number; corte_top_20: number; flujo_en_top_20: number; esperado_azar: number; metodo: string };
   puntos_criticos: { properties: { fid: number; lugar: string; causa: string; fuente_url: string } }[];
   limites: string[];
