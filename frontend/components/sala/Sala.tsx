@@ -14,6 +14,7 @@ import { urlGoogleMaps, type Cuadrilla } from "@/lib/cuadrilla";
 import type { LngLat } from "@/lib/data";
 import { boundsDe } from "@/lib/real";
 import { APORTES, dos, nombreFila, puntaje, SalaProvider, useSala, type Fila } from "@/lib/sala";
+import { puestosReporte } from "@/lib/queCambio";
 import { horaSantiago, NIVEL_AGUA, useRecorridos, type EstadoConsulta, type EvidenciaAgua } from "@/lib/transporte";
 import { useCapaCadenas } from "../central/capaCadenas";
 import { useCapaContexto } from "./capaContexto";
@@ -432,10 +433,7 @@ function QueCambio({ nuevo }: { nuevo: boolean }) {
     );
   const c = o.clasificacion;
   const punto = durante.filas.find((r) => r.sumidero_id === o.sumidero_id);
-  const ant = o.prioridad?.antes?.prioridad;
-  const des = o.prioridad?.despues?.prioridad;
-  // El reporte solo mueve su propia rejilla: su puesto previo es el que tendría hoy con el puntaje anterior
-  const puestoAntes = ant != null && punto ? 1 + durante.filas.filter((r) => r !== punto && (r.prioridad ?? 0) > ant).length : null;
+  const puestos = puestosReporte(o, demo.activo);
   const despacho = o.despachos?.find((d) => d.crew_id === cuadrilla?.id);
   return (
     <section className={`${s.tarjeta} ${nuevo ? s.tarjetaNueva : ""}`} aria-live="polite">
@@ -454,11 +452,11 @@ function QueCambio({ nuevo }: { nuevo: boolean }) {
       </p>
       <div className={s.antesDespues}>
         <div>
-          <span>{demo.activo ? "Puesto en San Carlos y entorno" : "Puesto en la zona MUT"}</span>
+          <span>Puesto registrado · {puestos.alcance}</span>
           <p>
-            <s>{puestoAntes ? `#${puestoAntes}` : "Fuera del plan"}</s> <i aria-hidden>→</i> <b>{punto ? `#${punto.puesto}` : "Sin dato"}</b>
+            <s>{puestos.antes}</s> <i aria-hidden>→</i> <b>{puestos.despues}</b>
             <small>
-              puntaje {puntaje(ant)} → {puntaje(des)}
+              {puestos.zonaMut && `zona MUT: ${puestos.zonaMut} · `}puntaje {puntaje(o.prioridad?.antes?.prioridad)} → {puntaje(o.prioridad?.despues?.prioridad)}
             </small>
           </p>
         </div>
