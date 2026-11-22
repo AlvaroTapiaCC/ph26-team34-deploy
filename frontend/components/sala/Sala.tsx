@@ -513,6 +513,17 @@ function notaPublica(o: ObservacionPublica) {
   return c.rejilla === "limpia" ? "La rejilla se ve despejada." : "La clasificación quedó registrada.";
 }
 
+function EncabezadoDurante() {
+  const { observaciones } = useSala();
+  const n = observaciones.datos.length;
+  return (
+    <p className={s.faseDurante}>
+      <b>Durante la lluvia</b>
+      <span>{observaciones.estado === "cargando" && !n ? "Leyendo reportes…" : n ? `${n} ${n === 1 ? "reporte recibido" : "reportes recibidos"}` : "Sin reportes todavía"}</span>
+    </p>
+  );
+}
+
 function QueCambio({ nuevo }: { nuevo: boolean }) {
   const { observaciones, durante, cuadrilla } = useSala();
   const o = observaciones.datos[0] ?? null;
@@ -1062,7 +1073,14 @@ function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, nuevo, p
   return (
     <>
       <div className={s.rielTop} key={fase}>
-        {fase === "durante" ? <QueCambio nuevo={nuevo} /> : <Recomendacion />}
+        {fase === "durante" ? (
+          <>
+            <EncabezadoDurante />
+            <QueCambio nuevo={nuevo} />
+          </>
+        ) : (
+          <Recomendacion />
+        )}
       </div>
       <Tabs.Root className={s.tabs} value={pestana} onValueChange={setPestana}>
         <Tabs.List className={s.tabLista} aria-label="Detalle">
