@@ -11,8 +11,10 @@ Dos niveles que no se mezclan (lo observado manda sobre lo estimado):
 - **en_riesgo:** solo hay prioridad alta cerca: una de las `riesgo_top_n` rejillas de mayor
   prioridad de la zona (el mismo criterio con que el despacho elige candidatas, #32).
 
-De cada rejilla cuenta su ÚLTIMA observación de agua vigente: si una foto posterior muestra
-el agua bajo la cuneta (`sin_agua`), el paradero deja de estar expuesto. `no_evaluable` no
+De cada rejilla cuenta su ÚLTIMA observación de agua vigente: si una foto posterior del agua,
+una cámara o un texto muestran el agua bajo la cuneta (`sin_agua`), el paradero deja de estar
+expuesto. Una foto de rejilla, como la del cierre de la cuadrilla (#42), puede marcar agua pero
+no apagarla: el incidente de agua no se cierra con esa foto. `no_evaluable` no
 cuenta como "sin agua" (un dato faltante no es un valor válido).
 
 Drena informa la exposición; el desvío lo confirma Red.
@@ -257,6 +259,9 @@ def ultimas_observaciones_agua(conn: Connection, vigencia_h: float, incluir_simu
           from observations o {_ULTIMA_CLASIFICACION}
          where o.sumidero_id is not null
            and c.resultado->>'nivel_agua' = any(%(niveles)s)
+           -- Una foto de rejilla (p. ej. la de cierre, #42) mira la rejilla de cerca: puede mostrar
+           -- agua, pero su "sin_agua" no apaga el agua del tramo.
+           and not (o.tipo = 'foto_rejilla' and c.resultado->>'nivel_agua' = 'sin_agua')
            and o.ts > now() - make_interval(hours => %(h)s)
            and o.ts <= now()
            and (%(sim)s or not o.is_simulated)

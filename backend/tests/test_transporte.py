@@ -144,19 +144,22 @@ def test_integracion_observacion_vigente_marca_pc1329_y_la_vencida_no():
     pc = svc.cargar_datos().paraderos["PC1329"]
     lejos = svc.cargar_datos().paraderos["PC1016"]
 
-    def insertar(conn, sid, lat, lon, niveles, horas):
+    def insertar(conn, sid, lat, lon, niveles, horas, tipos=None):
         conn.execute("insert into sumideros (id, geom, fuente) values (%s, st_point(%s, %s, 4326), 'manual')",
                      (sid, lon, lat))
         for i, nivel in enumerate(niveles):  # en orden: la última observación es la que manda
+            tipo = (tipos or {}).get(i, "foto_agua")
             o = conn.execute("insert into observations (sumidero_id, fuente, tipo, ts) values"
-                             " (%s, 'vecino', 'foto_agua', now() - make_interval(hours => %s, secs => %s))"
-                             " returning id", (sid, horas, len(niveles) - i)).fetchone()["id"]
+                             " (%s, 'vecino', %s, now() - make_interval(hours => %s, secs => %s))"
+                             " returning id", (sid, tipo, horas, len(niveles) - i)).fetchone()["id"]
             conn.execute("insert into classifications (observation_id, resultado, modelo, prompt_version)"
                          " values (%s, %s, 'test', 'v0')", (o, json.dumps({"nivel_agua": nivel})))
 
     try:
         with get_conn() as conn:
-            insertar(conn, viva, pc["lat"] + 0.0001, pc["lon"], ["cuneta", "hasta_vereda"], 0)
+            # La última es una foto de rejilla sin agua (como la del cierre, #42): no apaga el agua
+            insertar(conn, viva, pc["lat"] + 0.0001, pc["lon"], ["cuneta", "hasta_vereda", "sin_agua"], 0,
+                     tipos={2: "foto_rejilla"})
             insertar(conn, vieja, lejos["lat"], lejos["lon"] + 0.0001, ["sobre_vereda"], 7)  # vencida (6 h)
             insertar(conn, seca, lejos["lat"] + 0.0001, lejos["lon"], ["hasta_vereda", "sin_agua"], 0)
         r = client.get("/transporte/expuestos")
