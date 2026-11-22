@@ -226,6 +226,10 @@ def test_cierre_con_foto(escena, monkeypatch):
     m = str(escena.m3)
 
     monkeypatch.setattr("app.routers.missions.clasificar_rejilla", lambda data: None)  # Claude caído: sin verificar
+    # Sin re-planificar: la cuadrilla de prueba es simulada y el despacho real le quitaría m1 (y movería
+    # el plan de las cuadrillas de la demo en la base compartida). El re-planeo tras el cierre se prueba
+    # en test_cierre.py y test_dispatch.py.
+    monkeypatch.setattr("app.routers.missions.dispatch.replanificar_seguro", lambda *a, **k: {"despachado": False})
 
     # No se puede cerrar desde pendiente: se responde antes de subir la foto (ni de llamar a Claude)
     r = client.post(f"/missions/{m}/close", files={"foto": ("x.jpg", _jpeg(), "image/jpeg")})
