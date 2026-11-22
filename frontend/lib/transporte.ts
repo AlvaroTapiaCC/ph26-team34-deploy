@@ -182,6 +182,56 @@ export function useRecorridos(activo: boolean, zona: ZonaTransporte = "mut") {
   return r;
 }
 
+export interface ParaderoRecorrido {
+  id: string;
+  nombre: string;
+  lon: number;
+  lat: number;
+}
+
+export interface RecorridoCompleto {
+  servicio: string;
+  sentido: string;
+  destino: string | null;
+  geometria: LngLat[];
+  paraderos: ParaderoRecorrido[];
+}
+
+const completosCache: Partial<Record<ZonaTransporte, Promise<RecorridoCompleto[]>>> = {};
+
+export function cargarRecorridosCompletos(zona: ZonaTransporte = "mut"): Promise<RecorridoCompleto[]> {
+  return completosCache[zona] ??= fetch(`/data/recorridos_completos_${zona === "san-carlos" ? "san_carlos" : "mut"}.json`)
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+    .catch((error: unknown) => {
+      delete completosCache[zona];
+      throw error;
+    });
+}
+
+export function useRecorridoCompleto(servicio: string | null, zona: ZonaTransporte = "mut") {
+  const [seleccion, setSeleccion] = useState<{ zona: ZonaTransporte; recorrido: RecorridoCompleto } | null>(null);
+  useEffect(() => {
+    if (!servicio) return;
+    let vivo = true;
+    let reintento: ReturnType<typeof setTimeout> | undefined;
+    const cargar = async (intento: number) => {
+      try {
+        const recorridos = await cargarRecorridosCompletos(zona);
+        const recorrido = recorridos.find((r) => claveServicio(r) === servicio);
+        if (vivo) setSeleccion(recorrido ? { zona, recorrido } : null);
+      } catch {
+        if (vivo && intento < 3) reintento = setTimeout(() => void cargar(intento + 1), 1000 * (intento + 1));
+      }
+    };
+    void cargar(0);
+    return () => {
+      vivo = false;
+      clearTimeout(reintento);
+    };
+  }, [servicio, zona]);
+  return seleccion?.zona === zona && claveServicio(seleccion.recorrido) === servicio ? seleccion.recorrido : null;
+}
+
 export const claveServicio = (s: { servicio: string; sentido: string }) => `${s.servicio}|${s.sentido}`;
 
 // --- Formato ---

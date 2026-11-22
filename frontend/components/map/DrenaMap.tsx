@@ -5,6 +5,7 @@ import type { LngLat, Prioridad } from "@/lib/data";
 import { FLUJO_CONFIG } from "@/lib/flujo/config";
 import { BASE_STYLE, loadMapLibre, type MapLibre } from "./maplibre";
 import { colorDe, EVENTO_PALETA } from "@/lib/paleta";
+import type { RecorridoCompleto } from "@/lib/transporte";
 
 export interface MapPin {
   id: string;
@@ -77,6 +78,7 @@ export interface DrenaMapProps {
   recorridos?: LngLat[][] | null; // trazado de los servicios afectados
   recorridosFondo?: LngLat[][] | null; // todos los recorridos de la zona, tenues
   recorridosDestacados?: LngLat[][] | null;
+  recorridoCompleto?: RecorridoCompleto | null;
   calor?: boolean; // mapa de calor de riesgo a partir de `puntos` (peso)
   caminatas?: [LngLat, LngLat][] | null; // paradero expuesto → paradero alternativo
   bounds: [LngLat, LngLat];
@@ -192,6 +194,8 @@ const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
   ["puntos-sel", "circle-stroke-color", "principal"],
   ["puntos", "circle-stroke-color", "secundario"],
   ["chain-line", "line-color", "principal"],
+  ["rec-paraderos", "circle-color", "bus"],
+  ["rec-paraderos", "circle-stroke-color", "surface"],
 ];
 
 /** Chevrón para el sentido de los recorridos de bus, con el color de transporte de la paleta. */
@@ -211,13 +215,17 @@ function flechaBus(): ImageData {
   return ctx.getImageData(0, 0, 24, 24);
 }
 
-function pintarMapa(map: MapLibre) {
+function pintarMapa(map: MapLibre, completo = false) {
   if (map.hasImage?.("bus-sentido")) map.updateImage("bus-sentido", flechaBus());
   for (const [capa, prop, color] of COLORES_CAPAS) if (map.getLayer(capa)) map.setPaintProperty(capa, prop, colorDe(color));
   const t = (c: string, a: number) => colorDe(c).replace(/^#(..)(..)(..)$/, (_m, r, g, b) => `rgba(${parseInt(r, 16)},${parseInt(g, 16)},${parseInt(b, 16)},${a})`); // paleta-ok: transparencia sobre colores de la paleta
   // Los recorridos se recortan al radio del extracto GTFS: sus extremos se desvanecen en vez de terminar en seco.
   const desvanecido = ["interpolate", ["linear"], ["line-progress"], 0, t("bus", 0), 0.12, t("bus", 1), 0.88, t("bus", 1), 1, t("bus", 0)];
   for (const capa of ["rec-line", "rec-destacado", "rec-fondo"]) if (map.getLayer(capa)) map.setPaintProperty(capa, "line-gradient", desvanecido);
+  if (completo && map.getLayer("rec-destacado")) {
+    map.setPaintProperty("rec-destacado", "line-gradient", null);
+    map.setPaintProperty("rec-destacado", "line-color", colorDe("bus"));
+  }
   if (map.getLayer("riesgo-calor")) {
     // Riesgo bajo = transparente (el mapa queda gris); medio = calipso tenue; alto = calipso a blanco
     map.setPaintProperty("riesgo-calor", "heatmap-color", ["interpolate", ["linear"], ["heatmap-density"], 0, "rgba(0,0,0,0)", 0.12, "rgba(0,0,0,0)", 0.3, t("principal", 0.15), 0.6, t("principal", 0.35), 0.85, t("principal", 0.55), 1, t("principal", 0.7)]); // paleta-ok: transparente
@@ -269,6 +277,10 @@ export default function DrenaMap(props: DrenaMapProps) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const size = props.pinSize ?? 40;
+  const completoRef = useRef(props.recorridoCompleto);
+  completoRef.current = props.recorridoCompleto;
+  const paddingRef = useRef(props.padding);
+  paddingRef.current = props.padding;
 
   // Capas extra de quien usa el mapa (p. ej. la simulación del flujo o las cadenas de la central). Va antes de crear el mapa: así su limpieza corre antes de map.remove()
   const onMapReadyRef = useRef(props.onMapReady);
@@ -304,7 +316,7 @@ export default function DrenaMap(props: DrenaMapProps) {
         mapRef.current = map;
         map.once("style.load", () => {
           const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]), lineMetrics: id.startsWith("rec") });
-          ["esc", "chain", "lim", "area", "celda", "celda-link", "gore", "rec", "rec-destacado", "caminata"].forEach(add);
+          ["esc", "chain", "lim", "area", "celda", "celda-link", "gore", "rec", "rec-destacado", "rec-paraderos", "caminata"].forEach(add);
           map.addSource("comunas-rm", { type: "geojson", data: "/data/comunas_rm.geojson" });
           // El catastro completo (420 KB) se pide la primera vez que se enciende su capa
           map.addSource("rejillas", { type: "geojson", data: fc([]), cluster: true, clusterMaxZoom: 16, clusterRadius: 30 });
@@ -448,9 +460,10 @@ export default function DrenaMap(props: DrenaMapProps) {
             },
           });
           map.addLayer({ id: "rec-destacado", type: "line", source: "rec-destacado", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 6, "line-opacity": 1 } });
-          pintarMapa(map);
+          map.addLayer({ id: "rec-paraderos", type: "circle", source: "rec-paraderos", paint: { "circle-radius": 3.5, "circle-stroke-width": 1.5 } });
+          pintarMapa(map, !!completoRef.current);
           // Si cambia el esquema de color del sistema, se vuelven a leer los colores
-          const repintar = () => pintarMapa(map);
+          const repintar = () => pintarMapa(map, !!completoRef.current);
           const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
           mq?.addEventListener?.("change", repintar);
           unsubTema.current = () => mq?.removeEventListener?.("change", repintar);
@@ -484,10 +497,11 @@ export default function DrenaMap(props: DrenaMapProps) {
   // Paleta editable (#131): repinta las capas sin recrear el mapa
   useEffect(() => {
     if (!ready) return;
-    const repintar = () => mapRef.current && pintarMapa(mapRef.current);
+    const repintar = () => mapRef.current && pintarMapa(mapRef.current, !!completoRef.current);
+    repintar();
     window.addEventListener(EVENTO_PALETA, repintar);
     return () => window.removeEventListener(EVENTO_PALETA, repintar);
-  }, [ready]);
+  }, [ready, props.recorridoCompleto]);
 
   // Encuadre (en 3D, con la inclinación y el rumbo de la vista)
   useEffect(() => {
@@ -530,17 +544,49 @@ export default function DrenaMap(props: DrenaMapProps) {
     set("celda", fc(props.celda ? [poly(props.celda.poly)] : []));
     set("celda-link", fc(props.celda ? [line(props.celda.link)] : []));
     set("rec", fc((props.recorridos ?? []).map(line)));
-    set("rec-destacado", fc((props.recorridosDestacados ?? []).map(line)));
-    const destacado = !!props.recorridosDestacados?.length;
+    set("rec-destacado", fc((props.recorridoCompleto ? [props.recorridoCompleto.geometria] : props.recorridosDestacados ?? []).map(line)));
+    const existentes = new Set((props.paraderos ?? []).map((p) => p.id));
+    set("rec-paraderos", fc((props.recorridoCompleto?.paraderos ?? []).filter((p) => !existentes.has(p.id)).map((p) => ({ type: "Feature", properties: { id: p.id, nombre: p.nombre }, geometry: { type: "Point", coordinates: [p.lon, p.lat] } }))));
+    const destacado = !!props.recorridoCompleto || !!props.recorridosDestacados?.length;
     map.setPaintProperty("rec-line", "line-opacity", destacado ? 0.2 : 0.55);
     map.setPaintProperty("rec-flecha", "icon-opacity", destacado ? 0.2 : 0.9);
     map.moveLayer("rec-destacado");
+    map.moveLayer("rec-paraderos");
     set("caminata", fc((props.caminatas ?? []).map(line)));
     set("ruta", fc((props.ruta ?? []).map(line)));
     set("rec-fondo", fc((props.recorridosFondo ?? []).map(line)));
     set("puntos", fc((props.puntos ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, prio: p.prio, top: !!p.top, w: p.peso ?? 0, nombre: p.nombre ?? "", sub: p.sub ?? "" }, geometry: { type: "Point", coordinates: p.coord } }))));
     set("gore", fc((props.gore ?? []).map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }))));
-  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.recorridosDestacados, props.caminatas, props.puntos, props.ruta, props.recorridosFondo]);
+  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.recorridosDestacados, props.recorridoCompleto, props.paraderos, props.caminatas, props.puntos, props.ruta, props.recorridosFondo]);
+
+  useEffect(() => {
+    if (!ready || !props.recorridoCompleto?.geometria.length) return;
+    const puntos = props.recorridoCompleto.geometria;
+    const xs = puntos.map((p) => p[0]);
+    const ys = puntos.map((p) => p[1]);
+    mapRef.current.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], {
+      padding: paddingRef.current ?? 50, maxZoom: 15, pitch: 0, bearing: 0,
+      duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 900,
+    });
+  }, [ready, props.recorridoCompleto]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const map = mapRef.current;
+    const popup = new libRef.current.Popup({ closeButton: false, closeOnClick: false, offset: 10, className: "globo" });
+    const mover = (e: MapLibre) => {
+      const f = e.features?.[0];
+      if (f) popup.setLngLat(f.geometry.coordinates).setText(f.properties.nombre).addTo(map);
+    };
+    const salir = () => popup.remove();
+    map.on("mousemove", "rec-paraderos", mover);
+    map.on("mouseleave", "rec-paraderos", salir);
+    return () => {
+      map.off("mousemove", "rec-paraderos", mover);
+      map.off("mouseleave", "rec-paraderos", salir);
+      popup.remove();
+    };
+  }, [ready, props.recorridoCompleto]);
 
   useEffect(() => {
     if (!ready) return;
