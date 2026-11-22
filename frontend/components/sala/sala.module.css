@@ -945,17 +945,17 @@
   font-variant-numeric: tabular-nums;
 }
 .p_alta {
-  background: var(--principal);
-  color: var(--sobre-principal);
-  box-shadow: 0 4px 14px -4px var(--brillo);
+  background: var(--prio-alta);
+  color: var(--sobre-color);
 }
 .p_media {
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--principal) 60%, transparent);
-  color: var(--principal);
+  background: color-mix(in srgb, var(--prio-media) 12%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--prio-media);
+  color: var(--prio-media);
 }
 .p_baja {
-  background: color-mix(in srgb, var(--secundario) 6%, transparent);
-  color: var(--text-3);
+  background: color-mix(in srgb, var(--prio-baja) 12%, transparent);
+  color: var(--prio-baja);
 }
 .filaTxt {
   display: grid;
