@@ -676,6 +676,7 @@ const Mapa = memo(function Mapa({
         className={s.mapaCanvas}
         puntos={puntos}
         onClickPunto={onSel}
+        capasSobrePuntos={capas.reportes && durante ? [incidentes.capa] : undefined}
         seleccionado={sel}
         labels={labels}
         ruta={lineas}
