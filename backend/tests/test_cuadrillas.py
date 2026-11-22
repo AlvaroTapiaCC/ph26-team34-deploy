@@ -240,6 +240,8 @@ def test_cierre_con_foto(escena, monkeypatch):
 
     # Cerrar dos veces: 409; imagen ilegible: 422; misión inexistente: 404
     assert client.post(f"/missions/{m}/close", files={"foto": ("x.jpg", _jpeg(), "image/jpeg")}).status_code == 409
+    # La misión debe estar cerrable para que se llegue a leer la imagen (si no, 409 antes)
+    assert client.post(f"/missions/{escena.m1}/status", json={"estado": "en_camino"}).status_code == 200
     assert client.post(f"/missions/{escena.m1}/close", files={"foto": ("x.jpg", b"nope", "image/jpeg")}).status_code == 422
     assert client.post(f"/missions/{uuid.uuid4()}/close", files={"foto": ("x.jpg", _jpeg(), "image/jpeg")}).status_code == 404
     from app.db import get_conn
