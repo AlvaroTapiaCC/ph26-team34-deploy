@@ -7,6 +7,9 @@ Reglas de datos (revisión del PR #58):
 - De cada observación cuenta solo su ÚLTIMA clasificación (una reclasificación no duplica).
 - Los reportes de texto suben P solo si apuntan a obstrucción (`reportes_texto.tipos_que_suben_p`);
   un anegamiento no implica rejilla tapada: entra a la consecuencia como nivel de agua (Durante).
+- Cada observación pesa según la confianza que Claude le dio (`confianza` en formula.yaml, #88 y #124):
+  la foto de rejilla mueve P, cada texto suma su aporte y el agua entra a C con nivel · factor.
+  `senales_sumidero` lista esas mismas lecturas para la ficha (`GET /sumideros/{id}`).
 - `incluir_simulados=False` (prueba de campo) excluye todo dato simulado: sumideros, observaciones,
   historial de limpieza, features simuladas (`features_simuladas`) y casos sin observaciones reales.
   Ese cálculo NO se guarda en `scores`: el ranking de la demo no se pisa.
@@ -22,11 +25,17 @@ from psycopg import Connection
 from psycopg.types.json import Jsonb
 
 from app.config import get_formula_config
-from app.services.formula import Score, StreetChain, SumideroInput, calcular_ranking
+from app.services.formula import (
+    Score,
+    StreetChain,
+    SumideroInput,
+    calcular_ranking,
+    elegir_agua,
+    factor_confianza,
+)
 
 ZONA = ZoneInfo("America/Santiago")
-# Peor nivel de agua primero
-_ORDEN_AGUA = ["sobre_vereda", "hasta_vereda", "cuneta", "sin_agua"]
+_NIVELES_AGUA = ["sobre_vereda", "hasta_vereda", "cuneta", "sin_agua"]
 
 # Última clasificación de cada observación
 _ULTIMA_CLASIFICACION = """
@@ -37,6 +46,109 @@ _ULTIMA_CLASIFICACION = """
          limit 1
     ) c on true
 """
+
+
+# Lecturas vigentes de cada clase de señal. Las usan el cálculo (`cargar_entradas`) y la ficha
+# (`senales_sumidero`), así ambos aplican siempre las mismas vigencias y filtros.
+_COLUMNAS = """o.id as observation_id, o.sumidero_id, o.fuente, o.tipo, o.ts, o.is_simulated,
+               c.resultado->>'confianza' as confianza"""
+_FILTRO_COMUN = """o.sumidero_id is not null
+               and (%(sim)s or not o.is_simulated)
+               and (%(sid)s::text is null or o.sumidero_id = %(sid)s)"""
+_SQL_LECTURAS = {
+    # Foto de rejilla evaluable: P (lo confirmado manda)
+    "rejilla": f"""
+        select {_COLUMNAS}, c.resultado->>'rejilla' as valor
+          from observations o {_ULTIMA_CLASIFICACION}
+         where o.tipo = 'foto_rejilla' and {_FILTRO_COMUN}
+           and (c.resultado->>'evaluable')::boolean
+           and c.resultado->>'rejilla' in ('limpia', 'parcial', 'tapada')
+           and o.ts > now() - make_interval(hours => %(h_foto)s)
+         order by o.sumidero_id, o.ts desc, o.id desc
+    """,
+    # Texto que apunta a obstrucción: suma a P si no hay foto
+    "texto": f"""
+        select {_COLUMNAS}, c.resultado->>'tipo' as valor
+          from observations o {_ULTIMA_CLASIFICACION}
+         where o.tipo = 'texto' and {_FILTRO_COMUN}
+           and c.resultado->>'tipo' = any(%(tipos)s)
+           and o.ts > now() - make_interval(hours => %(h_foto)s)
+         order by o.sumidero_id, o.ts desc, o.id desc
+    """,
+    # Nivel de agua de cualquier observación: C en Durante
+    "agua": f"""
+        select {_COLUMNAS}, c.resultado->>'nivel_agua' as valor
+          from observations o {_ULTIMA_CLASIFICACION}
+         where {_FILTRO_COMUN}
+           and c.resultado->>'nivel_agua' = any(%(niveles)s)
+           and o.ts > now() - make_interval(hours => %(h_agua)s)
+         order by o.sumidero_id, o.ts desc, o.id desc
+    """,
+}
+
+
+def _lecturas(
+    conn: Connection,
+    cfg: Mapping[str, Any],
+    incluir_simulados: bool = True,
+    sumidero_id: str | None = None,
+    agua: bool = True,
+) -> dict[str, list[Mapping[str, Any]]]:
+    """Observaciones vigentes por clase ('rejilla', 'texto', 'agua'), de la más nueva a la más antigua."""
+    params = {
+        "sim": incluir_simulados,
+        "sid": sumidero_id,
+        "h_foto": cfg["observado"]["vigencia_horas"],
+        "h_agua": cfg["durante"].get("vigencia_agua_horas", 6),
+        "tipos": list(cfg["reportes_texto"].get("tipos_que_suben_p", ["rejilla_tapada", "basura"])),
+        "niveles": _NIVELES_AGUA,
+    }
+    return {
+        clase: (conn.execute(sql, params).fetchall() if clase != "agua" or agua else [])
+        for clase, sql in _SQL_LECTURAS.items()
+    }
+
+
+def senales_sumidero(
+    conn: Connection, sumidero_id: str, cfg: Mapping[str, Any] | None = None
+) -> list[dict[str, Any]]:
+    """Resumen de las señales vigentes que afectan a un sumidero (#124), para la ficha.
+
+    Una fila por lectura: clase de señal, fuente, tipo y hora de captura (UTC) de la
+    observación, valor que leyó Claude, su confianza y el factor que aplica la fórmula.
+    `usada` dice si la fórmula la toma hoy: la foto más reciente; los textos si no hay foto;
+    el agua con mayor nivel · factor. `aplica_en` dice en qué modo entra al cálculo.
+    Mismas reglas que el cálculo de la demo (`formula.yaml`, con datos simulados rotulados).
+    """
+    cfg = cfg or get_formula_config()
+    lect = _lecturas(conn, cfg, incluir_simulados=True, sumidero_id=sumidero_id)
+    elegida = elegir_agua([(r["valor"], r["confianza"]) for r in lect["agua"]], cfg)
+    hay_foto = bool(lect["rejilla"])
+    senales: list[dict[str, Any]] = []
+    agua_marcada = False
+    for clase in ("rejilla", "texto", "agua"):
+        for i, r in enumerate(lect[clase]):
+            if clase == "rejilla":
+                usada = i == 0
+            elif clase == "texto":
+                usada = not hay_foto
+            else:
+                usada = not agua_marcada and (r["valor"], r["confianza"]) == elegida
+                agua_marcada = agua_marcada or usada
+            senales.append({
+                "observation_id": r["observation_id"],
+                "senal": clase,
+                "fuente": r["fuente"],
+                "tipo_observacion": r["tipo"],
+                "ts": r["ts"],
+                "valor": r["valor"],
+                "confianza": r["confianza"],
+                "factor_confianza": factor_confianza(r["confianza"], cfg),
+                "aplica_en": ["durante"] if clase == "agua" else ["antes", "durante"],
+                "usada": usada,
+                "is_simulated": r["is_simulated"],
+            })
+    return senales
 
 
 def hoy_santiago() -> date:
@@ -59,10 +171,7 @@ def cargar_entradas(
     """Arma la entrada de la fórmula desde la base."""
     cfg = cfg or get_formula_config()
     norm = cfg.get("normalizacion", {})
-    vig_foto = cfg["observado"]["vigencia_horas"]
-    vig_agua = cfg["durante"].get("vigencia_agua_horas", 6)
     vig_urgente = cfg["durante"].get("vigencia_urgente_horas", 6)
-    tipos_p = list(cfg["reportes_texto"].get("tipos_que_suben_p", ["rejilla_tapada", "basura"]))
     feats_sim = set(cfg.get("features_simuladas", ["dias_sin_limpieza"]))
     sim = {"sim": incluir_simulados}
 
@@ -82,59 +191,27 @@ def cargar_entradas(
         sim,
     ).fetchall()
 
-    # Última foto de rejilla evaluable y vigente (lo confirmado manda)
-    fotos = {
-        r["sumidero_id"]: r
-        for r in conn.execute(
-            f"""
-            select distinct on (o.sumidero_id) o.sumidero_id, c.resultado->>'rejilla' as rejilla,
-                   c.resultado->>'confianza' as confianza
-              from observations o {_ULTIMA_CLASIFICACION}
-             where o.tipo = 'foto_rejilla' and o.sumidero_id is not null
-               and (c.resultado->>'evaluable')::boolean
-               and c.resultado->>'rejilla' in ('limpia', 'parcial', 'tapada')
-               and o.ts > now() - make_interval(hours => %(h)s)
-               and (%(sim)s or not o.is_simulated)
-             order by o.sumidero_id, o.ts desc, o.id desc
-            """,
-            {"h": vig_foto, **sim},
-        )
-    }
+    lect = _lecturas(conn, cfg, incluir_simulados, agua=modo == "durante")
 
-    # Reportes de texto que apuntan a obstrucción (una fila por observación)
-    textos = {
-        r["sumidero_id"]: r["n"]
-        for r in conn.execute(
-            f"""
-            select o.sumidero_id, count(*) as n
-              from observations o {_ULTIMA_CLASIFICACION}
-             where o.tipo = 'texto' and o.sumidero_id is not null
-               and c.resultado->>'tipo' = any(%(tipos)s)
-               and o.ts > now() - make_interval(hours => %(h)s)
-               and (%(sim)s or not o.is_simulated)
-             group by o.sumidero_id
-            """,
-            {"h": vig_foto, "tipos": tipos_p, **sim},
-        )
-    }
+    # Última foto de rejilla evaluable y vigente (lo confirmado manda). Vienen de la más nueva
+    # a la más antigua: la primera de cada sumidero es la que vale.
+    fotos: dict[str, Mapping[str, Any]] = {}
+    for r in lect["rejilla"]:
+        fotos.setdefault(r["sumidero_id"], r)
 
-    agua: dict[str, str] = {}
+    # Reportes de texto que apuntan a obstrucción (una fila por observación) con su confianza
+    textos: dict[str, list[str | None]] = {}
+    for r in lect["texto"]:
+        textos.setdefault(r["sumidero_id"], []).append(r["confianza"])
+
+    # Agua: la lectura vigente con mayor nivel · factor de confianza (#124)
+    lecturas_agua: dict[str, list[tuple[str, str | None]]] = {}
+    for r in lect["agua"]:
+        lecturas_agua.setdefault(r["sumidero_id"], []).append((r["valor"], r["confianza"]))
+    agua = {sid: elegir_agua(ls, cfg) for sid, ls in lecturas_agua.items()}
+
     urgentes: set[str] = set()
     if modo == "durante":
-        for r in conn.execute(
-            f"""
-            select o.sumidero_id, c.resultado->>'nivel_agua' as nivel
-              from observations o {_ULTIMA_CLASIFICACION}
-             where o.sumidero_id is not null
-               and c.resultado->>'nivel_agua' in ('sobre_vereda', 'hasta_vereda', 'cuneta', 'sin_agua')
-               and o.ts > now() - make_interval(hours => %(h)s)
-               and (%(sim)s or not o.is_simulated)
-            """,
-            {"h": vig_agua, **sim},
-        ):
-            prev = agua.get(r["sumidero_id"])
-            if prev is None or _ORDEN_AGUA.index(r["nivel"]) < _ORDEN_AGUA.index(prev):
-                agua[r["sumidero_id"]] = r["nivel"]
         urgentes = {
             r["sumidero_id"]
             for r in conn.execute(
@@ -165,14 +242,18 @@ def cargar_entradas(
             if d is not None:
                 f["dias_sin_limpieza"] = d
         foto = fotos.get(r["id"]) or {}
+        confs_texto = textos.get(r["id"], [])
+        nivel, conf_agua = agua.get(r["id"]) or (None, None)
         entradas.append(
             SumideroInput(
                 id=r["id"],
                 features=f,
-                rejilla_observada=foto.get("rejilla"),
+                rejilla_observada=foto.get("valor"),
                 confianza_foto=foto.get("confianza"),
-                reportes_texto=textos.get(r["id"], 0),
-                nivel_agua=agua.get(r["id"]),
+                reportes_texto=len(confs_texto),
+                confianza_textos=confs_texto,
+                nivel_agua=nivel,
+                confianza_agua=conf_agua,
                 urgente=r["id"] in urgentes,
             )
         )

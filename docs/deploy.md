@@ -67,6 +67,8 @@ Para cambiar variables: *Environment* → editar → *Save, rebuild and deploy*.
 - **Root directory:** `frontend`
 - **Framework:** Next.js (detección automática)
 
+`/central/validacion` se genera al compilar. Lee los resultados publicados en `data/validacion/` del mismo checkout. Conserva activa la opción de Vercel [Include source files outside of the Root Directory in the Build Step](https://vercel.com/docs/monorepos/monorepo-faq#can-i-share-source-files-between-projects-are-shared-packages-supported) para incluirlos con `frontend`. Publica nuevamente al actualizar los resultados.
+
 Variables (Project Settings → Environment Variables):
 
 | Variable | Valor |
@@ -77,6 +79,8 @@ Variables (Project Settings → Environment Variables):
 | `NEXT_PUBLIC_CREW_TOKEN` | igual que `CREW_TOKEN` de Render (app `/cuadrilla`); nunca el `ADMIN_TOKEN` |
 
 Las variables `NEXT_PUBLIC_*` se fijan al momento del build: después de cambiarlas hay que redeployar (*Deployments* → … → *Redeploy*).
+
+Con las dos variables públicas de Supabase configuradas, el ranking usa Realtime para detectar inserciones y cambios en `scores` del escenario abierto y vuelve a consultar la API. La suscripción usa la publicación y los permisos de lectura existentes. Para verificarla, dejar el ranking abierto en un entorno de pruebas, ejecutar un recálculo autorizado y comprobar que los puntajes actualizados aparecen sin recargar.
 
 ## Base de datos (Supabase)
 
@@ -92,6 +96,8 @@ py -3.12 -m venv .venv
 El script registra lo aplicado en `schema_migrations`, así que se puede correr varias veces.
 
 Seguridad: todas las tablas tienen RLS. El navegador (publishable key) solo puede **leer**; las escrituras pasan por el backend.
+
+La [verificación de producción de la demo](verificacion-produccion-demo.md) registra la revisión observada, los pasos de publicación y la prueba con dos celulares.
 
 ## Correr en local
 

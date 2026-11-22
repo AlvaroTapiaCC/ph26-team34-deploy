@@ -1,7 +1,7 @@
 // Convierte las respuestas del backend a los tipos que ya usan los componentes (lib/data.ts).
 // El backend entrega un ranking por SUMIDERO; la interfaz muestra INTERSECCIONES: se agrupan por
 // `intersection_id` (el ranking ya trae `intersection_id` e `intersection_nombre`).
-import type { ApiEscenario, ApiFicha, ApiRanking, ApiRankingItem } from "./api";
+import type { ApiEscenario, ApiFicha, ApiRanking, ApiRankingItem, ApiSenal } from "./api";
 import type { Comuna, LngLat, Prioridad, RankedPunto, Scenario } from "./data";
 
 /**
@@ -41,7 +41,7 @@ export function boundsDe(puntos: { coord: LngLat }[]): [LngLat, LngLat] {
 const acortar = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 export function aEscenario(e: ApiEscenario): Scenario {
-  return { id: e.id, label: e.nombre, short: acortar(e.nombre, 22), ranking: [], aguaExterna: 0, criticosTop30: 0, real: true };
+  return { id: e.id, label: e.nombre, short: acortar(e.nombre, 22), ranking: [], real: true };
 }
 
 export interface RankingReal {
@@ -109,6 +109,7 @@ export interface FichaReal {
   criticidad: string[];
   ultimaLimpieza: string | null;
   nObservaciones: number;
+  senales: ApiSenal[]; // observaciones vigentes con su fuente y confianza (#124)
 }
 
 export const NOMBRE_VARIABLE: Record<string, string> = {
@@ -146,5 +147,6 @@ export function aFichaReal(f: ApiFicha, sumideroAPunto: Record<string, string>, 
     criticidad: Array.isArray(crit) ? crit.map(String) : typeof crit === "string" ? [crit] : [],
     ultimaLimpieza: f.ultima_limpieza?.fecha ?? null,
     nObservaciones: f.observaciones.length,
+    senales: f.senales ?? [], // API anterior a #124: sin señales
   };
 }

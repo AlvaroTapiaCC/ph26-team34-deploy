@@ -35,11 +35,12 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-SCRIPT_VERSION = "1.1.0"
+SCRIPT_VERSION = "1.1.1"
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "backend"))
 
-from app.services.formula import PESO_A_FEATURE, StreetChain, SumideroInput, calcular_ranking  # noqa: E402
+from app.services.formula import PESO_A_FEATURE, SumideroInput, calcular_ranking  # noqa: E402
+from validacion_ranking import cadenas_del_sector  # noqa: E402
 
 
 def sha256(ruta):
@@ -107,13 +108,7 @@ def main():
         entradas.append(SumideroInput(r["ID_IDE"], f))
 
     ids = set(zona["ID_IDE"])
-    cadenas, vistas = [], set()
-    for c in json.loads(Path(a.cadenas).read_text(encoding="utf-8")):
-        par = [(s, d) for s, d in zip(c["sumidero_ids"], c["distancias_m"]) if s in ids]
-        clave = tuple(s for s, _ in par)
-        if len(par) >= 2 and clave not in vistas:
-            vistas.add(clave)
-            cadenas.append(StreetChain(c["street_id"], [s for s, _ in par], [d for _, d in par]))
+    cadenas = cadenas_del_sector(json.loads(Path(a.cadenas).read_text(encoding="utf-8")), ids)
     print(f"Rejillas: {len(entradas)}; cadenas dentro de la zona: {len(cadenas)}")
 
     scores = calcular_ranking(entradas, cadenas, cfg_ef, "antes")
@@ -155,7 +150,8 @@ def main():
     meta = {
         "generado_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "git_head_al_generar": git_head(),
-        "regla": "Predicción hecha antes de fotografiar. Después de este commit no se cambian pesos ni datos.",
+        "regla": ("Predicción hecha antes de fotografiar. Después de este commit no se cambian pesos ni datos."
+                  if a.sufijo == "mut" else "Ranking base del sector con la configuración congelada, sin clima."),
         f"zona_{a.sufijo}": {**meta_ter["zona"], "rejillas_en_zona": int(ter[col_zona].sum()),
                      "rejillas_rankeadas": n, "fuera_de_red_excluidas": fuera},
         "formula": {

@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ESCURRIMIENTO, fmt, googleMapsTramos, MAX_WAYPOINTS_MOVIL, pad2, PUNTOS, statsPunto, textoWhatsApp, type LngLat, type ScenarioId } from "@/lib/data";
 import { boundsDe } from "@/lib/real";
-import { useStore, type MobileTab } from "@/lib/store";
+import { CUADRILLAS_MAX, useStore, type MobileTab } from "@/lib/store";
 import AvisoDatos from "../AvisoDatos";
 import { copy } from "../desktop/Modals";
 import { CriticidadPill, VariablesReales } from "../desktop/Ficha";
@@ -46,7 +47,6 @@ function useMobilePins(onPin: (id: string) => void, focus?: string) {
       rank: p.rank,
       prio: p.prio,
       faded: !visible.includes(p),
-      ring: p.id === (focus ?? visible[0]?.id) ? "dashed" : undefined,
       onClick: () => onPin(p.id),
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -108,6 +108,11 @@ function Prioridades() {
         </div>
         <div className="mob__pad">
           <Segmented<ScenarioId> size="lg" soft options={escenarios.map((x) => ({ id: x.id, label: x.short }))} value={s.scenario} onChange={(scenario) => set({ scenario })} />
+        </div>
+        <div className="mob__pad">
+          <Link href="/central/validacion" className="btn btn--secondary btn--md btn--block">
+            Validación histórica
+          </Link>
         </div>
         {s.status === "error" ? (
           <div className="mgap">
@@ -291,7 +296,7 @@ function Filtros() {
             <b>{cu}</b>
             <small>corta la lista en {cu * 2} puntos</small>
           </div>
-          <button onClick={() => setCu(Math.min(5, cu + 1))} aria-label="Más">
+          <button onClick={() => setCu(Math.min(CUADRILLAS_MAX, cu + 1))} aria-label="Más">
             +
           </button>
         </div>

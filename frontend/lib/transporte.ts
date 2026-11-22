@@ -73,7 +73,7 @@ export interface Expuestos {
 }
 
 export const getExpuestos = (escenario: string) =>
-  apiGet<Expuestos>(`/transporte/expuestos?scenario=${encodeURIComponent(escenario)}`, { timeoutMs: 10_000, reintentos: 0 });
+  apiGet<Expuestos>(`/transporte/expuestos?scenario=${encodeURIComponent(escenario)}`, { timeoutMs: 10_000, reintentos: 0, cache: "no-store" });
 
 export const INTERVALO_MS = 3_000;
 

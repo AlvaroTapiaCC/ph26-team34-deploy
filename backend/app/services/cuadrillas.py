@@ -118,7 +118,7 @@ def ultimo_cambio(conn: Connection, crew_id: str) -> dict[str, Any] | None:
         """
         select e.ts, e.payload->>'motivo' as motivo, e.payload->'ruta_version' as ruta_version,
                e.payload->'siguiente_antes' as siguiente_antes,
-               e.payload->'siguiente_despues' as siguiente_despues,
+               e.payload->'siguiente_despues' as siguiente_despues, o.id as observation_id,
                o.tipo as obs_tipo, o.fuente as obs_fuente, o.is_simulated as obs_simulada,
                c.resultado->>'rejilla' as rejilla, c.resultado->>'nivel_agua' as nivel_agua,
                c.resultado->'material' as material
@@ -142,8 +142,27 @@ def ultimo_cambio(conn: Connection, crew_id: str) -> dict[str, Any] | None:
                        "rejilla": fila["rejilla"], "nivel_agua": fila["nivel_agua"],
                        "material": fila["material"] if isinstance(fila["material"], list) else []}
     return {"hora": fila["ts"], "motivo": fila["motivo"], "ruta_version": fila["ruta_version"],
+            "observation_id": fila["observation_id"],
             "siguiente_antes": fila["siguiente_antes"], "siguiente_despues": fila["siguiente_despues"],
             "observacion": observacion}
+
+
+def ultimo_cierre(conn: Connection, crew_id: str) -> dict[str, Any] | None:
+    """Último cierre con categorías públicas, para el tablero Durante."""
+    return conn.execute(
+        """
+        select m.id as mission_id, m.sumidero_id, coalesce(s.calle, 'Caso reportado') as nombre,
+               c.created_at as hora, c.verificado,
+               c.clasificacion->>'rejilla' as rejilla, c.clasificacion->>'confianza' as confianza
+          from missions m
+          join closures c on c.mission_id = m.id
+          left join sumideros s on s.id = m.sumidero_id
+         where m.crew_id = %s and m.estado = 'cerrada'
+         order by c.created_at desc, c.id desc
+         limit 1
+        """,
+        (crew_id,),
+    ).fetchone()
 
 
 def ruta(conn: Connection, crew_id: str, ver_privado: bool = False) -> dict[str, Any]:
@@ -158,8 +177,12 @@ def ruta(conn: Connection, crew_id: str, ver_privado: bool = False) -> dict[str,
     if crew is None:
         raise NoEncontrado(f"Cuadrilla {crew_id} no existe")
     oculta = not (crew["is_simulated"] or ver_privado)
-    extra = {"posicion_oculta": True} if oculta else {}
-    cambio = ultimo_cambio(conn, crew_id)
+    extra = {
+        "ultimo_cambio": ultimo_cambio(conn, crew_id),
+        "ultimo_cierre": ultimo_cierre(conn, crew_id),
+    }
+    if oculta:
+        extra["posicion_oculta"] = True
     paradas = _paradas(conn, crew_id)
     if not oculta:
         guardada = conn.execute(
@@ -169,17 +192,17 @@ def ruta(conn: Connection, crew_id: str, ver_privado: bool = False) -> dict[str,
         ).fetchone()
         if guardada:
             return {"crew_id": crew_id, "origen": "despacho", **guardada, "misiones": paradas,
-                    "ultimo_cambio": cambio}
+                    **extra}
 
     puntos = [(p["lat"], p["lon"]) for p in paradas if p["lat"] is not None]
     if crew["lat"] is not None and not oculta:
         puntos = [(crew["lat"], crew["lon"]), *puntos]
     if not puntos:
         return {"crew_id": crew_id, "origen": "sin_misiones", "version": None, "geojson": None,
-                "paradas": [], "misiones": [], "ultimo_cambio": cambio, **extra}
+                "paradas": [], "misiones": [], **extra}
     r = routing.ruta(puntos).to_dict()
     return {"crew_id": crew_id, "origen": "calculada", "version": None, **r, "misiones": paradas,
-            "ultimo_cambio": cambio, **extra}
+            **extra}
 
 
 # ---------------------------------------------------------------------------
@@ -227,7 +250,8 @@ def cambiar_estado(conn: Connection, mission_id: str, nuevo: str) -> dict[str, A
         if mision is None:
             raise TransicionInvalida(_estado_actual(conn, mission_id), nuevo)
         _sincronizar(conn, mision)
-        _evento(conn, "mision_estado", {"mission_id": str(mission_id), "estado": nuevo, "crew_id": mision["crew_id"]})
+        _evento(conn, "mision_estado", {"mission_id": str(mission_id), "estado": nuevo, "crew_id": mision["crew_id"],
+                                        "caso_id": str(mision["case_id"]) if mision["case_id"] else None})
     return mision
 
 
@@ -276,7 +300,8 @@ def cerrar_mision(conn: Connection, mission_id: str, foto_ruta: str, clasificaci
             )
         _sincronizar(conn, mision)
         _evento(conn, "mision_cerrada", {"mission_id": str(mission_id), "closure_id": str(cierre["id"]),
-                                         "crew_id": mision["crew_id"], "verificado": verificado})
+                                         "crew_id": mision["crew_id"], "verificado": verificado,
+                                         "caso_id": str(mision["case_id"]) if mision["case_id"] else None})
     return {"mision": mision, "cierre": cierre}
 
 

@@ -2,6 +2,8 @@
 
 Dos personas: una narra y la otra opera los celulares. Los intervalos incluyen la interacción. Usar el recorrido en vivo si el ensayo #50 pasó de punta a punta. Si se usa una grabación o el simulador, anunciar «secuencia reproducida» al empezar. Si falta una función, presentarla en futuro y omitir su acción en pantalla.
 
+Ver el orden para integrar, desplegar, ensayar y grabar. [Ruta crítica de la demo](ruta-critica-demo.md)
+
 ### 0:00–0:25 · Una decisión en plena lluvia
 
 «El 13 de octubre hubo más de 1.900 llamadas en dos horas. Imaginen estar en la central municipal. Hay agua en varias calles, una cuadrilla disponible y un catastro público que cubre cerca de un tercio de las rejillas. ¿Qué dirección le dan por radio? ¿Qué le dicen a la persona que espera la micro en esa esquina?»
@@ -26,9 +28,11 @@ Dos personas: una narra y la otra opera los celulares. Los intervalos incluyen l
 
 ### 2:00–2:35 · Qué se puede comprobar
 
-«La predicción de las 46 rejillas quedó guardada con fecha y huella digital. Para evaluarla comparamos el ranking con anegamientos documentados de una lluvia pasada. Para evaluar la lectura de fotos, dos personas las etiquetan por separado. Y para medir la respuesta, contamos desde el envío de la foto hasta la nueva misión.»
+«La predicción de las 46 rejillas quedó guardada con fecha y huella digital. Para evaluar la fórmula comparamos su cobertura espacial con dos referencias. Para evaluar la lectura de fotos, dos personas las etiquetan por separado. Y para medir la respuesta, contamos desde el envío de la foto hasta la nueva misión.»
 
-*Si hay resultados verificados, sustituir la última parte por los tres resultados del ensayo: «En el replay, [aciertos/total con el corte de #86]. Claude coincidió con las personas en [X/Y], con [Z] imágenes no evaluables. Desde la foto hasta la misión pasaron [segundos del registro de #50]». Si falta alguna medición, decir cuál sigue pendiente.*
+Para la comparación espacial de julio: «Las rejillas que quedaron en el 20 % superior del ranking cubrieron tres de ocho puntos críticos conocidos a menos de 100 metros. El área de aporte cubrió dos y el azar, 1,8 en promedio». [Resultado del replay](../data/validacion/replay/README.md)
+
+*Cuando estén disponibles las otras mediciones, añadir: «Claude coincidió con las personas en [X/Y], con [Z] imágenes no evaluables. Desde la foto hasta la misión pasaron [segundos del registro de #50]». Si falta alguna medición, decir cuál sigue pendiente.*
 
 ### 2:35–3:00 · Qué aporta Drena y qué viene
 

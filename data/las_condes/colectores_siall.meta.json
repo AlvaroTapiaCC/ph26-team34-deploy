@@ -1,0 +1,20 @@
+{
+  "fuente": "DOH/MOP, SIALL capa 6",
+  "fuente_url": "https://rest-sit.mop.gob.cl/arcgis/rest/services/DOH/SIALL/MapServer/6/query?where=COMUNA+%3D+%27Las+Condes%27&outFields=OBJECTID%2CID_IDE%2CCOMUNA%2CESTADO%2CTIPO_CONDU%2CTIPO_RED%2CFORMA_SEC%2CLONG%2CPENDIENTE%2CCAPACIDAD%2CDIAM_O_ANC%2CALTURA&outSR=4326&f=json&orderByFields=OBJECTID&returnGeometry=true",
+  "descargado_utc": "2026-11-22T01:12:24+00:00",
+  "cobertura": "Las Condes, Región Metropolitana, Chile",
+  "salida": {
+    "archivo": "colectores_siall.geojson",
+    "sha256": "49d06eccf450ead4755e0859c28eab1cd05b617bddec480f55082449678fd35c"
+  },
+  "registros": 631,
+  "seleccion": "COMUNA = Las Condes; geometría de referencia de la capa",
+  "unidades": {
+    "coordenadas": "grados WGS84",
+    "LONG": "m",
+    "PENDIENTE": "%",
+    "CAPACIDAD": "m³/s",
+    "DIAM_O_ANC": "mm",
+    "ALTURA": "mm"
+  }
+}

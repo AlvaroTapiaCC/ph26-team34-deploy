@@ -76,7 +76,7 @@ def iso(dt):
     return None if dt is None else dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def descargar(nombre, evento, lat, lon, cfg):
+def descargar(nombre, evento, lat, lon, cfg, salida_dir):
     # Ventana: desde las 00:00 del día anterior hasta las 24:00 del día siguiente, hora de Santiago.
     ini = datetime.combine(evento["desde"] - timedelta(days=1), time(0), SANTIAGO).astimezone(timezone.utc)
     fin = datetime.combine(evento["hasta"] + timedelta(days=2), time(0), SANTIAGO).astimezone(timezone.utc)
@@ -133,7 +133,6 @@ def descargar(nombre, evento, lat, lon, cfg):
             for modo in ("tormenta_inminente", "durante", "despues")},
     }
 
-    salida_dir = REPO / "data" / "escenarios"
     salida_dir.mkdir(parents=True, exist_ok=True)
     salida = salida_dir / f"{nombre}.json"
     salida.write_text(json.dumps({
@@ -142,7 +141,7 @@ def descargar(nombre, evento, lat, lon, cfg):
         "unidades": {"lluvia": "mm/h", "racha": "km/h", "viento": "km/h", "clima": "0-1"},
         "resumen": resumen,
         "horas": horas,
-    }, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    }, ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n")
 
     meta = {
         "generado_utc": iso(datetime.now(timezone.utc)),
@@ -166,9 +165,9 @@ def descargar(nombre, evento, lat, lon, cfg):
                    "sha256": sha256(__file__)},
     }
     salida.with_suffix(".meta.json").write_text(
-        json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"{nombre}: {resumen['horas']} horas, {resumen['lluvia_total_mm']} mm, "
-          f"racha máx {resumen['racha_max_kmh']} km/h → {salida.relative_to(REPO)}")
+          f"racha máx {resumen['racha_max_kmh']} km/h -> {salida}")
 
 
 def main():
@@ -177,10 +176,12 @@ def main():
                     help="por defecto, todos los candidatos")
     ap.add_argument("--lat", type=float, default=CENTRO_MUT[0])
     ap.add_argument("--lon", type=float, default=CENTRO_MUT[1])
+    ap.add_argument("--salida", type=Path, default=REPO / "data" / "escenarios",
+                    help="directorio de las series; usar uno distinto para otro sector")
     a = ap.parse_args()
     cfg = cargar_config()
     for nombre in a.evento or sorted(EVENTOS):
-        descargar(nombre, EVENTOS[nombre], a.lat, a.lon, cfg)
+        descargar(nombre, EVENTOS[nombre], a.lat, a.lon, cfg, a.salida)
 
 
 if __name__ == "__main__":

@@ -44,6 +44,34 @@ python pipeline/05_prediccion.py --sufijo replay
   misma zona. La tesela del DEM y la de WorldCover se eligen según el centro.
 - La primera vez, la red de calles de OSM tarda varios minutos en bajar. Conviene lanzarla apenas se decida el sector.
 
+### Sector de julio en Las Condes (#87)
+
+El centro está en `[-70.541, -33.418]` y el radio es de 1.500 m, al oriente de Rotonda Atenas.
+El corte del pipeline contiene 568 rejillas SIALL con fecha de actualización de 2016. Hay 562 en
+el ranking y 6 fuera de la red vehicular. La referencia de pendiente es el percentil 90 de la
+zona. El campo `centro_confirmado` identifica el pin validado del MUT. Para julio, `centro_lonlat`
+y `nota` registran el centro escogido para el replay. [Metadatos del terreno](terreno_replay_julio.meta.json) · [Metadatos del ranking](validacion/prediccion_replay_julio.meta.json)
+
+El insumo local de OpenStreetMap conserva versiones anteriores al comienzo del 16 de julio en
+Santiago (corte UTC `2026-07-16T03:59:59Z`). Se recuperaron las versiones anteriores a partir
+de los objetos visibles en la extracción y sus dependencias. Un objeto eliminado entre julio y
+la extracción puede faltar si ninguna de esas dependencias lo referencia. Se usan además
+Copernicus GLO-30 para elevación y WorldCover 2021 para cobertura. [Metadatos de OSM](fuente_osm_replay_julio.meta.json) · [Créditos y licencia ODbL](https://www.openstreetmap.org/copyright) · [Metadatos de variables](variables_replay_julio.meta.json)
+
+Regeneración desde la raíz del repositorio.
+
+```bash
+python pipeline/03_terreno.py --centro=-70.541,-33.418 --radio 1500 --sufijo replay_julio \
+  --nota "Concentración de puntos críticos públicos del invierno de 2026, al oriente de Rotonda Atenas" \
+  --osm-xml data/fuente_osm_replay_julio.osm.bz2
+python pipeline/04_variables.py --sufijo replay_julio --osm-xml data/fuente_osm_replay_julio.osm.bz2
+python pipeline/05_prediccion.py --sufijo replay_julio
+```
+
+El ranking del sector usa la configuración congelada de validación y guarda su hash. Los seis
+sumideros a más de 30 m de la red vehicular se conservan en las tablas del sector y se excluyen
+del ranking, según el criterio del pipeline. [Ranking de julio](validacion/prediccion_replay_julio.csv)
+
 ## Lluvia y viento del replay (`data/escenarios/`)
 
 Serie horaria real de Open-Meteo para cada evento candidato del replay (#86), desde un día antes
@@ -61,6 +89,32 @@ python pipeline/11_clima_historico.py --lat … --lon …     # si #86 elige otr
   `backend/config/clima.yaml` con `backend/app/services/clima_serie.py`. Los umbrales se fijaron antes de mirar el replay.
   Un dato faltante deja `clima` nulo y el modo en `sin_dato`, nunca un 0.
 - `<evento>.meta.json` registra las URLs de consulta, la celda de la grilla usada, la fecha de descarga y el sha256 de la salida, de la config y del script.
+
+## Anegamientos viales documentados (#73)
+
+El [registro del 13 de octubre de 2026](validacion/anegados_20261013.geojson) documenta 9 ubicaciones.
+En el sector más concentrado caben 4 en un radio de 1,5 km. La [auditoría](validacion/anegados_20261013.md) explica las fuentes,
+las horas de aviso o publicación y el corte que lleva al evento de julio para el replay (#86).
+
+## Fuentes complementarias de Las Condes
+
+Los archivos de [`las_condes/`](las_condes/) apoyan el replay y la revisión del terreno. Se obtienen con las dependencias de `pipeline/requirements.txt` y el comando `python pipeline/13_las_condes.py`. Cada archivo incluye metadatos de fuente, descarga, cobertura, unidades y SHA-256.
+
+| Archivo | Cobertura |
+| --- | --- |
+| `colectores_siall.geojson` | 631 tramos de la capa 6 de SIALL con comuna Las Condes. |
+| `subareas_tributarias_siall.geojson` | 64 polígonos de la capa 12 de SIALL que intersectan el límite comunal del catastro. Se conserva la geometría completa. |
+| `puntos_criticos_invierno_2026.geojson` | 29 de los 33 puntos del Programa Invierno de SENAPRED. Se excluyeron cuatro vinculados a domicilios. Son antecedentes de riesgo por recurrencia, sin fecha de ocurrencia. |
+| `pronostico_rotonda_atenas_2026-07-16.csv` | 48 horas nominales de la corrida ECMWF IFS inicializada el 16 de julio a las 06:00 UTC para el sector Rotonda Atenas. Un campo vacío indica que el proveedor no entregó ese dato. |
+
+La versión pública disponible de la capa 12 produjo 64 subáreas con este filtro. Queda por cotejar con el extracto de 103 mencionado en la issue. También quedan pendientes la capa municipal de canales y los archivos de Atención Vecino y arbolado. [Issue #74](https://github.com/platanus-hack/platanus-hack-26-cl-team-34/issues/74) · [Portal de Datos Abiertos de Las Condes](https://datos.lascondes.cl/)
+
+## Reclamos de Atención Vecino (#72)
+
+`validacion/reclamos/` reúne los tickets de sumideros y anegamiento del portal de datos abiertos de Las Condes,
+agrupados por cuadra y sin domicilios. El CSV crudo, pendiente en #74, no se versiona porque trae domicilios. `pipeline/14_reclamos.py` los cruza con el ranking A
+del sector del replay de julio (`prediccion_replay_julio.csv`). El [README](validacion/reclamos/README.md) explica la fuente,
+la licencia pendiente y los resultados.
 
 ## Obsoleto
 

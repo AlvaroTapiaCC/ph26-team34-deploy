@@ -461,6 +461,12 @@ function Resultado({
           <dd>{t.gravedad}</dd>
           <dt>Nivel de agua</dt>
           <dd>{NIVEL_AGUA_TXT[t.nivel_agua]}</dd>
+          {t.confianza && (
+            <>
+              <dt>Confianza</dt>
+              <dd>{CONF_TXT[t.confianza]}</dd>
+            </>
+          )}
           {t.ubicacion_texto && (
             <>
               <dt>Lugar</dt>
