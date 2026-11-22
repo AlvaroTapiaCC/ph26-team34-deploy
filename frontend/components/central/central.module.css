@@ -78,6 +78,12 @@
   min-width: 0;
 }
 
+/* La columna de la Central crece con su contenido: sin el alto máximo de .tp, pensado para la columna fija del tablero */
+.column > .transporte {
+  max-height: none;
+  overflow-y: visible;
+}
+
 .card {
   display: grid;
   gap: 0.625rem;
