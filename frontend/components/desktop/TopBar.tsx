@@ -1,10 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { ScenarioId } from "@/lib/data";
 import { useStore, type Modo } from "@/lib/store";
 import { Button, Logo, Segmented, Selector } from "../ui";
 
 export default function TopBar() {
+  const router = useRouter();
   const { s, set, escenarios, comunas } = useStore();
   const go = (vista: "validacion" | "metodologia") => set({ vista: s.vista === vista ? "main" : vista, ficha: null });
   return (
@@ -41,7 +43,10 @@ export default function TopBar() {
           { id: "durante", label: "Durante" },
         ]}
         value={s.modo}
-        onChange={(modo) => set({ modo, vista: "main", ficha: null })}
+        onChange={(modo) => {
+          if (modo === "durante") router.push("/central/durante");
+          else set({ modo, vista: "main", ficha: null });
+        }}
       />
       <Button variant={s.vista === "validacion" ? "primary" : "secondary"} onClick={() => go("validacion")}>
         Validación histórica
