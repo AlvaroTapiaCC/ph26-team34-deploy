@@ -19,8 +19,8 @@ Versión mínima para la demo (zona MUT, cuadrillas simuladas de #79):
 5. Se guarda solo lo que cambió: misiones (una activa por rejilla o caso), una versión nueva en
    `routes` si cambió la secuencia de paradas y un evento `replan` por cuadrilla con la parada
    siguiente antes y después (lo usan el panel "qué cambió" de #36 y el cronómetro de #50).
-   Planificar dos veces con los mismos datos no crea misiones ni versiones. Una misión por rejilla
-   sin caso recibe el caso abierto más reciente de esa rejilla, y su avance llega a ese caso.
+   Planificar dos veces con los mismos datos no crea misiones ni versiones. Al planificar por un
+   reporte, una misión por rejilla sin caso puede asumir el caso registrado por ese reporte.
 
 Tiempos con `services/routing.py` (OSRM con plan B en línea recta): sin OSRM el despacho sigue.
 Privacidad (revisión de #80): la geometría de la ruta de una cuadrilla REAL parte en su primera
@@ -300,7 +300,7 @@ def _armar(conn: Connection, ids: list[str] | None) -> tuple[list[Cuadrilla], di
 
 
 def planificar(conn: Connection, motivo: str, observation_id: str | None = None,
-               params: dict[str, Any] | None = None) -> dict[str, Any]:
+               params: dict[str, Any] | None = None, *, caso_id: str | None = None) -> dict[str, Any]:
     """Recalcula el plan de todas las cuadrillas y guarda solo lo que cambió. Ver el docstring del módulo."""
     prm = {**PARAMS, **(params or {})}
     ahora = datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -343,10 +343,9 @@ def planificar(conn: Connection, motivo: str, observation_id: str | None = None,
         for cid, paradas in despues.items():
             for i, p in enumerate(paradas, start=1):
                 creadas += _guardar_mision(conn, p, cid, i)
-        vinculadas = _vincular_casos(conn, prm["cuadrillas"])
-        for paradas in despues.values():
-            for p in paradas:
-                p.case_id = vinculadas.get(p.mission_id, p.case_id)
+        if motivo == "observacion" and observation_id and caso_id:
+            _vincular_caso_del_reporte(conn, observation_id, caso_id,
+                                       [p for paradas in despues.values() for p in paradas])
 
         rutas: dict[str, dict[str, Any]] = {}
         for c in equipo:
@@ -407,27 +406,28 @@ def _guardar_mision(conn: Connection, p: Parada, crew_id: str, orden: int) -> in
     return 0
 
 
-def _vincular_casos(conn: Connection, ids: list[str] | None) -> dict[str, str]:
-    """Asigna a cada misión activa por rejilla sin caso el caso abierto más reciente de esa rejilla.
-
-    La misión creada por `sumidero_id` atiende el reporte de esa rejilla: así su avance llega al
-    caso y al informe (#43). Una misión conserva el primer caso que recibe. Devuelve {mission_id: case_id}."""
+def _vincular_caso_del_reporte(conn: Connection, observation_id: str, caso_id: str, paradas: list[Parada]) -> None:
+    """Vincula la parada de la rejilla al caso registrado por el reporte, antes de la llegada."""
+    por_id = {p.mission_id: p for p in paradas if p.mission_id and p.sumidero_id and not p.case_id}
+    if not por_id:
+        return
     filas = conn.execute(
         """
         update missions m set case_id = ca.id
-          from (select distinct on (sumidero_id) sumidero_id, id
-                  from cases
-                 where sumidero_id is not null and estado not in ('resuelto', 'descartado')
-                 order by sumidero_id, abierto_at desc, id desc) ca
-         where m.sumidero_id = ca.sumidero_id and m.case_id is null and m.estado = any(%(activas)s)
-           and (%(ids)s::text[] is null or m.crew_id = any(%(ids)s))
+          from case_observations co
+          join observations o on o.id = co.observation_id
+          join cases ca on ca.id = co.case_id and ca.sumidero_id = o.sumidero_id
+         where co.observation_id = %(observation_id)s and co.case_id = %(caso_id)s
+           and ca.estado not in ('resuelto', 'descartado')
+           and m.id = any(%(misiones)s::uuid[]) and m.sumidero_id = o.sumidero_id
+           and m.case_id is null and m.estado in ('pendiente', 'en_camino')
         returning m.id, m.crew_id, m.case_id, m.sumidero_id, m.estado
         """,
-        {"activas": list(cuadrillas.ACTIVAS), "ids": ids},
+        {"observation_id": observation_id, "caso_id": caso_id, "misiones": list(por_id)},
     ).fetchall()
     for fila in filas:
+        por_id[str(fila["id"])].case_id = str(fila["case_id"])
         cuadrillas._sincronizar(conn, fila)
-    return {str(f["id"]): str(f["case_id"]) for f in filas}
 
 
 def _guardar_ruta(conn: Connection, c: Cuadrilla, paradas: list[Parada]) -> int | None:
@@ -482,7 +482,7 @@ def replanificar_seguro(motivo: str, observation_id: str | None = None, sumidero
     el reporte ni el cierre que lo pidió. Devuelve el resumen de `para_observacion`."""
     try:
         with get_conn() as conn:
-            plan = planificar(conn, motivo, observation_id)
+            plan = planificar(conn, motivo, observation_id, caso_id=caso_id)
         return para_observacion(plan, sumidero_id, caso_id)
     except Exception as e:  # se registra y se informa en la respuesta
         log.exception("Falló el despacho (%s, observación %s)", motivo, observation_id)

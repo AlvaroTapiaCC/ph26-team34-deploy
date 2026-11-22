@@ -27,6 +27,7 @@ _EVENTOS = """
     with ventana as (
         select id, ts, tipo,
                case when (payload->>'observation_id') ~* %(uuid)s then (payload->>'observation_id')::uuid end as obs_id,
+               payload ? 'caso_id' as caso_registrado,
                case when (payload->>'caso_id') ~* %(uuid)s then (payload->>'caso_id')::uuid end as caso_id,
                case when (payload->>'mission_id') ~* %(uuid)s then (payload->>'mission_id')::uuid end as mision_id,
                payload->>'crew_id' as crew_id,
@@ -38,7 +39,7 @@ _EVENTOS = """
            and tipo in ('observacion', 'mision_estado', 'mision_cerrada', 'replan')
     )
     select e.id, e.ts, e.tipo, e.obs_id, o.id is not null as observacion_existe,
-           coalesce(ca.id, m.case_id) as caso_id, s.comuna,
+           case when e.caso_registrado then ca.id else m.case_id end as caso_id, s.comuna,
            coalesce(o.sumidero_id, m.sumidero_id) as sumidero_id,
            o.fuente, o.ts as capturada,
            case when cl.resultado->'evaluable' = 'true'::jsonb then cl.resultado->>'rejilla' end as rejilla,
