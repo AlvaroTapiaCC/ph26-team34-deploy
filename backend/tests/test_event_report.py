@@ -143,3 +143,22 @@ def test_api_exige_token_privado_valida_intervalo_y_no_cachea(monkeypatch):
     assert resp.status_code == 200
     assert resp.headers["cache-control"] == "no-store"
     assert resp.json()["metricas"]["casos"] == 0
+
+
+def test_llegada_de_mision_por_rejilla_cuenta_una_vez_en_su_sector():
+    """Revisión de #133: reporte → despacho por `sumidero_id` → llegada. La auditoría de la llegada
+    trae el caso de la misión, y la llegada cuenta una vez en el sector del caso."""
+    filas = [
+        _fila(10, caso_id="caso-p", comuna="Providencia", sumidero_id="AL01"),
+        _fila(20, caso_id="caso-lc", comuna="Las Condes", sumidero_id="AL02"),
+        _fila(30, "replan", obs_id="obs-20", motivo="observacion", caso_id=None),
+        _fila(80, "mision_estado", estado="en_camino", caso_id="caso-lc", comuna=None),
+        _fila(140, "mision_estado", estado="en_sitio", caso_id="caso-lc", comuna=None),
+        _fila(150, "mision_estado", estado="en_sitio", caso_id="caso-lc", comuna=None),
+    ]
+    datos = report.calcular(filas, None, DESDE, HASTA, False)
+    assert datos["casos_por_sector"] == [
+        {"sector": "Las Condes", "casos": 1, "llegada_en_sitio": {"medidos": 1, "sin_medicion": 0, "mediana_s": 120}},
+        {"sector": "Providencia", "casos": 1, "llegada_en_sitio": {"medidos": 0, "sin_medicion": 1, "mediana_s": None}},
+    ]
+    assert datos["llegada_en_sitio"] == {"medidos": 1, "sin_medicion": 1, "mediana_s": 120}

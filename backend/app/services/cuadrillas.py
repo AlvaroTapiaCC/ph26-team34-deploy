@@ -227,7 +227,8 @@ def cambiar_estado(conn: Connection, mission_id: str, nuevo: str) -> dict[str, A
         if mision is None:
             raise TransicionInvalida(_estado_actual(conn, mission_id), nuevo)
         _sincronizar(conn, mision)
-        _evento(conn, "mision_estado", {"mission_id": str(mission_id), "estado": nuevo, "crew_id": mision["crew_id"]})
+        _evento(conn, "mision_estado", {"mission_id": str(mission_id), "estado": nuevo, "crew_id": mision["crew_id"],
+                                        "caso_id": str(mision["case_id"]) if mision["case_id"] else None})
     return mision
 
 
@@ -276,7 +277,8 @@ def cerrar_mision(conn: Connection, mission_id: str, foto_ruta: str, clasificaci
             )
         _sincronizar(conn, mision)
         _evento(conn, "mision_cerrada", {"mission_id": str(mission_id), "closure_id": str(cierre["id"]),
-                                         "crew_id": mision["crew_id"], "verificado": verificado})
+                                         "crew_id": mision["crew_id"], "verificado": verificado,
+                                         "caso_id": str(mision["case_id"]) if mision["case_id"] else None})
     return {"mision": mision, "cierre": cierre}
 
 
