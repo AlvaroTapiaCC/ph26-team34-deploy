@@ -122,14 +122,16 @@ function pinEl(p: MapPin, size: number, alClic: () => void, alHover: (dentro: bo
   return el;
 }
 
-const PARADERO_SIGNO = { expuesto: "≋", en_riesgo: "!", alternativo: "↪" } as const;
-
 function paraderoEl(p: MapParadero, alClic: () => void): HTMLElement {
-  const el = document.createElement("div");
+  const el = document.createElement("button");
+  el.type = "button";
   el.className = `paradero paradero--${p.nivel}` + (p.activo ? " is-active" : "") + (p.onClick ? " pin--click" : "");
   el.title = p.titulo;
   el.setAttribute("aria-label", p.titulo);
-  el.innerHTML = `<span class="paradero__bus">BUS</span><span class="paradero__signo">${PARADERO_SIGNO[p.nivel]}</span>`;
+  el.setAttribute("aria-pressed", String(!!p.activo));
+  el.tabIndex = p.onClick ? 0 : -1;
+  if (!p.onClick) el.setAttribute("aria-disabled", "true");
+  el.innerHTML = `<span class="paradero__badge"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="16" rx="3"/><path d="M5 11h14M8 19v2m8-2v2M9 6h6"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor" stroke="none"/></svg></span>`;
   if (p.onClick) {
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -690,6 +692,7 @@ export default function DrenaMap(props: DrenaMapProps) {
       const { el, coord, anchor = "center", offset = [0, 0] } = crear();
       if (!primeraVez) el.classList.add("is-nuevo");
       siguientes.set(key, new ml.Marker({ element: el, anchor, offset }).setLngLat(coord).addTo(map));
+      if (el.classList.contains("paradero")) el.setAttribute("aria-label", el.title);
     };
     (props.celda?.rayos ?? []).forEach((c) =>
       reusar(`rayo|${c}`, () => {
