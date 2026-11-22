@@ -622,8 +622,8 @@ const Mapa = memo(function Mapa({
   const reportes = useMemo(() => reportesParaMapa(observaciones.datos, filas, horaReportes), [observaciones.datos, filas, horaReportes]);
   const incidentes = useCapaReportes(reportes, capas.reportes && durante, onSel);
   const contexto = useCapaContexto({ infra: capas.infra && !simulacion, colectores: capas.colectores && !simulacion, criticos: capas.criticos && !simulacion });
-  const recorridos = useRecorridos(verTransporte);
-  const recorridosFondo = useMemo(() => (verTransporte ? recorridos.flatMap((r) => r.tramos) : []), [verTransporte, recorridos]);
+  const recorridos = useRecorridos(verTransporte, demo.activo ? "san-carlos" : "mut");
+  const recorridosFondo = useMemo(() => (verTransporte && !demo.activo ? recorridos.flatMap((r) => r.tramos) : []), [verTransporte, recorridos, demo.activo]);
   const tp = useMemo(() => (verTransporte ? capasTransporte(transporte.datos, recorridos, paradero, onParadero, servicio) : { paraderos: [], recorridos: [], recorridosDestacados: [], caminatas: [] }), [verTransporte, transporte.datos, recorridos, paradero, onParadero, servicio]);
 
   // Todas las rejillas del ranking como puntos (capa GL): las 5 primeras más grandes y con brillo, sin números
@@ -1026,16 +1026,22 @@ function SalaInterior({ children }: { children: ReactNode }) {
   // Cada paso usa los mismos datos locales y enfoca la decisión que se está narrando.
   const demoActivo = sala.demo.activo;
   const demoPaso = sala.demo.paso;
+  const paraderoDemo = demoActivo && demoPaso >= 4 ? sala.transporte.datos?.expuestos[0] : null;
+  const idParaderoDemo = paraderoDemo?.id ?? null;
+  const servicioDemo = paraderoDemo?.servicios[0];
+  const claveServicioDemo = servicioDemo ? `${servicioDemo.servicio}|${servicioDemo.sentido}` : null;
+  const lonParaderoDemo = paraderoDemo?.lon;
+  const latParaderoDemo = paraderoDemo?.lat;
   useEffect(() => {
     if (!demoActivo) return;
     router.replace(demoPaso === 0 ? "/central/antes" : "/central/durante");
     setPestana(demoPaso >= 4 ? "transporte" : demoPaso === 3 ? "cuadrilla" : "prioridad");
     setSel(demoPaso === 2 ? DEMO_SUMIDERO : null);
-    setParadero(null);
-    setServicio(null);
-    setFoco(demoPaso === 2 ? { coord: DEMO_CENTRO, siempre: true } : null);
+    setParadero(idParaderoDemo);
+    setServicio(claveServicioDemo);
+    setFoco(demoPaso >= 4 && lonParaderoDemo != null && latParaderoDemo != null ? { coord: [lonParaderoDemo, latParaderoDemo], siempre: true } : demoPaso === 2 ? { coord: DEMO_CENTRO, siempre: true } : null);
     setCapas(capasDemo(demoPaso));
-  }, [demoActivo, demoPaso, router, vista]);
+  }, [demoActivo, demoPaso, router, vista, idParaderoDemo, claveServicioDemo, lonParaderoDemo, latParaderoDemo]);
 
   // Las capas por defecto cambian con la fase (Durante muestra transporte); el usuario puede ajustarlas después
   useEffect(() => {

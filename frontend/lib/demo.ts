@@ -56,6 +56,8 @@ export function datosDemo(paso: number, transporteLocal?: Expuestos | null) {
     prioridad: { antes: { scenario_id: "demo-local", rank: antesFoto.rank, prioridad: antesFoto.prioridad }, despues: { scenario_id: "demo-local", rank: punto.rank, prioridad: punto.prioridad } },
     despachos: paso >= 3 ? [{ crew_id: cuadrilla.id, cuadrilla: cuadrilla.nombre, is_simulated: true, hora: hora.hora_utc, siguiente_antes: base[0].intersection_nombre, siguiente_despues: punto.intersection_nombre }] : [],
   }] : [];
+  if (agua) observaciones.unshift({ id: "demo-san-carlos-agua", sumidero_id: DEMO_SUMIDERO, caso_id: null, ts: hora.hora_utc, fuente: "vecino", tipo: "foto_agua", is_simulated: true, urgente: false,
+    clasificacion: { evaluable: true, nivel_agua: "hasta_vereda", confianza: "alta" } });
   const transporte: Expuestos = agua && transporteLocal ? transporteLocal : {
     scenario_id: "demo-local", calculado_at: hora.hora_utc, nota: "Reconstrucción San Carlos · incidente simulado", aviso: "Sin avisos ni despachos reales. Los desvíos requieren confirmación de Red.", fuente: null,
     parametros: { radio_m: 80, aguas_abajo_m: 150, riesgo_top_n: 5, vigencia_agua_horas: 6 },
