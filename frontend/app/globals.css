@@ -3,8 +3,8 @@
   /* paleta:inicio — generado por scripts/paleta.mjs desde lib/paleta.json (#131). No editar a mano. */
   /* Editables (?paleta=1) */
   --bg: #ededeb; /* Fondo */
-  --text: #1b1b1b; /* Texto */
-  --acento: #ff3d0a; /* Acento */
+  --text: #35323d; /* Texto */
+  --acento: #4673fb; /* Acento */
   /* Derivados de los editables */
   --surface: color-mix(in srgb, var(--bg) 15%, #ffffff); /* Tarjeta */
   --surface-2: color-mix(in srgb, var(--bg) 60%, #ffffff); /* Tarjeta secundaria */
@@ -679,7 +679,7 @@ p {
   align-items: center;
   gap: 16px;
   padding: 0 24px;
-  background: var(--surface);
+  background: var(--bg); /* mismo color que la franja del clima y el fondo de la página */
   border-bottom: 1px solid var(--line);
   position: relative;
   z-index: 20;
@@ -701,7 +701,7 @@ p {
   align-items: center;
   gap: 16px;
   padding: 6px 24px;
-  background: var(--surface-2);
+  background: var(--bg); /* mismo color que la barra superior y el fondo de la página */
   border-bottom: 1px solid var(--line);
   font-size: 13px;
   color: var(--text-2);

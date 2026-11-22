@@ -1,8 +1,8 @@
 {
   "editables": [
     { "id": "bg", "nombre": "Fondo", "uso": "Fondo de la página; de él salen las tarjetas, bordes y el fondo del mapa", "defecto": "#ededeb" },
-    { "id": "text", "nombre": "Texto", "uso": "Títulos, cifras y fondos oscuros; de él salen los textos secundarios y la prioridad media y baja", "defecto": "#1b1b1b" },
-    { "id": "acento", "nombre": "Acento", "uso": "Botón principal, cifras destacadas, prioridad alta, cadena aguas abajo en el mapa", "defecto": "#ff3d0a" }
+    { "id": "text", "nombre": "Texto", "uso": "Títulos, cifras y fondos oscuros; de él salen los textos secundarios y la prioridad media y baja", "defecto": "#35323d" },
+    { "id": "acento", "nombre": "Acento", "uso": "Botón principal, cifras destacadas, prioridad alta, cadena aguas abajo en el mapa", "defecto": "#4673fb" }
   ],
   "derivados": [
     { "id": "surface", "nombre": "Tarjeta", "mezcla": ["bg", 15, "#ffffff"] },
