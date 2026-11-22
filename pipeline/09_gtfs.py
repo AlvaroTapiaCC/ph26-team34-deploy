@@ -5,8 +5,14 @@ import hashlib
 import io
 import json
 import math
+import os
+import time
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,10 +21,108 @@ RADIO = 900
 METROS_LAT = math.pi * 6371000 / 180
 METROS_LON = METROS_LAT * math.cos(math.radians(CENTRO[1]))
 URL = "https://www.dtpm.cl/descargas/gtfs/GTFS_20261114_v2.zip"
+OSRM_URL = "https://router.project-osrm.org"
+MATCH_PARAMS = dict(overview="full", geometries="geojson", tidy="true", gaps="split")
+MAX_COORDS = 10
+RADIO_MATCH = 30
+CONFIANZA_MIN = 0.7
+DESVIO_MAX_M = 40
+VARIACION_MAX = 0.25
 
 
 def distancia(a, b):
     return math.hypot((a[0] - b[0]) * METROS_LON, (a[1] - b[1]) * METROS_LAT)
+
+
+def longitud(puntos):
+    return sum(distancia(a, b) for a, b in zip(puntos, puntos[1:]))
+
+
+def distancia_segmento(p, a, b):
+    dx, dy = (b[0]-a[0])*METROS_LON, (b[1]-a[1])*METROS_LAT
+    px, py = (p[0]-a[0])*METROS_LON, (p[1]-a[1])*METROS_LAT
+    t = max(0, min(1, (px*dx + py*dy)/(dx*dx + dy*dy))) if dx or dy else 0
+    return math.hypot(px-t*dx, py-t*dy)
+
+
+def validar_match(datos, fuente):
+    matches = datos.get("matchings") or []
+    if datos.get("code") != "Ok" or len(matches) != 1:
+        return None
+    match = matches[0]
+    geom = match.get("geometry") or {}
+    puntos = geom.get("coordinates") or []
+    if match.get("confidence", 0) < CONFIANZA_MIN or geom.get("type") != "LineString" or len(puntos) < 2:
+        return None
+    if any(len(p) != 2 or not all(isinstance(v, (int, float)) and math.isfinite(v) for v in p) for p in puntos):
+        return None
+    if any(min(distancia_segmento(p, a, b) for a, b in zip(fuente, fuente[1:])) > DESVIO_MAX_M for p in puntos):
+        return None
+    if distancia(puntos[0], fuente[0]) > DESVIO_MAX_M or distancia(puntos[-1], fuente[-1]) > DESVIO_MAX_M:
+        return None
+    # Los extremos originales unen sin huecos los chunks ajustados y los de respaldo.
+    unidos = [fuente[0], *puntos, fuente[-1]]
+    original = longitud(fuente)
+    if not original or abs(longitud(unidos)/original - 1) > VARIACION_MAX:
+        return None
+    return unidos
+
+
+class AjustadorOSRM:
+    def __init__(self, servidor, cache):
+        self.servidor = servidor.rstrip("/")
+        self.cache = cache
+        self.cache.mkdir(parents=True, exist_ok=True)
+        self.conteos = {}
+        self.fallos = 0
+
+    def consultar(self, puntos):
+        coords = ";".join(f"{lon},{lat}" for lon, lat in puntos)
+        params = {**MATCH_PARAMS, "radiuses": ";".join([str(RADIO_MATCH)]*len(puntos))}
+        url = f"{self.servidor}/match/v1/driving/{coords}?{urlencode(params)}"
+        ruta = self.cache / (hashlib.sha256(url.encode()).hexdigest() + ".json")
+        if ruta.exists():
+            self.fallos = 0
+            return json.loads(ruta.read_text())
+        for intento in range(3):
+            time.sleep(1 + intento*2)
+            try:
+                with urlopen(Request(url, headers={"User-Agent": "Drena-GTFS/1.0"}), timeout=40) as response:
+                    datos = json.load(response)
+                ruta.write_text(json.dumps(datos, separators=(",", ":")))
+                self.fallos = 0
+                return datos
+            except HTTPError as e:
+                if e.code not in (429, 500, 502, 503, 504):
+                    return {}
+            except (URLError, TimeoutError, ValueError):
+                pass
+        self.fallos += 1
+        if self.fallos >= 3:
+            raise RuntimeError("OSRM no responde tras tres chunks; se detiene sin publicar datos")
+        return {}
+
+    def ajustar(self, puntos, shape):
+        salida = []
+        conteo = dict(matched=0, fallback=0)
+        for inicio in range(0, len(puntos)-1, MAX_COORDS-1):
+            chunk = puntos[inicio:inicio+MAX_COORDS]
+            ajustado = validar_match(self.consultar(chunk), chunk)
+            conteo["matched" if ajustado else "fallback"] += 1
+            for p in ajustado or chunk:
+                if not salida or list(salida[-1]) != list(p):
+                    salida.append(p)
+        self.conteos[shape] = conteo
+        print(f"{shape}: {conteo}", flush=True)
+        return salida
+
+    def metadatos(self):
+        return dict(metodo="OSRM match", servidor=self.servidor, perfil="driving",
+                    parametros={**MATCH_PARAMS, "radiuses_m": RADIO_MATCH},
+                    fecha_utc=datetime.now(timezone.utc).isoformat(), max_coordenadas=MAX_COORDS,
+                    solapamiento=1, confianza_min=CONFIANZA_MIN, desvio_max_m=DESVIO_MAX_M,
+                    variacion_longitud_max=VARIACION_MAX, por_shape=self.conteos,
+                    totales={k: sum(c[k] for c in self.conteos.values()) for k in ("matched", "fallback")})
 
 
 def filas(z, nombre):
@@ -51,7 +155,7 @@ def tramos(puntos):
     return partes
 
 
-def extraer(z):
+def extraer(z, ajustador=None):
     paraderos = {}
     for r in filas(z, "stops"):
         if r["location_type"] not in ("", "0"):
@@ -85,6 +189,8 @@ def extraer(z):
     for (servicio, sentido), tid in sorted(elegidos.items()):
         v = viajes[tid]
         puntos = [(lon, lat) for _, lon, lat in sorted(formas[v["shape_id"]])]
+        if ajustador:
+            puntos = ajustador.ajustar(puntos, v["shape_id"])
         lineas.append(dict(servicio=servicio, sentido=sentido, destino=v["trip_headsign"], viaje=tid,
                            paraderos=[p for _, p in sorted(secuencias[tid])], geometria=tramos(puntos)))
     stops = []
@@ -111,14 +217,18 @@ def main():
     parser.add_argument("zip", type=Path)
     parser.add_argument("--url", default=URL)
     parser.add_argument("--fecha", required=True, help="Fecha de descarga (AAAA-MM-DD)")
+    parser.add_argument("--osrm-url", default=os.getenv("OSRM_URL", OSRM_URL))
+    parser.add_argument("--cache-osrm", type=Path, default=ROOT/"cache/gtfs-osrm")
     args = parser.parse_args()
+    ajustador = AjustadorOSRM(args.osrm_url, args.cache_osrm)
     with ZipFile(args.zip) as z:
-        datos = extraer(z)
+        datos = extraer(z, ajustador)
     with args.zip.open("rb") as f:
         digest = hashlib.file_digest(f, "sha256").hexdigest()
     meta = dict(fuente="GTFS de DTPM", url=args.url, fecha_descarga=args.fecha,
                 sha256_zip=digest, centro_lonlat=CENTRO, radio_m=RADIO,
                 paraderos_a_menos_de_80m=cercanos(datos["paraderos"]))
+    meta["ajuste_geometria"] = ajustador.metadatos()
     dest = ROOT/"backend/data/transporte_mut.json"
     dest.write_bytes((json.dumps(datos, ensure_ascii=False, separators=(",", ":"))+"\n").encode())
     meta["sha256_salida"] = hashlib.sha256(dest.read_bytes()).hexdigest()
