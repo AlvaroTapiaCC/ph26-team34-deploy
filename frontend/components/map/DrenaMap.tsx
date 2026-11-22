@@ -24,6 +24,15 @@ export interface MapLabel {
   anchor?: "left" | "right" | "top" | "bottom" | "center" | "top-left" | "bottom-left";
 }
 
+export interface MapParadero {
+  id: string;
+  coord: LngLat;
+  nivel: "expuesto" | "en_riesgo" | "alternativo";
+  activo?: boolean;
+  titulo: string;
+  onClick?: () => void;
+}
+
 export interface DrenaMapProps {
   pins?: MapPin[];
   labels?: MapLabel[];
@@ -36,6 +45,9 @@ export interface DrenaMapProps {
   comunas?: boolean; // límites comunales reales (public/data/comunas.geojson)
   rejillas?: boolean; // catastro de rejillas MOP, agrupadas en zoom bajo (public/data/rejillas.geojson)
   reales?: { coord: LngLat; conTop: boolean }[] | null;
+  paraderos?: MapParadero[] | null; // transporte: expuestos, en riesgo y alternativos (#92)
+  recorridos?: LngLat[][] | null; // trazado de los servicios afectados
+  caminatas?: [LngLat, LngLat][] | null; // paradero expuesto → paradero alternativo
   bounds: [LngLat, LngLat];
   padding?: number | { top: number; bottom: number; left: number; right: number };
   attribution?: string;
@@ -78,6 +90,23 @@ function pinEl(p: MapPin, size: number): HTMLElement {
     r.className = "pin__real";
     el.appendChild(r);
   }
+  if (p.onClick) {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      p.onClick!();
+    });
+  }
+  return el;
+}
+
+const PARADERO_SIGNO = { expuesto: "≋", en_riesgo: "!", alternativo: "↪" } as const;
+
+function paraderoEl(p: MapParadero): HTMLElement {
+  const el = document.createElement("div");
+  el.className = `paradero paradero--${p.nivel}` + (p.activo ? " is-active" : "") + (p.onClick ? " pin--click" : "");
+  el.title = p.titulo;
+  el.setAttribute("aria-label", p.titulo);
+  el.innerHTML = `<span class="paradero__bus">BUS</span><span class="paradero__signo">${PARADERO_SIGNO[p.nivel]}</span>`;
   if (p.onClick) {
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -133,7 +162,7 @@ export default function DrenaMap(props: DrenaMapProps) {
         mapRef.current = map;
         map.once("style.load", () => {
           const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]) });
-          ["esc", "chain", "lim", "area", "celda", "celda-link", "gore"].forEach(add);
+          ["esc", "chain", "lim", "area", "celda", "celda-link", "gore", "rec", "caminata"].forEach(add);
           map.addSource("comunas", { type: "geojson", data: "/data/comunas.geojson" });
           map.addSource("rejillas", { type: "geojson", data: "/data/rejillas.geojson", cluster: true, clusterMaxZoom: 15, clusterRadius: 40 });
           map.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-color": "#FF3D0A", "fill-opacity": 0.16 } });
@@ -168,6 +197,9 @@ export default function DrenaMap(props: DrenaMapProps) {
             layout: hidden,
             paint: { "circle-radius": 2.5, "circle-color": "#767672", "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 0.75 },
           });
+          // Transporte: azul fuera de la paleta de prioridad para no confundir un recorrido con escurrimiento.
+          map.addLayer({ id: "rec-line", type: "line", source: "rec", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#1F5FBF", "line-width": 3, "line-opacity": 0.55 } });
+          map.addLayer({ id: "caminata", type: "line", source: "caminata", layout: { "line-cap": "round" }, paint: { "line-color": "#1F5FBF", "line-width": 2.5, "line-dasharray": [0.5, 2] } });
           map.addLayer({ id: "esc-halo", type: "line", source: "esc", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#FF3D0A", "line-width": 9, "line-opacity": 0.14 } });
           map.addLayer({ id: "esc-line", type: "line", source: "esc", paint: { "line-color": "#FF3D0A", "line-width": 2, "line-opacity": 0.85, "line-dasharray": [2.5, 2.5] } });
           map.addLayer({ id: "chain-halo", type: "line", source: "chain", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#FF3D0A", "line-width": 14, "line-opacity": 0.2 } });
@@ -204,8 +236,10 @@ export default function DrenaMap(props: DrenaMapProps) {
     set("area", fc(props.area ? [poly(props.area)] : []));
     set("celda", fc(props.celda ? [poly(props.celda.poly)] : []));
     set("celda-link", fc(props.celda ? [line(props.celda.link)] : []));
+    set("rec", fc((props.recorridos ?? []).map(line)));
+    set("caminata", fc((props.caminatas ?? []).map(line)));
     set("gore", fc((props.gore ?? []).map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }))));
-  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore]);
+  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.caminatas]);
 
   // Visibilidad de las capas de datos reales
   useEffect(() => {
@@ -238,10 +272,12 @@ export default function DrenaMap(props: DrenaMapProps) {
       el.textContent = "ϟ";
       add(el, c);
     });
+    // Paraderos bajo los pines de prioridad; el activo al final para que quede encima
+    [...(props.paraderos ?? [])].sort((a, b) => Number(!!a.activo) - Number(!!b.activo)).forEach((p) => add(paraderoEl(p), p.coord));
     // pins: los atenuados primero para que queden debajo
     [...(props.pins ?? [])].sort((a, b) => Number(!!b.faded) - Number(!!a.faded)).forEach((p) => add(pinEl(p, size), p.coord));
     (props.labels ?? []).forEach((l) => add(labelEl(l), l.coord, l.anchor ?? "left", l.offset ?? [size / 2 + 6, 0]));
-  }, [ready, props.pins, props.labels, props.reales, props.celda, size]);
+  }, [ready, props.pins, props.labels, props.reales, props.celda, props.paraderos, size]);
 
   return (
     <div className={`map ${props.className ?? ""}`}>

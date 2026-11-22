@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.db import DatabaseUnavailable, close_pool, ejecutar_con_plazo, precalentar_pool
-from app.routers import clasificar, clima, crews, events, formula, missions, observations, rutas, scenarios, sim, sumideros
+from app.routers import clasificar, clima, crews, dispatch, events, formula, missions, observations, rutas, scenarios, sim, sumideros, transporte
 
 HEALTH_DB_TIMEOUT_S = 3
 
@@ -36,7 +36,7 @@ async def db_unavailable(_: Request, exc: DatabaseUnavailable):
     return JSONResponse(status_code=503, content={"status": "error", "detail": str(exc)})
 
 
-for r in (scenarios, sumideros, observations, formula, crews, missions, events, sim, clasificar, rutas, clima):
+for r in (scenarios, sumideros, observations, formula, crews, missions, dispatch, events, sim, clasificar, rutas, transporte, clima):
     app.include_router(r.router)
 
 
