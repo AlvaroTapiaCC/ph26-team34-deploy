@@ -62,6 +62,19 @@ python pipeline/11_clima_historico.py --lat … --lon …     # si #86 elige otr
   Un dato faltante deja `clima` nulo y el modo en `sin_dato`, nunca un 0.
 - `<evento>.meta.json` registra las URLs de consulta, la celda de la grilla usada, la fecha de descarga y el sha256 de la salida, de la config y del script.
 
+## Fuentes complementarias de Las Condes
+
+Los archivos de [`las_condes/`](las_condes/) apoyan el replay y la revisión del terreno. Se obtienen con las dependencias de `pipeline/requirements.txt` y el comando `python pipeline/13_las_condes.py`. Cada archivo incluye metadatos de fuente, descarga, cobertura, unidades y SHA-256.
+
+| Archivo | Cobertura |
+| --- | --- |
+| `colectores_siall.geojson` | 631 tramos de la capa 6 de SIALL con comuna Las Condes. |
+| `subareas_tributarias_siall.geojson` | 64 polígonos de la capa 12 de SIALL que intersectan el límite comunal del catastro. Se conserva la geometría completa. |
+| `puntos_criticos_invierno_2026.geojson` | 29 de los 33 puntos del Programa Invierno de SENAPRED. Se excluyeron cuatro vinculados a domicilios. Son antecedentes de riesgo por recurrencia, sin fecha de ocurrencia. |
+| `pronostico_rotonda_atenas_2026-07-16.csv` | 48 horas nominales de la corrida ECMWF IFS inicializada el 16 de julio a las 06:00 UTC para el sector Rotonda Atenas. Un campo vacío indica que el proveedor no entregó ese dato. |
+
+La versión pública disponible de la capa 12 produjo 64 subáreas con este filtro. Queda por cotejar con el extracto de 103 mencionado en la issue. También quedan pendientes la capa municipal de canales y los archivos de Atención Vecino y arbolado. [Issue #74](https://github.com/platanus-hack/platanus-hack-26-cl-team-34/issues/74) · [Portal de Datos Abiertos de Las Condes](https://datos.lascondes.cl/)
+
 ## Obsoleto
 
 `data/sumideros_nunoa.geojson` y `pipeline/01_sumideros.py` quedan solo como referencia: no los usa nadie.
