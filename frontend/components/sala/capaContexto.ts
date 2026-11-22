@@ -103,7 +103,7 @@ export function useCapaContexto(capas: CapasContexto) {
         const p = f.properties ?? {};
         const el = document.createElement("div");
         const b = document.createElement("b");
-        b.textContent = p.capa === "infra" ? (p.nombre ?? TIPO_INFRA[p.tipo] ?? "Infraestructura") : p.capa === "critico" ? (p.nombre ?? "Anegamiento registrado") : `Colector ${p.tipo === "CERRADA" ? "cerrado" : "abierto"}`;
+        b.textContent = p.capa === "infra" ? (p.nombre ?? TIPO_INFRA[p.tipo] ?? "Infraestructura") : p.capa === "critico" ? (p.nombre ?? "Punto crítico histórico") : `Colector · ${p.tipo === "CERRADA" ? "conducto cerrado" : p.tipo === "ABIERTA" ? "conducto abierto" : "tipo sin información"}`;
         const sub = document.createElement("span");
         sub.textContent = p.capa === "infra" ? `${TIPO_INFRA[p.tipo] ?? p.tipo} · ${p.fuente}` : p.capa === "critico" ? `Riesgo ${String(p.tipo ?? "sin dato").toLowerCase()} · ${p.causa ?? "causa sin dato"} · ${p.fuente}` : p.fuente;
         el.append(b, sub);
