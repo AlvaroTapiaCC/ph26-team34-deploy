@@ -3,31 +3,32 @@
   "git_head_al_generar": "5d37f18a22254066535c58fc73f491095a9f061e",
   "fuente": {
     "nombre": "Atención Vecino (capa 6), Portal de Datos Abiertos de la Municipalidad de Las Condes",
+    "atribucion": "Municipalidad de Las Condes, Portal de Datos Abiertos, capa Atención Vecino.",
     "portal": "https://datos.lascondes.cl/datos",
     "descarga": "https://datos.lascondes.cl/download/capa/6/csv",
     "ficha": "https://datos.lascondes.cl/capas/6/details",
-    "licencia": "No declarada en la ficha de la capa. El portal publica un «Decreto Portal de Datos Abiertos» (https://datos.lascondes.cl/recursos) que no se pudo leer de forma automática porque está escaneado. Pendiente de confirmar.",
+    "licencia": "La política del portal prevé licencias Creative Commons con atribución y exige declarar la licencia de cada conjunto. La variante y el permiso específico de Atención Vecino siguen pendientes de confirmación.",
+    "referencias_licencia": {
+      "politica": "https://archivos.lascondes.cl/descargas/transparencia/ordenanzas/2025/mayo/decreto.1862.30may2025.pdf#page=15",
+      "cuenta_publica": "https://archivos.lascondes.cl/descargas/municipalidad/2026/cuenta-publica/CUENTA-PUBLICA-LAS-CONDES-2025.pdf"
+    },
     "descargado_utc": "2026-11-22T01:21:28Z",
     "sha256_crudo": "6ce34ceec415e7c4345038082a08b3b2a9cef23b28f146e113704e23d35fe237",
     "filas_crudo": 116304,
     "columnas_usadas": [
       "tipo_solicitud",
-      "motivo",
       "ubicacion_solicitud",
       "lat_solicitud",
       "long_solicitud",
       "fc_creacion"
     ],
-    "privacidad": "El CSV crudo no se versiona. ubicacion_solicitud, lat_solicitud y long_solicitud se usan solo en memoria para la cuadra, el sector y las distancias."
+    "privacidad": "Las direcciones y coordenadas se procesan en memoria. La salida publica totales y métricas por evento y sector."
   },
   "filtro": {
     "tipos_solicitud": {
       "Sumideros de Aguas Lluvias": "sumideros",
       "Anegamiento por aguas lluvias o desbordamiento de canales": "anegamiento"
-    },
-    "motivos": "todos (Solicitud, Reclamo, Denuncia, etc.)",
-    "tickets_drenaje_totales": 853,
-    "descartados": {}
+    }
   },
   "evento": {
     "nombre": "2026-10-13",
@@ -63,7 +64,7 @@
     "semilla": 86,
     "permutaciones_azar": 1000,
     "distancia": "Haversine",
-    "ventanas": "principal: días del evento; sensibilidad: agrega el día siguiente"
+    "ventanas": "días completos del evento en hora de Santiago"
   },
   "formula": {
     "config": {
@@ -79,11 +80,12 @@
   },
   "script": {
     "ruta": "pipeline/14_reclamos.py",
-    "version": "1.1.0",
-    "sha256": "4b9815e79963dcbd0e5b43a9dca007ef8aac9af13946694af99138ee29754552"
+    "version": "1.2.0",
+    "sha256": "53570d43aa78bccd01d8236f0a55aa92a335315145fe0695a301538675d7b41f"
   },
   "salida": {
     "archivo": "2026-10-13_mut.json",
-    "sha256": "5285d76c7c29eca925523bb88588fa6ec1d20305c84416bd8a44a601e4e4ede8"
+    "sha256": "b1a4e178b73f0194ef92e9efcf791ad0099652e157747d04ad13c744a8edecdd",
+    "procedencia": "Totales y métricas preservados del cálculo versionado con el script 1.1.0."
   }
 }
