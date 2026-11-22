@@ -22,8 +22,8 @@ const TIPO_OBS: Record<string, string> = { foto_agua: "foto de calle", foto_reji
 const coord = (p: { lat: number; lon: number }): LngLat => [p.lon, p.lat];
 
 /** Capas del mapa a partir de la respuesta: paraderos, trazados de servicios afectados y caminata al alternativo. */
-export function capasTransporte(d: Expuestos | null, recorridos: Recorrido[], activo: string | null, onSelect: (id: string) => void) {
-  if (!d) return { paraderos: [] as MapParadero[], recorridos: [] as LngLat[][], caminatas: [] as [LngLat, LngLat][] };
+export function capasTransporte(d: Expuestos | null, recorridos: Recorrido[], activo: string | null, onSelect: (id: string) => void, servicioActivo: string | null = null) {
+  if (!d) return { paraderos: [] as MapParadero[], recorridos: [] as LngLat[][], recorridosDestacados: [] as LngLat[][], caminatas: [] as [LngLat, LngLat][] };
   const paraderos: MapParadero[] = [];
   const caminatas: [LngLat, LngLat][] = [];
   const afectados = new Set<string>();
@@ -50,7 +50,8 @@ export function capasTransporte(d: Expuestos | null, recorridos: Recorrido[], ac
     paraderos.push({ id: p.id, coord: coord(p), nivel: "en_riesgo", activo: p.id === activo, titulo: `En riesgo · ${p.nombre}`, onClick: () => onSelect(p.id) });
   paraderos.push(...alternativos.values());
   const lineas = recorridos.filter((r) => afectados.has(claveServicio(r))).flatMap((r) => r.tramos);
-  return { paraderos, recorridos: lineas, caminatas };
+  const destacados = recorridos.filter((r) => afectados.has(claveServicio(r)) && claveServicio(r) === servicioActivo).flatMap((r) => r.tramos);
+  return { paraderos, recorridos: lineas, recorridosDestacados: destacados, caminatas };
 }
 
 /** "PC1016-Parada 3 / (M) Tobalaba" → código y nombre por separado. */
@@ -69,7 +70,21 @@ function NombreParadero({ nombre }: { nombre: string }) {
   );
 }
 
-function Expuesto({ p, activo, onSelect }: { p: ParaderoExpuesto; activo: boolean; onSelect: () => void }) {
+interface SeleccionServicio {
+  servicioActivo: string | null;
+  onServicio: (paradero: string, servicio: string) => void;
+}
+
+function Servicios({ p, servicioActivo, onServicio }: SeleccionServicio & { p: ParaderoEnRiesgo | ParaderoExpuesto }) {
+  return <ul className="tp__servicios">{p.servicios.map((s) => (
+    <li key={claveServicio(s)}>
+      <button type="button" className="tp__svc" aria-label={`Servicio ${s.servicio}, ${sentidoTexto(s)}`} aria-pressed={servicioActivo === claveServicio(s)} onClick={() => onServicio(p.id, claveServicio(s))}>{s.servicio}</button>
+      <span className="tp__dir">{sentidoTexto(s)}</span>
+    </li>
+  ))}</ul>;
+}
+
+function Expuesto({ p, activo, onSelect, servicioActivo, onServicio }: SeleccionServicio & { p: ParaderoExpuesto; activo: boolean; onSelect: () => void }) {
   const c = p.causa;
   return (
     <div className={`tp__item tp__item--expuesto ${activo ? "is-active" : ""}`}>
@@ -85,7 +100,7 @@ function Expuesto({ p, activo, onSelect }: { p: ParaderoExpuesto; activo: boolea
       <ul className="tp__servicios">
         {p.servicios.map((s) => (
           <li key={claveServicio(s)}>
-            <span className="tp__svc">{s.servicio}</span>
+            <button type="button" className="tp__svc" aria-label={`Servicio ${s.servicio}, ${sentidoTexto(s)}`} aria-pressed={servicioActivo === claveServicio(s)} onClick={() => onServicio(p.id, claveServicio(s))}>{s.servicio}</button>
             <span className="tp__dir">{sentidoTexto(s)}</span>
             {s.alternativo ? (
               <span className="tp__alt">
@@ -102,7 +117,7 @@ function Expuesto({ p, activo, onSelect }: { p: ParaderoExpuesto; activo: boolea
   );
 }
 
-function EnRiesgo({ p, activo, onSelect }: { p: ParaderoEnRiesgo; activo: boolean; onSelect: () => void }) {
+function EnRiesgo({ p, activo, onSelect, servicioActivo, onServicio }: SeleccionServicio & { p: ParaderoEnRiesgo; activo: boolean; onSelect: () => void }) {
   return (
     <div className={`tp__item ${activo ? "is-active" : ""}`}>
       <button className="tp__head" onClick={onSelect} aria-pressed={activo}>
@@ -110,8 +125,9 @@ function EnRiesgo({ p, activo, onSelect }: { p: ParaderoEnRiesgo; activo: boolea
         <NombreParadero nombre={p.nombre} />
       </button>
       <p className="tp__causa">
-        Rejilla {p.causa.sumidero_id} a {p.causa.distancia_m} m, puesto {p.causa.puesto_en_zona} de prioridad en la zona · servicios {p.servicios.map((s) => s.servicio).join(", ")}
+        Rejilla {p.causa.sumidero_id} a {p.causa.distancia_m} m, puesto {p.causa.puesto_en_zona} de prioridad en la zona
       </p>
+      <Servicios p={p} servicioActivo={servicioActivo} onServicio={onServicio} />
     </div>
   );
 }
@@ -122,8 +138,10 @@ export default function Transporte({
   estado,
   activo,
   onSelect,
+  servicioActivo,
+  onServicio,
   className,
-}: {
+}: SeleccionServicio & {
   datos: Expuestos | null;
   calculadoAt: string | null;
   estado: EstadoConsulta;
@@ -162,10 +180,10 @@ export default function Transporte({
       {datos && (datos.expuestos.length > 0 || datos.en_riesgo.length > 0) && (
         <div className="tp__list">
           {datos.expuestos.map((p) => (
-            <Expuesto key={p.id} p={p} activo={activo === p.id} onSelect={() => toggle(p.id)} />
+            <Expuesto key={p.id} p={p} activo={activo === p.id} onSelect={() => toggle(p.id)} servicioActivo={activo === p.id ? servicioActivo : null} onServicio={onServicio} />
           ))}
           {datos.en_riesgo.map((p) => (
-            <EnRiesgo key={p.id} p={p} activo={activo === p.id} onSelect={() => toggle(p.id)} />
+            <EnRiesgo key={p.id} p={p} activo={activo === p.id} onSelect={() => toggle(p.id)} servicioActivo={activo === p.id ? servicioActivo : null} onServicio={onServicio} />
           ))}
         </div>
       )}
