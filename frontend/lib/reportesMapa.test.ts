@@ -24,6 +24,14 @@ test("la última foto limpia sustituye la obstrucción aunque lleguen desordenad
   assert.equal(r[0].tipo, "despejada");
 });
 
+test("un caso cerrado más reciente no oculta otro caso activo en la misma rejilla", () => {
+  const activo = obs({ caso_id: "activo", caso_publico: { estado: "nuevo", lat: -33.4, lon: -70.6 } });
+  for (const estado of ["cerrado", "descartado"]) {
+    const cerrado = obs({ id: "cerrado", caso_id: "cerrado", ts: "2026-11-22T11:30:00Z", caso_publico: { estado, lat: -33.4, lon: -70.6 } });
+    assert.deepEqual(reportesParaMapa([activo, cerrado], REJILLAS, AHORA), reportesParaMapa([activo], REJILLAS, AHORA));
+  }
+});
+
 test("una foto no evaluable nunca se presenta como obstrucción confirmada", () => {
   const [r] = reportesParaMapa([obs({ clasificacion: { evaluable: false, rejilla: "tapada", nivel_agua: "sobre_vereda" } })], REJILLAS, AHORA);
   assert.equal(r.tipo, "reporte");
