@@ -148,7 +148,7 @@ function Barra({ vista }: { vista: Vista }) {
         <Logo />
       </Link>
       <nav className={s.nav} aria-label="Vistas">
-        {NAV.map((n) => (
+        {NAV.filter((n) => n.vista !== "validacion").map((n) => (
           <Link key={n.href} href={n.href} aria-current={n.vista === vista ? "page" : undefined} className={s.navLink}>
             {n.texto}
           </Link>
