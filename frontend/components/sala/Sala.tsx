@@ -5,7 +5,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import * as Select from "@radix-ui/react-select";
 import * as Tabs from "@radix-ui/react-tabs";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -24,6 +24,8 @@ import { fuenteReportes, fuenteSimulada } from "@/lib/flujo/fuentes";
 import { useFlujo, type Flujo } from "@/lib/flujo/useFlujo";
 import { precargarMapLibre } from "../map/maplibre";
 import { Logo } from "../ui";
+import { DEMO_PARADERO, DEMO_SERVICIO, DEMO_SUMIDERO } from "@/lib/demo";
+import { BotonDemo, GuionDemo } from "./Demo";
 import s from "./sala.module.css";
 
 if (typeof window !== "undefined") precargarMapLibre();
@@ -143,24 +145,24 @@ const NAV: { href: string; vista: Vista | "validacion"; texto: string }[] = [
 ];
 
 function Barra({ vista }: { vista: Vista }) {
+  const { demo } = useSala();
   return (
     <header className={s.barra}>
-      <Link href="/" className={s.logo} aria-label="Drena, inicio">
+      <Link href="/" onClick={demo.activo ? demo.salir : undefined} className={s.logo} aria-label="Drena, inicio">
         <Logo />
       </Link>
       {vista !== "inicio" && (
         <>
           <nav className={s.nav} aria-label="Vistas">
             {NAV.filter((n) => n.vista !== "validacion").map((n) => (
-              <Link key={n.href} href={n.href} aria-current={n.vista === vista ? "page" : undefined} className={s.navLink}>
+              <Link key={n.href} href={n.href} onClick={demo.activo ? demo.salir : undefined} aria-current={n.vista === vista ? "page" : undefined} className={s.navLink}>
                 {n.texto}
               </Link>
             ))}
           </nav>
           <span className={s.zona}>Zona MUT · Providencia y Las Condes</span>
           <span className={s.barraDer}>
-            <Pulso />
-            <Reloj />
+            {demo.activo ? <span className={s.chipSim}>Demo simulada · sin conexión a producción</span> : <><BotonDemo /><Pulso /><Reloj /></>}
           </span>
         </>
       )}
@@ -188,6 +190,7 @@ function Inicio({ activo, mapaListo }: { activo: boolean; mapaListo: boolean }) 
             <span>Abrir la central</span>
             <i aria-hidden>→</i>
           </Link>
+          <BotonDemo />
         </div>
         <figure className={s.inicioFoto}>
           <Image
@@ -497,7 +500,7 @@ function Recomendacion() {
 /* ───────────────────────── Cuadrilla ───────────────────────── */
 
 function Misiones() {
-  const { cuadrillas, cuadrilla, elegirCuadrilla, ruta, estadoRuta } = useSala();
+  const { cuadrillas, cuadrilla, elegirCuadrilla, ruta, estadoRuta, demo } = useSala();
   if (!cuadrilla) return <p className={s.vacio}>No hay cuadrillas registradas.</p>;
   const cierre = ruta?.ultimo_cierre;
   return (
@@ -542,9 +545,9 @@ function Misiones() {
           </span>
         </div>
       )}
-      <Link className={s.btnSec} href={`/cuadrilla?id=${encodeURIComponent(cuadrilla.id)}`} target="_blank">
+      {demo.activo ? <p className={s.hint}>Propuesta simulada en este navegador. No se envió al celular de una cuadrilla.</p> : <Link className={s.btnSec} href={`/cuadrilla?id=${encodeURIComponent(cuadrilla.id)}`} target="_blank">
         Abrir el celular de la cuadrilla <i aria-hidden>↗</i>
-      </Link>
+      </Link>}
     </div>
   );
 }
@@ -1019,6 +1022,7 @@ const CAPAS_ANTES: Capas = { agua: true, calor: true, cadenas: false, transporte
 const CAPAS_DURANTE: Capas = { agua: true, calor: true, cadenas: false, transporte: true, limites: true, catastro: false, infra: false, colectores: false, criticos: false };
 
 function SalaInterior({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const vista = vistaDe(usePathname() ?? "/");
   const sala = useSala();
   const fase: "antes" | "durante" = vista === "durante" ? "durante" : "antes";
@@ -1036,6 +1040,20 @@ function SalaInterior({ children }: { children: ReactNode }) {
   const [estados, setEstados] = useState<Record<string, EstadoRejilla>>({});
   const [modoAgua, setModoAgua] = useState<ModoAgua>("real");
 
+  // Cada paso usa los mismos datos locales y enfoca la decisión que se está narrando.
+  const demoActivo = sala.demo.activo;
+  const demoPaso = sala.demo.paso;
+  useEffect(() => {
+    if (!demoActivo) return;
+    router.replace(demoPaso === 0 ? "/central/antes" : "/central/durante");
+    setPestana(demoPaso >= 3 ? "transporte" : demoPaso === 2 ? "cuadrilla" : "prioridad");
+    setSel(demoPaso >= 1 ? DEMO_SUMIDERO : null);
+    setParadero(demoPaso >= 3 ? DEMO_PARADERO : null);
+    setServicio(demoPaso >= 3 ? DEMO_SERVICIO : null);
+    setFoco(demoPaso >= 1 ? { coord: [-70.604457, -33.417855], siempre: true } : null);
+    setCapas({ ...CAPAS_DURANTE, agua: false });
+  }, [demoActivo, demoPaso, router]);
+
   // Las capas por defecto cambian con la fase (Durante muestra transporte); el usuario puede ajustarlas después
   useEffect(() => {
     setCapas(vista === "durante" ? CAPAS_DURANTE : CAPAS_ANTES);
@@ -1044,7 +1062,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
   // Motor de flujo: solo pide la red (por teselas: lo visible y lo que está aguas arriba) y dibuja en la vista Simulación
   const puntosFlujo = useMemo(() => sala.antes.filas.map((p) => ({ id: p.sumidero_id, nombre: nombreFila(p), coord: [p.lon, p.lat] as LngLat })), [sala.antes.filas]);
   const simulando = vista === "simulacion";
-  const aguaEnMapa = simulando || ((vista === "antes" || vista === "durante") && capas.agua);
+  const aguaEnMapa = !demoActivo && (simulando || ((vista === "antes" || vista === "durante") && capas.agua));
   const aguaReal = !simulando && modoAgua === "real";
   const flujoRef = useRef<Flujo | null>(null);
   // Agua simulada en Antes/Durante: supuesto fijo de 1 de cada 5 rejillas tapadas (siempre las mismas), para ver dónde no cabe
@@ -1149,6 +1167,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
         <Inicio activo={vista === "inicio"} mapaListo={mapaListo} />
         {(vista === "validacion" || vista === "san-carlos") && <div className={s.pagina}>{children}</div>}
         <aside className={s.riel} aria-hidden={!conMapa(vista)} inert={!conMapa(vista)}>
+          <GuionDemo />
           {simulando ? (
             <Simulacion flujo={flujo} estados={estados} setEstados={setEstados} />
           ) : (

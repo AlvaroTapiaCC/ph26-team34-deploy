@@ -21,6 +21,29 @@
 }
 
 /* ───────── Barra ───────── */
+.demo {
+  padding: 1rem;
+  border-bottom: 1px solid var(--principal);
+  background: var(--vidrio);
+  flex-shrink: 0;
+}
+.demoEncabezado, .demoControles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  font-size: .75rem;
+}
+.demo h2 { margin: .6rem 0 .35rem; font-size: 1.1rem; }
+.demo p { margin: .35rem 0; font-size: .8125rem; line-height: 1.5; }
+.demo .demoNota { color: var(--text-3); font-size: .7rem; }
+.demo progress { width: 100%; height: .3rem; accent-color: var(--principal); margin: .5rem 0; }
+.demoFoto { display: flex; align-items: center; gap: .75rem; margin: .6rem 0; font-size: .75rem; color: var(--text-2); }
+.demoFoto img { border-radius: .5rem; object-fit: cover; }
+.demoControles .btnSec { font-size: .75rem; padding: .4rem .5rem; min-height: 2rem; }
+.inicioTexto > .btnSec { margin-top: 1rem; }
+
 .barra {
   position: relative;
   z-index: 20;

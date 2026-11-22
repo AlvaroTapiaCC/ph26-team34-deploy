@@ -163,7 +163,7 @@ export default function Transporte({
       <div className="tp__top">
         <Kicker tone={datos?.expuestos.length ? "danger" : undefined}>Paraderos de buses expuestos</Kicker>
         <span className="tp__ts">
-          {estado === "error" ? "Sin conexión · reintentando" : datos ? `Calculado ${horaSantiago(calculadoAt, true)} · cada ${INTERVALO_MS / 1000} s` : "Consultando…"}
+          {datos?.scenario_id === "demo-local" ? "Escenario simulado · sin actualizaciones en vivo" : estado === "error" ? "Sin conexión · reintentando" : datos ? `Calculado ${horaSantiago(calculadoAt, true)} · cada ${INTERVALO_MS / 1000} s` : "Consultando…"}
         </span>
       </div>
 
