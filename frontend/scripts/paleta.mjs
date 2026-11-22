@@ -95,7 +95,7 @@ if (arg === "--escribir") {
 /**
  * Colores escritos a mano en app/, components/ y lib/ (fuera del bloque de la paleta).
  * - Hex: #rgb o #rrggbb con alguna letra, o entre comillas / después de ":" (así no confunde "#124", un issue).
- * - rgb()/rgba()/hsl(): salvo negro y blanco con transparencia (sombras y brillos neutros).
+ * - rgb()/rgba()/hsl(): salvo negro y blanco con transparencia en sombras y filtros (no como fondo ni color).
  */
 function buscarColoresFijos() {
   const HEXRE = /#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/g;
@@ -120,7 +120,9 @@ function buscarColoresFijos() {
         const antes = linea.slice(Math.max(0, m.index - 2), m.index);
         if (/[a-fA-F]/.test(m[0]) || /["'`]$|:\s?$/.test(antes)) malos.push(m[0]);
       }
-      for (const m of linea.matchAll(FUNC)) if (!NEUTRO.test(m[1].trim())) malos.push(m[0]);
+      // Negro/blanco con transparencia solo como sombra o filtro; como fondo o color debe salir de la paleta
+      const esSombra = /shadow|filter|--sh-/.test(linea);
+      for (const m of linea.matchAll(FUNC)) if (!(esSombra && NEUTRO.test(m[1].trim()))) malos.push(m[0]);
       if (malos.length) encontrados.push(`${relative(raiz, ruta).replace(/\\/g, "/")}:${i + 1}  ${malos.join(" ")}`);
     });
   };

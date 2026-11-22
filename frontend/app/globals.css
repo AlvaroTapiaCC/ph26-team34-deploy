@@ -2,26 +2,27 @@
 :root {
   /* paleta:inicio — generado por scripts/paleta.mjs desde lib/paleta.json (#131). No editar a mano. */
   /* Editables (?paleta=1) */
-  --principal: #4673fb; /* Principal */
-  --secundario: #35323d; /* Secundario */
-  --fondo: #ededeb; /* Fondo */
+  --principal: #368786; /* Principal */
+  --secundario: #ece9f4; /* Texto */
+  --fondo: #2a2930; /* Fondo */
   /* Derivados de los editables */
-  --surface: color-mix(in srgb, var(--fondo) 15%, #ffffff); /* Tarjeta */
-  --surface-2: color-mix(in srgb, var(--fondo) 60%, #ffffff); /* Tarjeta secundaria */
-  --surface-3: color-mix(in srgb, var(--fondo) 92%, var(--secundario)); /* Relieve */
-  --line: color-mix(in srgb, var(--fondo) 95%, var(--secundario)); /* Línea */
-  --map-bg: color-mix(in srgb, var(--fondo) 98%, var(--secundario)); /* Fondo del mapa */
+  --surface: color-mix(in srgb, var(--fondo) 92%, var(--secundario)); /* Tarjeta */
+  --surface-2: color-mix(in srgb, var(--fondo) 86%, var(--secundario)); /* Tarjeta secundaria */
+  --surface-3: color-mix(in srgb, var(--fondo) 76%, var(--secundario)); /* Relieve */
+  --line: color-mix(in srgb, var(--fondo) 82%, var(--secundario)); /* Línea */
+  --map-bg: color-mix(in srgb, var(--fondo) 95%, var(--secundario)); /* Fondo del mapa */
   --text-2: color-mix(in srgb, var(--secundario) 70%, var(--fondo)); /* Texto secundario */
   --text-3: color-mix(in srgb, var(--secundario) 54%, var(--fondo)); /* Texto tenue */
   --contexto: color-mix(in srgb, var(--secundario) 45%, var(--fondo)); /* Capas de contexto del mapa */
-  --texto-inv: var(--surface); /* Texto sobre color */
-  --sobre-principal: var(--surface); /* Texto sobre el principal */
+  --texto-inv: var(--fondo); /* Texto sobre el color de texto */
+  --sobre-principal: var(--sobre-color); /* Texto sobre el principal */
   --principal-suave: color-mix(in srgb, var(--principal) 21%, var(--surface)); /* Principal suave */
   --prio-alta: var(--principal); /* Prioridad alta */
   --prio-media: var(--secundario); /* Prioridad media */
   --prio-baja: color-mix(in srgb, var(--secundario) 57%, var(--fondo)); /* Prioridad baja */
   --agua-suave: color-mix(in srgb, var(--agua) 12%, var(--surface)); /* Agua suave */
   /* Fijos: tienen significado propio (peligro, correcto, advertencia, transporte) */
+  --sobre-color: #ffffff; /* Texto sobre color fuerte */
   --danger: #b3261e; /* Peligro */
   --ok: #2e7d32; /* Correcto */
   --aviso: #b26a00; /* Advertencia */
@@ -342,9 +343,11 @@ p {
 }
 .chip--media {
   background: var(--prio-media);
+  color: var(--texto-inv);
 }
 .chip--baja {
   background: var(--prio-baja);
+  color: var(--texto-inv);
 }
 .chip--faded {
   opacity: 0.6;
@@ -568,6 +571,11 @@ p {
   font-size: 15px;
   line-height: 20px;
   color: var(--sobre-principal);
+}
+/* Pines de prioridad media y baja: el número va en el color de fondo (contraste con --secundario) */
+.pin--media .pin__n,
+.pin--baja .pin__n {
+  color: var(--texto-inv);
 }
 .pin--faded > * {
   opacity: 0.3;
@@ -1261,7 +1269,7 @@ p {
   margin-right: 4px;
   border-radius: 50%;
   background: var(--metro);
-  color: var(--texto-inv);
+  color: var(--sobre-color);
   font-size: 9px;
   font-weight: 700;
 }
@@ -2111,7 +2119,7 @@ p {
   height: 40px;
   border-radius: 10px;
   background: var(--agua);
-  color: var(--texto-inv);
+  color: var(--sobre-color);
 }
 .sim__play:disabled,
 .sim__btn:disabled {
@@ -2267,7 +2275,7 @@ p {
   max-width: min(400px, calc(100% - 370px));
   padding: 10px 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.94);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1), inset 0 0 0 1px var(--line);
   font-size: 12px;
   line-height: 16px;
@@ -2334,7 +2342,7 @@ p {
   width: 18px;
   height: 3px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.25);
+  background: color-mix(in srgb, var(--surface) 25%, transparent);
 }
 .recorrido__puntos i.is-on {
   background: var(--principal);
@@ -2365,7 +2373,7 @@ p {
   color: var(--surface-3);
 }
 .recorrido__saltar:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--surface) 8%, transparent);
 }
 .recorrido__sig {
   height: 36px;
@@ -2554,7 +2562,7 @@ p {
 }
 .tp__badge--expuesto {
   background: var(--bus);
-  color: var(--texto-inv);
+  color: var(--sobre-color);
 }
 .tp__badge--riesgo {
   background: transparent;
@@ -2639,7 +2647,7 @@ p {
 }
 .paradero--expuesto {
   background: var(--bus);
-  color: var(--texto-inv);
+  color: var(--sobre-color);
 }
 .paradero--alternativo {
   background: var(--bus-dim);

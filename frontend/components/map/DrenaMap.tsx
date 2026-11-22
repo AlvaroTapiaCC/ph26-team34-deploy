@@ -72,7 +72,7 @@ const COLORS: Record<string, string> = {
 
 function pinEl(p: MapPin, size: number): HTMLElement {
   const el = document.createElement("div");
-  el.className = "pin" + (p.faded ? " pin--faded" : "") + (p.onClick ? " pin--click" : "") + (p.prio === "alta" ? " pin--tri" : "");
+  el.className = "pin" + (p.faded ? " pin--faded" : "") + (p.onClick ? " pin--click" : "") + (p.prio === "alta" ? " pin--tri" : "") + ` pin--${p.prio}`;
   el.style.width = el.style.height = `${size}px`;
   const fill = COLORS[p.prio];
   let shape = "";

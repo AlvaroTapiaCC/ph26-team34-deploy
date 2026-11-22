@@ -214,13 +214,13 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
     type: "circle",
     source: SRC.sum,
     filter: ["==", ["get", "id"], ""],
-    paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 8, 17, 16], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2 },
+    paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 8, 17, 16], "circle-color": "transparent", "circle-stroke-width": 2 },
   });
   map.addLayer({
     id: "flujo-pop",
     type: "circle",
     source: SRC.pop,
-    paint: { "circle-radius": ["get", "r"], "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": ["get", "c"], "circle-stroke-width": 2.5, "circle-stroke-opacity": ["get", "o"] },
+    paint: { "circle-radius": ["get", "r"], "circle-color": "transparent", "circle-stroke-color": ["get", "c"], "circle-stroke-width": 2.5, "circle-stroke-opacity": ["get", "o"] },
   });
   // Zona de clic más grande que el círculo (solo de cerca, donde las rejillas se distinguen)
   map.addLayer({ id: "flujo-hit", type: "circle", source: SRC.sum, minzoom: 13, paint: { "circle-radius": 11, "circle-color": colorDe("secundario"), "circle-opacity": 0 } });
