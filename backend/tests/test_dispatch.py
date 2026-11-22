@@ -1,11 +1,14 @@
 """Despacho y re-planificación (issue #32)."""
 import os
 import uuid
+from contextlib import nullcontext
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from psycopg.types.json import Jsonb
 
 from app.main import app
 from app.services import dispatch, routing
@@ -195,6 +198,44 @@ def test_foto_tapada_fuera_del_plan_cambia_la_siguiente_parada(escena):
     ruta = client.get(f"/crews/{r['crew_id']}/route").json()
     assert ruta["origen"] == "despacho" and ruta["version"] == r["ruta_version"]
     assert ruta["paradas"][0]["sumidero_id"] == escena.s[3]
+
+
+@INTEGRACION
+def test_observaciones_muestran_el_ultimo_despacho_por_cuadrilla_y_reporte(escena, monkeypatch):
+    from app.db import get_conn
+
+    captura = datetime.now(UTC)
+    primera, segunda, sin_despacho = [uuid.uuid4() for _ in range(3)]
+
+    def registrar(conn, reporte, cuadrilla, segundos, despues):
+        payload = {"observation_id": str(reporte), "crew_id": cuadrilla,
+                   "siguiente_antes": {"nombre": "Calle Uno", "detalle": "domicilio privado"},
+                   "siguiente_despues": {"nombre": despues} if despues else None}
+        conn.execute("insert into events (tipo, payload, ts) values ('replan', %s, %s)",
+                     (Jsonb(payload), captura + timedelta(seconds=segundos)))
+
+    with get_conn() as conn, conn.transaction(force_rollback=True):
+        for i, reporte in enumerate((primera, segunda, sin_despacho)):
+            conn.execute("insert into observations (id, fuente, tipo, ts, texto)"
+                         " values (%s, 'vecino', 'texto', %s, 'domicilio privado')",
+                         (reporte, captura + timedelta(seconds=i)))
+        registrar(conn, primera, escena.c2, 8, "Cambio anterior")
+        registrar(conn, primera, escena.c1, 12, "Calle Dos")
+        registrar(conn, primera, escena.c2, 14, "Calle Tres")
+        registrar(conn, segunda, escena.c2, 25, None)
+        monkeypatch.setattr("app.routers.observations.get_conn", lambda: nullcontext(conn))
+        r = client.get("/observations", params={"desde": captura.isoformat()})
+
+    assert r.status_code == 200
+    por_id = {item["id"]: item["despachos"] for item in r.json()["items"]}
+    cambios = por_id[str(primera)]
+    assert [(c["crew_id"], c["cuadrilla"], c["siguiente_despues"]) for c in cambios] == [
+        (escena.c1, "C1", "Calle Dos"), (escena.c2, "C2", "Calle Tres")]
+    assert all(c["siguiente_antes"] == "Calle Uno" and c["is_simulated"] for c in cambios)
+    assert datetime.fromisoformat(cambios[1]["hora"]) == captura + timedelta(seconds=14)
+    assert len(por_id[str(segunda)]) == 1 and por_id[str(segunda)][0]["siguiente_despues"] is None
+    assert por_id[str(sin_despacho)] == []
+    assert "domicilio privado" not in r.text
 
 
 @INTEGRACION

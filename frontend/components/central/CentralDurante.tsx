@@ -11,7 +11,7 @@ import {
   useConsultaPeriodica,
   type ObservacionPublica,
 } from "@/lib/central";
-import { getCuadrillas, getRuta, type Cuadrilla, type RutaCuadrilla, type UltimoCambio } from "@/lib/cuadrilla";
+import { getCuadrillas, getRuta, type Cuadrilla, type RutaCuadrilla } from "@/lib/cuadrilla";
 import type { LngLat, Prioridad } from "@/lib/data";
 import { boundsDe, prioDe } from "@/lib/real";
 import { horaSantiago, NIVEL_AGUA, useExpuestos, type EstadoConsulta } from "@/lib/transporte";
@@ -62,15 +62,13 @@ function notaPublica(o: ObservacionPublica) {
   return c.rejilla === "limpia" ? "La rejilla se ve despejada." : "La clasificación quedó registrada.";
 }
 
-function QueCambio({ observacion, cambio, ranking, estado }: {
+function QueCambio({ observacion, ranking, estado }: {
   observacion: ObservacionPublica | null;
-  cambio: UltimoCambio | null | undefined;
   ranking: ApiRankingItem[];
   estado: EstadoConsulta;
 }) {
   const c = observacion?.clasificacion;
-  const relacionado = cambio && observacion && cambio.observation_id === observacion.id ? cambio : null;
-  const segundos = relacionado && observacion ? (Date.parse(relacionado.hora) - Date.parse(observacion.ts)) / 1000 : NaN;
+  const despachos = observacion?.despachos ?? [];
   const punto = ranking.find((r) => r.sumidero_id === observacion?.sumidero_id);
   const prioridad = observacion?.prioridad;
   const anterior = prioridad?.antes?.scenario_id === ESCENARIO_CENTRAL ? prioridad.antes : null;
@@ -92,10 +90,19 @@ function QueCambio({ observacion, cambio, ranking, estado }: {
             <div><dt>Confianza</dt><dd>{c?.confianza ?? "Sin dato"}</dd></div>
             <div><dt>Nota de clasificación</dt><dd>{notaPublica(observacion)}</dd></div>
             <div><dt>Puntaje de prioridad antes → después</dt><dd>{anterior || actual ? `${puntaje(anterior?.prioridad)} → ${puntaje(actual?.prioridad)}` : "Comparación sin registrar"}</dd></div>
-            <div><dt>Siguiente parada antes → después</dt><dd>{relacionado ? `${relacionado.siguiente_antes?.nombre ?? "Sin parada"} → ${relacionado.siguiente_despues?.nombre ?? "Sin parada"}` : "Sin cambio vinculado para esta cuadrilla"}</dd></div>
-            <div><dt>Hora de la nueva propuesta</dt><dd>{relacionado ? horaSantiago(relacionado.hora, true) : "Sin dato"}</dd></div>
-            <div><dt>Tiempo desde la captura</dt><dd>{Number.isFinite(segundos) && segundos >= 0 ? `${Math.round(segundos)} s` : "Sin dato"}</dd></div>
           </dl>
+          {despachos.map((cambio) => {
+            const segundos = (Date.parse(cambio.hora) - Date.parse(observacion.ts)) / 1000;
+            return (
+              <dl className={styles.details} key={cambio.crew_id}>
+                <div><dt>Cuadrilla afectada</dt><dd>{cambio.cuadrilla}{cambio.is_simulated && " · simulada"}</dd></div>
+                <div><dt>Siguiente parada antes → después</dt><dd>{cambio.siguiente_antes ?? "Sin parada"} → {cambio.siguiente_despues ?? "Sin parada"}</dd></div>
+                <div><dt>Hora de la nueva propuesta</dt><dd>{horaSantiago(cambio.hora, true)}</dd></div>
+                <div><dt>Tiempo desde la captura</dt><dd>{Number.isFinite(segundos) && segundos >= 0 ? `${Math.round(segundos)} s` : "Sin dato"}</dd></div>
+              </dl>
+            );
+          })}
+          {despachos.length === 0 && <p className={styles.hint}>Sin cambio de despacho vinculado.</p>}
           {actual && punto?.prioridad === actual.prioridad && punto.explicacion && <p className={styles.hint}>{punto.explicacion}</p>}
         </>
       ) : estado === "ok" && <p className={styles.hint}>Aún no hay observaciones en el tablero.</p>}
@@ -288,7 +295,7 @@ export default function CentralDurante() {
           </section>
         </div>
         <div className={styles.column}>
-          <QueCambio observacion={obs[0] ?? null} cambio={ruta?.ultimo_cambio} ranking={filas} estado={reportes.estado} />
+          <QueCambio observacion={obs[0] ?? null} ranking={filas} estado={reportes.estado} />
           {cuadrilla && <Misiones cuadrilla={cuadrilla} ruta={ruta} estado={estadoRuta} />}
           <Transporte {...tp} activo={paradero} onSelect={setParadero} />
         </div>
