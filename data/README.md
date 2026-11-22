@@ -109,6 +109,13 @@ Los archivos de [`las_condes/`](las_condes/) apoyan el replay y la revisión del
 
 La versión pública disponible de la capa 12 produjo 64 subáreas con este filtro. Queda por cotejar con el extracto de 103 mencionado en la issue. También quedan pendientes la capa municipal de canales y los archivos de Atención Vecino y arbolado. [Issue #74](https://github.com/platanus-hack/platanus-hack-26-cl-team-34/issues/74) · [Portal de Datos Abiertos de Las Condes](https://datos.lascondes.cl/)
 
+## Reclamos de Atención Vecino (#72)
+
+`validacion/reclamos/` reúne los tickets de sumideros y anegamiento del portal de datos abiertos de Las Condes,
+agrupados por cuadra y sin domicilios. El CSV crudo, pendiente en #74, no se versiona porque trae domicilios. `pipeline/14_reclamos.py` los cruza con el ranking A
+del sector del replay de julio (`prediccion_replay_julio.csv`). El [README](validacion/reclamos/README.md) explica la fuente,
+la licencia pendiente y los resultados.
+
 ## Obsoleto
 
 `data/sumideros_nunoa.geojson` y `pipeline/01_sumideros.py` quedan solo como referencia: no los usa nadie.
