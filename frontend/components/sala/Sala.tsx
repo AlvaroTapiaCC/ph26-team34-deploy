@@ -195,7 +195,7 @@ function Inicio({ activo, mapaListo }: { activo: boolean; mapaListo: boolean }) 
             alt="Autos entre barro y escombros tras el aluvión en San Carlos de Apoquindo."
             width={1200}
             height={675}
-            sizes="(max-width: 68rem) 90vw, 48vw"
+            sizes="(max-width: 68rem) 90vw, 58vw"
             priority
           />
           <figcaption>
