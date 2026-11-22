@@ -1,9 +1,10 @@
 """Escenarios de lluvia y tabla de misiones (plan §9.5, issues #17 y #21)."""
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 
 from app.db import get_conn
+from app.services import explain
 
 router = APIRouter(prefix="/scenarios", tags=["scenarios"])
 
@@ -18,6 +19,7 @@ def list_scenarios():
 @router.get("/{scenario_id}/ranking")
 def get_ranking(
     scenario_id: str,
+    background_tasks: BackgroundTasks,
     modo: Literal["antes", "durante"] = "antes",
     limit: int = Query(500, ge=1, le=5000),
 ):
@@ -40,4 +42,13 @@ def get_ranking(
             """,
             (scenario_id, modo, limit),
         ).fetchall()
-    return {"scenario_id": scenario_id, "modo": modo, "items": rows}
+    pendientes = []
+    items = []
+    for row in rows:
+        if row["rank"] is not None and row["rank"] <= explain.TOP and row["explicacion"] is None:
+            pendientes.append(row)
+            row = {**row, "explicacion": explain.respaldo(explain.contexto(row))}
+        items.append(row)
+    if pendientes:
+        background_tasks.add_task(explain.completar, scenario_id, modo, pendientes)
+    return {"scenario_id": scenario_id, "modo": modo, "items": items}
