@@ -22,6 +22,7 @@ export default function TopBar() {
           Explorar comunas
         </Link>
         <Link href="/central/validacion">Validación</Link>
+        <Link href="/central/san-carlos">Caso San Carlos</Link>
       </nav>
       <div className="topbar__spacer" />
       <div className="topbar__ctrls">

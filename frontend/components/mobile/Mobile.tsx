@@ -113,11 +113,6 @@ function Prioridades() {
         <div className="mob__pad">
           <Segmented<ScenarioId> size="lg" soft options={escenarios.map((x) => ({ id: x.id, label: x.short }))} value={s.scenario} onChange={(scenario) => set({ scenario })} />
         </div>
-        <div className="mob__pad">
-          <Link href="/central/validacion" className="btn btn--secondary btn--md btn--block">
-            Validación histórica
-          </Link>
-        </div>
         {s.status === "error" ? (
           <div className="mgap">
             <Estado kind="error" />

@@ -5,8 +5,14 @@ import hashlib
 import io
 import json
 import math
+import os
+import time
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,10 +21,112 @@ RADIO = 900
 METROS_LAT = math.pi * 6371000 / 180
 METROS_LON = METROS_LAT * math.cos(math.radians(CENTRO[1]))
 URL = "https://www.dtpm.cl/descargas/gtfs/GTFS_20261114_v2.zip"
+OSRM_URL = "https://router.project-osrm.org"
+MATCH_PARAMS = dict(overview="full", geometries="geojson", tidy="true", gaps="split")
+MAX_COORDS = 10
+RADIO_MATCH = 30
+CONFIANZA_MIN = 0.7
+DESVIO_MAX_M = 40
+VARIACION_MAX = 0.25
 
 
 def distancia(a, b):
     return math.hypot((a[0] - b[0]) * METROS_LON, (a[1] - b[1]) * METROS_LAT)
+
+
+def longitud(puntos):
+    return sum(distancia(a, b) for a, b in zip(puntos, puntos[1:]))
+
+
+def distancia_segmento(p, a, b):
+    dx, dy = (b[0]-a[0])*METROS_LON, (b[1]-a[1])*METROS_LAT
+    px, py = (p[0]-a[0])*METROS_LON, (p[1]-a[1])*METROS_LAT
+    t = max(0, min(1, (px*dx + py*dy)/(dx*dx + dy*dy))) if dx or dy else 0
+    return math.hypot(px-t*dx, py-t*dy)
+
+
+def validar_match(datos, fuente):
+    matches = datos.get("matchings") or []
+    if datos.get("code") != "Ok" or len(matches) != 1:
+        return None
+    match = matches[0]
+    geom = match.get("geometry") or {}
+    puntos = geom.get("coordinates") or []
+    if match.get("confidence", 0) < CONFIANZA_MIN or geom.get("type") != "LineString" or len(puntos) < 2:
+        return None
+    if any(len(p) != 2 or not all(isinstance(v, (int, float)) and math.isfinite(v) for v in p) for p in puntos):
+        return None
+    if any(min(distancia_segmento(p, a, b) for a, b in zip(fuente, fuente[1:])) > DESVIO_MAX_M for p in puntos):
+        return None
+    if distancia(puntos[0], fuente[0]) > DESVIO_MAX_M or distancia(puntos[-1], fuente[-1]) > DESVIO_MAX_M:
+        return None
+    # Los extremos originales unen sin huecos los chunks ajustados y los de respaldo.
+    unidos = [fuente[0], *puntos, fuente[-1]]
+    original = longitud(fuente)
+    if not original or abs(longitud(unidos)/original - 1) > VARIACION_MAX:
+        return None
+    return unidos
+
+
+class AjustadorOSRM:
+    def __init__(self, servidor, cache, solo_cache=False):
+        self.servidor = servidor.rstrip("/")
+        self.cache = cache
+        self.cache.mkdir(parents=True, exist_ok=True)
+        self.conteos = {}
+        self.fallos = 0
+        self.solo_cache = solo_cache
+
+    def consultar(self, puntos):
+        coords = ";".join(f"{lon},{lat}" for lon, lat in puntos)
+        params = {**MATCH_PARAMS, "radiuses": ";".join([str(RADIO_MATCH)]*len(puntos))}
+        url = f"{self.servidor}/match/v1/driving/{coords}?{urlencode(params)}"
+        ruta = self.cache / (hashlib.sha256(url.encode()).hexdigest() + ".json")
+        if ruta.exists():
+            self.fallos = 0
+            return json.loads(ruta.read_text())
+        if self.solo_cache:
+            return {}
+        for intento in range(3):
+            time.sleep(1 + intento*2)
+            try:
+                with urlopen(Request(url, headers={"User-Agent": "Drena-GTFS/1.0"}), timeout=40) as response:
+                    datos = json.load(response)
+                ruta.write_text(json.dumps(datos, separators=(",", ":")))
+                self.fallos = 0
+                return datos
+            except HTTPError as e:
+                if e.code not in (429, 500, 502, 503, 504):
+                    return {}
+            except (URLError, TimeoutError, ValueError):
+                pass
+        self.fallos += 1
+        if self.fallos >= 3:
+            raise RuntimeError("OSRM no responde tras tres chunks; se detiene sin publicar datos")
+        return {}
+
+    def ajustar(self, puntos, shape):
+        salida = []
+        conteo = dict(matched=0, fallback=0)
+        for inicio in range(0, len(puntos)-1, MAX_COORDS-1):
+            chunk = puntos[inicio:inicio+MAX_COORDS]
+            ajustado = validar_match(self.consultar(chunk), chunk)
+            conteo["matched" if ajustado else "fallback"] += 1
+            for p in ajustado or chunk:
+                if not salida or list(salida[-1]) != list(p):
+                    salida.append(p)
+        self.conteos[shape] = conteo
+        print(f"{shape}: {conteo}", flush=True)
+        return salida
+
+    def metadatos(self):
+        return dict(metodo="OSRM match", servidor=self.servidor, perfil="driving", solo_cache=self.solo_cache,
+                    respaldo="Geometría GTFS original para chunks sin match válido o sin caché",
+                    parametros={**MATCH_PARAMS, "radiuses_m": RADIO_MATCH},
+                    fecha_utc=datetime.now(timezone.utc).isoformat(), max_coordenadas=MAX_COORDS,
+                    solapamiento=1, confianza_min=CONFIANZA_MIN, desvio_max_m=DESVIO_MAX_M,
+                    variacion_longitud_max=VARIACION_MAX, por_shape=self.conteos,
+                    totales={k: sum(c[k] for c in self.conteos.values()) for k in ("matched", "fallback")})
 
 
 def filas(z, nombre):
@@ -26,17 +134,17 @@ def filas(z, nombre):
         yield from csv.DictReader(io.TextIOWrapper(f, encoding="utf-8-sig", newline=""))
 
 
-def tramos(puntos):
+def tramos(puntos, centro=CENTRO, radio=RADIO):
     """Recorta segmentos al círculo en coordenadas métricas locales, incluso al cruzarlo."""
     partes = []
     for a, b in zip(puntos, puntos[1:]):
         dx, dy = (b[0]-a[0])*METROS_LON, (b[1]-a[1])*METROS_LAT
-        x, y = (a[0]-CENTRO[0])*METROS_LON, (a[1]-CENTRO[1])*METROS_LAT
+        x, y = (a[0]-centro[0])*METROS_LON, (a[1]-centro[1])*METROS_LAT
         longitud2 = dx*dx + dy*dy
         if longitud2 == 0:
             continue
         proy = x*dx + y*dy
-        disc = proy**2 - longitud2*(x*x + y*y - RADIO**2)
+        disc = proy**2 - longitud2*(x*x + y*y - radio**2)
         if disc <= 0:
             continue
         inicio = max(0, (-proy-math.sqrt(disc))/longitud2)
@@ -51,13 +159,15 @@ def tramos(puntos):
     return partes
 
 
-def extraer(z):
+def extraer(z, ajustador=None, centro=CENTRO, radio=RADIO, completos=None):
     paraderos = {}
+    todos_paraderos = {}
     for r in filas(z, "stops"):
         if r["location_type"] not in ("", "0"):
             continue
         lon, lat = float(r["stop_lon"]), float(r["stop_lat"])
-        if distancia((lon, lat), CENTRO) < RADIO:
+        todos_paraderos[r["stop_id"]] = dict(id=r["stop_id"], nombre=r["stop_name"], lon=lon, lat=lat)
+        if distancia((lon, lat), centro) < radio:
             paraderos[r["stop_id"]] = dict(id=r["stop_id"], nombre=r["stop_name"], lon=lon, lat=lat)
     buses = {r["route_id"]: r["route_short_name"] for r in filas(z, "routes") if r["route_type"] == "3"}
     viajes = {r["trip_id"]: r for r in filas(z, "trips") if r["route_id"] in buses}
@@ -78,6 +188,12 @@ def extraer(z):
             elegidos[clave] = tid
 
     formas = {viajes[tid]["shape_id"]: [] for tid in elegidos.values()}
+    secuencias_completas = defaultdict(list)
+    if completos is not None:
+        tids = set(elegidos.values())
+        for r in filas(z, "stop_times"):
+            if r["trip_id"] in tids:
+                secuencias_completas[r["trip_id"]].append((int(r["stop_sequence"]), r["stop_id"]))
     for r in filas(z, "shapes"):
         if r["shape_id"] in formas:
             formas[r["shape_id"]].append((int(r["shape_pt_sequence"]), float(r["shape_pt_lon"]), float(r["shape_pt_lat"])))
@@ -85,15 +201,49 @@ def extraer(z):
     for (servicio, sentido), tid in sorted(elegidos.items()):
         v = viajes[tid]
         puntos = [(lon, lat) for _, lon, lat in sorted(formas[v["shape_id"]])]
+        if ajustador:
+            puntos = ajustador.ajustar(puntos, v["shape_id"])
+        if completos is not None:
+            completos.append(dict(servicio=servicio, sentido=sentido, destino=v["trip_headsign"], geometria=puntos,
+                                  paraderos=[todos_paraderos[pid] for _, pid in sorted(secuencias_completas[tid])]))
         lineas.append(dict(servicio=servicio, sentido=sentido, destino=v["trip_headsign"], viaje=tid,
-                           paraderos=[p for _, p in sorted(secuencias[tid])], geometria=tramos(puntos)))
+                           paraderos=[p for _, p in sorted(secuencias[tid])], geometria=tramos(puntos, centro, radio)))
     stops = []
     for pid, claves in sorted(servicios.items()):
         stops.append({**paraderos[pid], "servicios": [dict(servicio=s, sentido=d, destino=h) for s, d, h in sorted(claves)]})
     return dict(paraderos=stops, recorridos=lineas)
 
 
-def cercanos(stops):
+def zona_san_carlos(ranking, rejillas):
+    with ranking.open(encoding="utf-8") as f:
+        filas_ranking = list(csv.DictReader(f))
+    if not filas_ranking:
+        raise ValueError("El ranking de San Carlos está vacío")
+    coords = {p["properties"]["ID_IDE"]: p["geometry"]["coordinates"]
+              for p in json.loads(rejillas.read_text(encoding="utf-8"))["features"]}
+    sector = [{"id": r["ID_IDE"], "coords": coords[r["ID_IDE"]],
+               "rank": int(r["rank"]), "prioridad": float(r["prioridad"])} for r in filas_ranking]
+    centro = (-70.541, -33.418)
+    radio = math.ceil((max(distancia(r["coords"], centro) for r in sector)+80)/100)*100
+    derivacion = dict(metodo="Centro del caso San Carlos; máxima distancia a rejillas del ranking +80 m, redondeada a 100 m",
+                      ranking="data/validacion/prediccion_replay_julio.csv", rejillas="data/rejillas.geojson",
+                      sha256_ranking=hashlib.sha256(ranking.read_bytes()).hexdigest(),
+                      sha256_rejillas=hashlib.sha256(rejillas.read_bytes()).hexdigest(),
+                      cantidad_rejillas=len(sector), margen_m=80,
+                      etiqueta="Reconstrucción · datos reproducidos (ranking de exposición; buses reales GTFS)")
+    return centro, radio, sector, derivacion
+
+
+def cercanos(stops, sector=None):
+    if sector is not None:
+        pares = []
+        for s in stops:
+            for r in sector:
+                metros = distancia((s["lon"], s["lat"]), r["coords"])
+                if metros < 80:
+                    pares.append(dict(paradero=s["id"], rejilla=r["id"], distancia_m=round(metros, 1),
+                                      rank=r["rank"], prioridad=r["prioridad"]))
+        return sorted(pares, key=lambda p: (p["distancia_m"], p["paradero"], p["rank"]))
     with (ROOT/"data/terreno_mut.csv").open(encoding="utf-8") as f:
         ranking = {r["ID_IDE"] for r in csv.DictReader(f) if r["en_zona_mut"] == "True" and r["fuera_de_red"] == "False"}
     puntos = json.loads((ROOT/"data/rejillas.geojson").read_text(encoding="utf-8"))["features"]
@@ -111,15 +261,39 @@ def main():
     parser.add_argument("zip", type=Path)
     parser.add_argument("--url", default=URL)
     parser.add_argument("--fecha", required=True, help="Fecha de descarga (AAAA-MM-DD)")
+    parser.add_argument("--osrm-url", default=os.getenv("OSRM_URL", OSRM_URL))
+    parser.add_argument("--cache-osrm", type=Path, default=ROOT/"cache/gtfs-osrm")
+    parser.add_argument("--solo-cache-osrm", action="store_true", help="Sin red; usa GTFS si no hay match en caché")
+    parser.add_argument("--zona", choices=("mut", "san-carlos"), default="mut")
+    parser.add_argument("--ranking", type=Path, default=ROOT/"data/validacion/prediccion_replay_julio.csv")
+    parser.add_argument("--rejillas", type=Path, default=ROOT/"data/rejillas.geojson")
+    parser.add_argument("--solo-completos", action="store_true", help="Publica solo los recorridos completos del frontend")
     args = parser.parse_args()
+    centro, radio, sector, derivacion = CENTRO, RADIO, None, None
+    if args.zona == "san-carlos":
+        centro, radio, sector, derivacion = zona_san_carlos(args.ranking, args.rejillas)
+    ajustador = AjustadorOSRM(args.osrm_url, args.cache_osrm, args.solo_cache_osrm)
+    completos = []
     with ZipFile(args.zip) as z:
-        datos = extraer(z)
+        datos = extraer(z, ajustador, centro, radio, completos)
     with args.zip.open("rb") as f:
         digest = hashlib.file_digest(f, "sha256").hexdigest()
     meta = dict(fuente="GTFS de DTPM", url=args.url, fecha_descarga=args.fecha,
-                sha256_zip=digest, centro_lonlat=CENTRO, radio_m=RADIO,
-                paraderos_a_menos_de_80m=cercanos(datos["paraderos"]))
-    dest = ROOT/"backend/data/transporte_mut.json"
+                sha256_zip=digest, centro_lonlat=centro, radio_m=radio,
+                paraderos_a_menos_de_80m=cercanos(datos["paraderos"], sector))
+    if derivacion:
+        meta["zona"] = args.zona
+        meta["derivacion_zona"] = derivacion
+    meta["ajuste_geometria"] = ajustador.metadatos()
+    nombre = "san_carlos" if args.zona == "san-carlos" else "mut"
+    ruta_completa = ROOT/f"frontend/public/data/recorridos_completos_{nombre}.json"
+    ruta_completa.write_text(json.dumps(completos, ensure_ascii=False, separators=(",", ":"))+"\n", encoding="utf-8")
+    meta_completa = {**meta, "geometria": "Shape completo sin recorte; paraderos ordenados del viaje elegido",
+                     "sha256_salida": hashlib.sha256(ruta_completa.read_bytes()).hexdigest()}
+    ruta_completa.with_suffix(".meta.json").write_text(json.dumps(meta_completa, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+    if args.solo_completos:
+        return
+    dest = ROOT/f"backend/data/transporte_{nombre}.json"
     dest.write_bytes((json.dumps(datos, ensure_ascii=False, separators=(",", ":"))+"\n").encode())
     meta["sha256_salida"] = hashlib.sha256(dest.read_bytes()).hexdigest()
     dest.with_suffix(".meta.json").write_bytes((json.dumps(meta, ensure_ascii=False, indent=2)+"\n").encode())

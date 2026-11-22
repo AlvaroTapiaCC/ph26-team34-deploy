@@ -48,6 +48,8 @@ CENTRO_MUT = (-33.417741, -70.601433)
 
 # Eventos candidatos de #86: días del evento en hora de Santiago.
 EVENTOS = {
+    "2026-10-08": {"desde": date(2026, 10, 6), "hasta": date(2026, 10, 8),
+                   "nota": "Caso San Carlos: reconstrucción del aluvión de Quebrada Honda, no validación."},
     "2026-10-13": {"desde": date(2026, 10, 13), "hasta": date(2026, 10, 13),
                    "nota": "Evento principal si #73 entrega verdad de terreno suficiente."},
     "2026-07-16_17": {"desde": date(2026, 7, 16), "hasta": date(2026, 7, 17),
@@ -137,6 +139,7 @@ def descargar(nombre, evento, lat, lon, cfg, salida_dir):
     salida = salida_dir / f"{nombre}.json"
     salida.write_text(json.dumps({
         "evento": nombre,
+        "etiqueta": "Reconstrucción · datos reproducidos",
         "fuente": "Open-Meteo (datos reales, no simulados)",
         "unidades": {"lluvia": "mm/h", "racha": "km/h", "viento": "km/h", "clima": "0-1"},
         "resumen": resumen,

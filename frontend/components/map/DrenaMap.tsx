@@ -5,6 +5,7 @@ import type { LngLat, Prioridad } from "@/lib/data";
 import { FLUJO_CONFIG } from "@/lib/flujo/config";
 import { BASE_STYLE, loadMapLibre, type MapLibre } from "./maplibre";
 import { colorDe, EVENTO_PALETA } from "@/lib/paleta";
+import type { RecorridoCompleto } from "@/lib/transporte";
 
 export interface MapPin {
   id: string;
@@ -69,10 +70,15 @@ export interface DrenaMapProps {
   foco?: LngLat | null; // centra el mapa en este punto (sin cambiar el zoom) al elegirlo en una lista
   ruta?: LngLat[][] | null; // ruta propuesta de una cuadrilla (color de acción, no de agua)
   puntos?: MapPunto[] | null; // rejillas como puntos GL, coloreados por prioridad
+  puntosVisibles?: boolean; // oculta los símbolos sin quitar los datos del mapa de calor; por defecto, sí
   onClickPunto?: (id: string) => void;
+  /** Capas interactivas que toman el clic y el hover antes que las rejillas subyacentes. */
+  capasSobrePuntos?: readonly string[];
   paraderos?: MapParadero[] | null; // transporte: expuestos, en riesgo y alternativos (#92)
   recorridos?: LngLat[][] | null; // trazado de los servicios afectados
   recorridosFondo?: LngLat[][] | null; // todos los recorridos de la zona, tenues
+  recorridosDestacados?: LngLat[][] | null;
+  recorridoCompleto?: RecorridoCompleto | null;
   calor?: boolean; // mapa de calor de riesgo a partir de `puntos` (peso)
   caminatas?: [LngLat, LngLat][] | null; // paradero expuesto → paradero alternativo
   bounds: [LngLat, LngLat];
@@ -121,14 +127,16 @@ function pinEl(p: MapPin, size: number, alClic: () => void, alHover: (dentro: bo
   return el;
 }
 
-const PARADERO_SIGNO = { expuesto: "≋", en_riesgo: "!", alternativo: "↪" } as const;
-
 function paraderoEl(p: MapParadero, alClic: () => void): HTMLElement {
-  const el = document.createElement("div");
+  const el = document.createElement("button");
+  el.type = "button";
   el.className = `paradero paradero--${p.nivel}` + (p.activo ? " is-active" : "") + (p.onClick ? " pin--click" : "");
   el.title = p.titulo;
   el.setAttribute("aria-label", p.titulo);
-  el.innerHTML = `<span class="paradero__bus">BUS</span><span class="paradero__signo">${PARADERO_SIGNO[p.nivel]}</span>`;
+  el.setAttribute("aria-pressed", String(!!p.activo));
+  el.tabIndex = p.onClick ? 0 : -1;
+  if (!p.onClick) el.setAttribute("aria-disabled", "true");
+  el.innerHTML = `<span class="paradero__badge"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="16" rx="3"/><path d="M5 11h14M8 19v2m8-2v2M9 6h6"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor" stroke="none"/></svg></span>`;
   if (p.onClick) {
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -178,7 +186,6 @@ const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
   ["esc-line", "line-color", "agua"],
   ["gore", "circle-color", "contexto"],
   ["gore", "circle-stroke-color", "surface"],
-  ["rec-line", "line-color", "bus"],
   ["caminata", "line-color", "bus"],
   ["chain-halo", "line-color", "principal"],
   ["ruta-halo", "line-color", "principal"],
@@ -186,8 +193,9 @@ const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
   ["puntos-hover", "circle-stroke-color", "secundario"],
   ["puntos-sel", "circle-stroke-color", "principal"],
   ["puntos", "circle-stroke-color", "secundario"],
-  ["rec-fondo", "line-color", "bus"],
   ["chain-line", "line-color", "principal"],
+  ["rec-paraderos", "circle-color", "bus"],
+  ["rec-paraderos", "circle-stroke-color", "surface"],
 ];
 
 /** Chevrón para el sentido de los recorridos de bus, con el color de transporte de la paleta. */
@@ -207,12 +215,19 @@ function flechaBus(): ImageData {
   return ctx.getImageData(0, 0, 24, 24);
 }
 
-function pintarMapa(map: MapLibre) {
+function pintarMapa(map: MapLibre, completo = false) {
   if (map.hasImage?.("bus-sentido")) map.updateImage("bus-sentido", flechaBus());
   for (const [capa, prop, color] of COLORES_CAPAS) if (map.getLayer(capa)) map.setPaintProperty(capa, prop, colorDe(color));
+  const t = (c: string, a: number) => colorDe(c).replace(/^#(..)(..)(..)$/, (_m, r, g, b) => `rgba(${parseInt(r, 16)},${parseInt(g, 16)},${parseInt(b, 16)},${a})`); // paleta-ok: transparencia sobre colores de la paleta
+  // Los recorridos se recortan al radio del extracto GTFS: sus extremos se desvanecen en vez de terminar en seco.
+  const desvanecido = ["interpolate", ["linear"], ["line-progress"], 0, t("bus", 0), 0.12, t("bus", 1), 0.88, t("bus", 1), 1, t("bus", 0)];
+  for (const capa of ["rec-line", "rec-destacado", "rec-fondo"]) if (map.getLayer(capa)) map.setPaintProperty(capa, "line-gradient", desvanecido);
+  if (completo && map.getLayer("rec-destacado")) {
+    map.setPaintProperty("rec-destacado", "line-gradient", null);
+    map.setPaintProperty("rec-destacado", "line-color", colorDe("bus"));
+  }
   if (map.getLayer("riesgo-calor")) {
     // Riesgo bajo = transparente (el mapa queda gris); medio = calipso tenue; alto = calipso a blanco
-    const t = (c: string, a: number) => colorDe(c).replace(/^#(..)(..)(..)$/, (_m, r, g, b) => `rgba(${parseInt(r, 16)},${parseInt(g, 16)},${parseInt(b, 16)},${a})`); // paleta-ok: transparencia sobre colores de la paleta
     map.setPaintProperty("riesgo-calor", "heatmap-color", ["interpolate", ["linear"], ["heatmap-density"], 0, "rgba(0,0,0,0)", 0.12, "rgba(0,0,0,0)", 0.3, t("principal", 0.15), 0.6, t("principal", 0.35), 0.85, t("principal", 0.55), 1, t("principal", 0.7)]); // paleta-ok: transparente
   }
   if (map.getLayer("puntos")) {
@@ -262,6 +277,10 @@ export default function DrenaMap(props: DrenaMapProps) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const size = props.pinSize ?? 40;
+  const completoRef = useRef(props.recorridoCompleto);
+  completoRef.current = props.recorridoCompleto;
+  const paddingRef = useRef(props.padding);
+  paddingRef.current = props.padding;
 
   // Capas extra de quien usa el mapa (p. ej. la simulación del flujo o las cadenas de la central). Va antes de crear el mapa: así su limpieza corre antes de map.remove()
   const onMapReadyRef = useRef(props.onMapReady);
@@ -296,8 +315,8 @@ export default function DrenaMap(props: DrenaMapProps) {
         if (!props.relieve) map.touchZoomRotate.disableRotation();
         mapRef.current = map;
         map.once("style.load", () => {
-          const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]) });
-          ["esc", "chain", "lim", "area", "celda", "celda-link", "gore", "rec", "caminata"].forEach(add);
+          const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]), lineMetrics: id.startsWith("rec") });
+          ["esc", "chain", "lim", "area", "celda", "celda-link", "gore", "rec", "rec-destacado", "rec-paraderos", "caminata"].forEach(add);
           map.addSource("comunas-rm", { type: "geojson", data: "/data/comunas_rm.geojson" });
           // El catastro completo (420 KB) se pide la primera vez que se enciende su capa
           map.addSource("rejillas", { type: "geojson", data: fc([]), cluster: true, clusterMaxZoom: 16, clusterRadius: 30 });
@@ -406,7 +425,7 @@ export default function DrenaMap(props: DrenaMapProps) {
             filter: ["==", ["get", "id"], ""],
             paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 6, 16, 10], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2 }, // paleta-ok: relleno transparente
           });
-          map.addSource("rec-fondo", { type: "geojson", data: fc([]) });
+          map.addSource("rec-fondo", { type: "geojson", data: fc([]), lineMetrics: true });
           map.addLayer({ id: "rec-fondo", type: "line", source: "rec-fondo", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 1.5, "line-opacity": 0.22 } });
           map.addLayer({
             id: "riesgo-calor",
@@ -440,9 +459,11 @@ export default function DrenaMap(props: DrenaMapProps) {
               "circle-opacity": ["match", ["get", "prio"], "baja", 0.7, 1],
             },
           });
-          pintarMapa(map);
+          map.addLayer({ id: "rec-destacado", type: "line", source: "rec-destacado", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 6, "line-opacity": 1 } });
+          map.addLayer({ id: "rec-paraderos", type: "circle", source: "rec-paraderos", paint: { "circle-radius": 3.5, "circle-stroke-width": 1.5 } });
+          pintarMapa(map, !!completoRef.current);
           // Si cambia el esquema de color del sistema, se vuelven a leer los colores
-          const repintar = () => pintarMapa(map);
+          const repintar = () => pintarMapa(map, !!completoRef.current);
           const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
           mq?.addEventListener?.("change", repintar);
           unsubTema.current = () => mq?.removeEventListener?.("change", repintar);
@@ -476,10 +497,11 @@ export default function DrenaMap(props: DrenaMapProps) {
   // Paleta editable (#131): repinta las capas sin recrear el mapa
   useEffect(() => {
     if (!ready) return;
-    const repintar = () => mapRef.current && pintarMapa(mapRef.current);
+    const repintar = () => mapRef.current && pintarMapa(mapRef.current, !!completoRef.current);
+    repintar();
     window.addEventListener(EVENTO_PALETA, repintar);
     return () => window.removeEventListener(EVENTO_PALETA, repintar);
-  }, [ready]);
+  }, [ready, props.recorridoCompleto]);
 
   // Encuadre (en 3D, con la inclinación y el rumbo de la vista)
   useEffect(() => {
@@ -522,12 +544,49 @@ export default function DrenaMap(props: DrenaMapProps) {
     set("celda", fc(props.celda ? [poly(props.celda.poly)] : []));
     set("celda-link", fc(props.celda ? [line(props.celda.link)] : []));
     set("rec", fc((props.recorridos ?? []).map(line)));
+    set("rec-destacado", fc((props.recorridoCompleto ? [props.recorridoCompleto.geometria] : props.recorridosDestacados ?? []).map(line)));
+    const existentes = new Set((props.paraderos ?? []).map((p) => p.id));
+    set("rec-paraderos", fc((props.recorridoCompleto?.paraderos ?? []).filter((p) => !existentes.has(p.id)).map((p) => ({ type: "Feature", properties: { id: p.id, nombre: p.nombre }, geometry: { type: "Point", coordinates: [p.lon, p.lat] } }))));
+    const destacado = !!props.recorridoCompleto || !!props.recorridosDestacados?.length;
+    map.setPaintProperty("rec-line", "line-opacity", destacado ? 0.2 : 0.55);
+    map.setPaintProperty("rec-flecha", "icon-opacity", destacado ? 0.2 : 0.9);
+    map.moveLayer("rec-destacado");
+    map.moveLayer("rec-paraderos");
     set("caminata", fc((props.caminatas ?? []).map(line)));
     set("ruta", fc((props.ruta ?? []).map(line)));
     set("rec-fondo", fc((props.recorridosFondo ?? []).map(line)));
     set("puntos", fc((props.puntos ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, prio: p.prio, top: !!p.top, w: p.peso ?? 0, nombre: p.nombre ?? "", sub: p.sub ?? "" }, geometry: { type: "Point", coordinates: p.coord } }))));
     set("gore", fc((props.gore ?? []).map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }))));
-  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.caminatas, props.puntos, props.ruta, props.recorridosFondo]);
+  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.recorridosDestacados, props.recorridoCompleto, props.paraderos, props.caminatas, props.puntos, props.ruta, props.recorridosFondo]);
+
+  useEffect(() => {
+    if (!ready || !props.recorridoCompleto?.geometria.length) return;
+    const puntos = props.recorridoCompleto.geometria;
+    const xs = puntos.map((p) => p[0]);
+    const ys = puntos.map((p) => p[1]);
+    mapRef.current.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], {
+      padding: paddingRef.current ?? 50, maxZoom: 15, pitch: 0, bearing: 0,
+      duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 900,
+    });
+  }, [ready, props.recorridoCompleto]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const map = mapRef.current;
+    const popup = new libRef.current.Popup({ closeButton: false, closeOnClick: false, offset: 10, className: "globo" });
+    const mover = (e: MapLibre) => {
+      const f = e.features?.[0];
+      if (f) popup.setLngLat(f.geometry.coordinates).setText(f.properties.nombre).addTo(map);
+    };
+    const salir = () => popup.remove();
+    map.on("mousemove", "rec-paraderos", mover);
+    map.on("mouseleave", "rec-paraderos", salir);
+    return () => {
+      map.off("mousemove", "rec-paraderos", mover);
+      map.off("mouseleave", "rec-paraderos", salir);
+      popup.remove();
+    };
+  }, [ready, props.recorridoCompleto]);
 
   useEffect(() => {
     if (!ready) return;
@@ -537,6 +596,8 @@ export default function DrenaMap(props: DrenaMapProps) {
 
   const onClickPuntoRef = useRef(props.onClickPunto);
   onClickPuntoRef.current = props.onClickPunto;
+  const capasSobrePuntosRef = useRef(props.capasSobrePuntos);
+  capasSobrePuntosRef.current = props.capasSobrePuntos;
   // Globo (nombre y puntaje) y resaltado al pasar el mouse por un pin o un punto
   const onHoverRef = useRef(props.onHover);
   onHoverRef.current = props.onHover;
@@ -567,11 +628,21 @@ export default function DrenaMap(props: DrenaMapProps) {
       }
       globo.current.setLngLat(d.coord).setDOMContent(el).addTo(map);
     };
+    const hayCapaEncima = (point: { x: number; y: number }) => {
+      const layers = (capasSobrePuntosRef.current ?? []).filter((id) => map.getLayer(id));
+      return layers.length > 0 && map.queryRenderedFeatures(point, { layers }).length > 0;
+    };
     const clic = (e: MapLibre) => {
+      if (hayCapaEncima(e.point)) return;
       const id = e.features?.[0]?.properties?.id;
       if (id) onClickPuntoRef.current?.(String(id));
     };
     const mueve = (e: MapLibre) => {
+      if (hayCapaEncima(e.point)) {
+        hoverRef.current?.(null);
+        map.getCanvas().style.cursor = "pointer";
+        return;
+      }
       // Con puntos solapados se toma el más cercano al cursor (estable), no el primero que devuelve la capa
       const fs: MapLibre[] = e.features ?? [];
       if (!fs.length) return;
@@ -617,6 +688,18 @@ export default function DrenaMap(props: DrenaMapProps) {
     raiz?.querySelectorAll(".pin.is-resaltado").forEach((e) => e.classList.remove("is-resaltado"));
     if (id) raiz?.querySelector(`.pin[data-id="${CSS.escape(id)}"]`)?.classList.add("is-resaltado");
   }, [ready, props.resaltado, props.pins]);
+
+  // Los símbolos de prioridad y el calor comparten datos, pero se filtran por separado.
+  useEffect(() => {
+    if (!ready) return;
+    const map = mapRef.current;
+    const visible = props.puntosVisibles !== false;
+    for (const id of ["puntos", "puntos-brillo", "puntos-sel", "puntos-hover"]) map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
+    if (!visible) {
+      hoverRef.current?.(null);
+      map.getCanvas().style.cursor = "";
+    }
+  }, [ready, props.puntosVisibles]);
 
   // Visibilidad de las capas de datos reales
   useEffect(() => {
@@ -682,6 +765,7 @@ export default function DrenaMap(props: DrenaMapProps) {
       const { el, coord, anchor = "center", offset = [0, 0] } = crear();
       if (!primeraVez) el.classList.add("is-nuevo");
       siguientes.set(key, new ml.Marker({ element: el, anchor, offset }).setLngLat(coord).addTo(map));
+      if (el.classList.contains("paradero")) el.setAttribute("aria-label", el.title);
     };
     (props.celda?.rayos ?? []).forEach((c) =>
       reusar(`rayo|${c}`, () => {
