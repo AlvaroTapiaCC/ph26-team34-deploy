@@ -702,7 +702,7 @@ const Mapa = memo(function Mapa({
   sinLluvia: boolean;
 }) {
   const { observaciones, transporte, cuadrilla, ruta } = useSala();
-  const [tresD, setTresD] = useState(true);
+  const [tresD, setTresD] = useState(false);
   const [menu, setMenu] = useState(false);
   const durante = vista === "durante";
   const simulacion = vista === "simulacion";
