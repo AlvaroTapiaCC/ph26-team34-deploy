@@ -1,30 +1,30 @@
-[
-  { "id": "bg", "grupo": "Fondos", "nombre": "Fondo de la página", "uso": "Fondo general detrás de las tarjetas", "defecto": "#ededeb" },
-  { "id": "surface", "grupo": "Fondos", "nombre": "Tarjeta", "uso": "Tarjetas, paneles, barra superior, marcadores del mapa", "defecto": "#ffffff" },
-  { "id": "surface-2", "grupo": "Fondos", "nombre": "Tarjeta secundaria", "uso": "Botones secundarios, filas, campos", "defecto": "#f3f3f1" },
-  { "id": "surface-3", "grupo": "Fondos", "nombre": "Relieve", "uso": "Barras vacías, separadores marcados, hover de botones", "defecto": "#dcdcd9" },
-  { "id": "line", "grupo": "Fondos", "nombre": "Línea", "uso": "Bordes finos y divisores", "defecto": "#e2e2df" },
-
-  { "id": "text", "grupo": "Texto", "nombre": "Texto principal", "uso": "Títulos, cifras, fondos oscuros (chips, avisos)", "defecto": "#1b1b1b" },
-  { "id": "text-2", "grupo": "Texto", "nombre": "Texto secundario", "uso": "Descripciones; límites comunales y GORE en el mapa", "defecto": "#5a5a57" },
-  { "id": "text-3", "grupo": "Texto", "nombre": "Texto tenue", "uso": "Rótulos chicos, ayudas, nombres de comuna", "defecto": "#7c7c78" },
-  { "id": "texto-inv", "grupo": "Texto", "nombre": "Texto sobre color", "uso": "Texto blanco sobre fondos oscuros o de color (metro, urgencia, chips)", "defecto": "#ffffff" },
-
-  { "id": "acento", "grupo": "Acento", "nombre": "Acento", "uso": "Botón principal, cifras destacadas, cadena aguas abajo y área de aporte en el mapa", "defecto": "#ff3d0a" },
-  { "id": "acento-ink", "grupo": "Acento", "nombre": "Texto sobre el acento", "uso": "Texto e íconos encima del color de acento", "defecto": "#ffffff" },
-  { "id": "acento-dim", "grupo": "Acento", "nombre": "Acento suave", "uso": "Fondos claros del acento (selección, chips)", "defecto": "#ffd6ca" },
-
-  { "id": "prio-alta", "grupo": "Prioridad", "nombre": "Prioridad alta", "uso": "Chip y pin ▲ Alta", "defecto": "#ff3d0a" },
-  { "id": "prio-media", "grupo": "Prioridad", "nombre": "Prioridad media", "uso": "Chip y pin ◆ Media", "defecto": "#1b1b1b" },
-  { "id": "prio-baja", "grupo": "Prioridad", "nombre": "Prioridad baja", "uso": "Chip y pin ● Baja; rejillas del catastro en el mapa", "defecto": "#767672" },
-
-  { "id": "danger", "grupo": "Estados", "nombre": "Peligro", "uso": "Errores y pantalla de urgencia (133, 132, 131)", "defecto": "#b3261e" },
-  { "id": "ok", "grupo": "Estados", "nombre": "Correcto", "uso": "GPS listo, rejilla limpia, verificado, en vivo", "defecto": "#2e7d32" },
-  { "id": "aviso", "grupo": "Estados", "nombre": "Advertencia", "uso": "Rejilla parcialmente tapada", "defecto": "#b26a00" },
-
-  { "id": "map-bg", "grupo": "Mapa", "nombre": "Fondo del mapa", "uso": "Fondo del mapa mientras cargan las teselas", "defecto": "#e8e8e6" },
-
-  { "id": "bus", "grupo": "Transporte", "nombre": "Transporte", "uso": "Paraderos expuestos, recorridos y caminata en el mapa", "defecto": "#1f5fbf" },
-  { "id": "bus-dim", "grupo": "Transporte", "nombre": "Transporte suave", "uso": "Fondos claros del panel de transporte", "defecto": "#dce7f7" },
-  { "id": "metro", "grupo": "Transporte", "nombre": "Metro", "uso": "Insignia de estación de metro", "defecto": "#1e5fd8" }
-]
+{
+  "editables": [
+    { "id": "bg", "nombre": "Fondo", "uso": "Fondo de la página; de él salen las tarjetas, bordes y el fondo del mapa", "defecto": "#ededeb" },
+    { "id": "text", "nombre": "Texto", "uso": "Títulos, cifras y fondos oscuros; de él salen los textos secundarios y la prioridad media y baja", "defecto": "#1b1b1b" },
+    { "id": "acento", "nombre": "Acento", "uso": "Botón principal, cifras destacadas, prioridad alta, cadena aguas abajo en el mapa", "defecto": "#ff3d0a" }
+  ],
+  "derivados": [
+    { "id": "surface", "nombre": "Tarjeta", "mezcla": ["bg", 15, "#ffffff"] },
+    { "id": "surface-2", "nombre": "Tarjeta secundaria", "mezcla": ["bg", 60, "#ffffff"] },
+    { "id": "surface-3", "nombre": "Relieve", "mezcla": ["bg", 92, "text"] },
+    { "id": "line", "nombre": "Línea", "mezcla": ["bg", 95, "text"] },
+    { "id": "map-bg", "nombre": "Fondo del mapa", "mezcla": ["bg", 98, "text"] },
+    { "id": "text-2", "nombre": "Texto secundario", "mezcla": ["text", 70, "bg"] },
+    { "id": "text-3", "nombre": "Texto tenue", "mezcla": ["text", 54, "bg"] },
+    { "id": "texto-inv", "nombre": "Texto sobre color", "mezcla": ["surface", 100, "surface"] },
+    { "id": "acento-ink", "nombre": "Texto sobre el acento", "mezcla": ["surface", 100, "surface"] },
+    { "id": "acento-dim", "nombre": "Acento suave", "mezcla": ["acento", 21, "surface"] },
+    { "id": "prio-alta", "nombre": "Prioridad alta", "mezcla": ["acento", 100, "acento"] },
+    { "id": "prio-media", "nombre": "Prioridad media", "mezcla": ["text", 100, "text"] },
+    { "id": "prio-baja", "nombre": "Prioridad baja", "mezcla": ["text", 57, "bg"] }
+  ],
+  "fijos": [
+    { "id": "danger", "nombre": "Peligro", "valor": "#b3261e" },
+    { "id": "ok", "nombre": "Correcto", "valor": "#2e7d32" },
+    { "id": "aviso", "nombre": "Advertencia", "valor": "#b26a00" },
+    { "id": "bus", "nombre": "Transporte", "valor": "#1f5fbf" },
+    { "id": "bus-dim", "nombre": "Transporte suave", "valor": "#dce7f7" },
+    { "id": "metro", "nombre": "Metro", "valor": "#1e5fd8" }
+  ]
+}

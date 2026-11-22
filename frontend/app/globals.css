@@ -1,25 +1,28 @@
 /* Drena · tokens (colección Figma "Drena Naranja") */
 :root {
-  /* paleta:inicio — colores editables (#131). Fuente: lib/paleta.json; se verifica antes del build */
-  --bg: #ededeb; /* Fondo de la página */
-  --surface: #ffffff; /* Tarjeta */
-  --surface-2: #f3f3f1; /* Tarjeta secundaria */
-  --surface-3: #dcdcd9; /* Relieve */
-  --line: #e2e2df; /* Línea */
-  --text: #1b1b1b; /* Texto principal */
-  --text-2: #5a5a57; /* Texto secundario */
-  --text-3: #7c7c78; /* Texto tenue */
-  --texto-inv: #ffffff; /* Texto sobre color */
+  /* paleta:inicio — generado por scripts/paleta.mjs desde lib/paleta.json (#131). No editar a mano. */
+  /* Editables (?paleta=1) */
+  --bg: #ededeb; /* Fondo */
+  --text: #1b1b1b; /* Texto */
   --acento: #ff3d0a; /* Acento */
-  --acento-ink: #ffffff; /* Texto sobre el acento */
-  --acento-dim: #ffd6ca; /* Acento suave */
-  --prio-alta: #ff3d0a; /* Prioridad alta */
-  --prio-media: #1b1b1b; /* Prioridad media */
-  --prio-baja: #767672; /* Prioridad baja */
+  /* Derivados de los editables */
+  --surface: color-mix(in srgb, var(--bg) 15%, #ffffff); /* Tarjeta */
+  --surface-2: color-mix(in srgb, var(--bg) 60%, #ffffff); /* Tarjeta secundaria */
+  --surface-3: color-mix(in srgb, var(--bg) 92%, var(--text)); /* Relieve */
+  --line: color-mix(in srgb, var(--bg) 95%, var(--text)); /* Línea */
+  --map-bg: color-mix(in srgb, var(--bg) 98%, var(--text)); /* Fondo del mapa */
+  --text-2: color-mix(in srgb, var(--text) 70%, var(--bg)); /* Texto secundario */
+  --text-3: color-mix(in srgb, var(--text) 54%, var(--bg)); /* Texto tenue */
+  --texto-inv: var(--surface); /* Texto sobre color */
+  --acento-ink: var(--surface); /* Texto sobre el acento */
+  --acento-dim: color-mix(in srgb, var(--acento) 21%, var(--surface)); /* Acento suave */
+  --prio-alta: var(--acento); /* Prioridad alta */
+  --prio-media: var(--text); /* Prioridad media */
+  --prio-baja: color-mix(in srgb, var(--text) 57%, var(--bg)); /* Prioridad baja */
+  /* Fijos: tienen significado propio (peligro, correcto, advertencia, transporte) */
   --danger: #b3261e; /* Peligro */
   --ok: #2e7d32; /* Correcto */
   --aviso: #b26a00; /* Advertencia */
-  --map-bg: #e8e8e6; /* Fondo del mapa */
   --bus: #1f5fbf; /* Transporte */
   --bus-dim: #dce7f7; /* Transporte suave */
   --metro: #1e5fd8; /* Metro */

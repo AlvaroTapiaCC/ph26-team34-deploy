@@ -1,26 +1,32 @@
 // Paleta de colores del front (#131). Una sola fuente de verdad: `paleta.json`.
-// - globals.css define los mismos valores por defecto en :root (entre `paleta:inicio` y `paleta:fin`);
-//   `scripts/verificar-paleta.mjs` corre antes del build y falla si no coinciden.
-// - Cada color es una variable CSS `--<id>`. Los derivados (versiones tenues, sombras con
-//   transparencia) se calculan en el CSS con color-mix(), así que no se editan por separado.
-// - El mapa (MapLibre) no lee variables CSS: lee los colores con `colorDe()` y se repinta al
-//   escuchar el evento `EVENTO_PALETA`.
+// - 3 colores editables (fondo, texto y acento). El resto se deriva de ellos con mezclas
+//   (`derivados`) o es fijo porque tiene significado propio (`fijos`: peligro, correcto,
+//   advertencia, transporte).
+// - globals.css declara todo en :root entre `paleta:inicio` y `paleta:fin`; ese bloque lo genera
+//   `scripts/paleta.mjs`, que también corre antes del build y falla si no coincide.
+// - En CSS los derivados son color-mix(): cambian solos al cambiar un color editable.
+// - El mapa (MapLibre) no lee variables CSS: usa `colorDe()`, que hace la misma mezcla en JS,
+//   y se repinta al escuchar el evento `EVENTO_PALETA`.
 // - Lo editado con el editor (?paleta=1) se guarda en localStorage de este navegador.
 import DEFINICION from "./paleta.json";
 
-export type ColorPaleta = { id: string; grupo: string; nombre: string; uso: string; defecto: string };
+export type ColorEditable = { id: string; nombre: string; uso: string; defecto: string };
+export type ColorDerivado = { id: string; nombre: string; mezcla: [string, number, string] };
+export type ColorFijo = { id: string; nombre: string; valor: string };
 export type Paleta = Record<string, string>;
 
-export const PALETA: ColorPaleta[] = DEFINICION;
-export const CLAVE_PALETA = "drena.paleta.v1";
+export const EDITABLES: ColorEditable[] = DEFINICION.editables;
+export const DERIVADOS: ColorDerivado[] = DEFINICION.derivados as ColorDerivado[];
+export const FIJOS: ColorFijo[] = DEFINICION.fijos;
+export const CLAVE_PALETA = "drena.paleta.v2";
 export const EVENTO_PALETA = "drena:paleta";
 
 const HEX = /^#[0-9a-f]{6}$/i;
-const IDS = new Set(PALETA.map((c) => c.id));
+const IDS = new Set(EDITABLES.map((c) => c.id));
 
-export const paletaPorDefecto = (): Paleta => Object.fromEntries(PALETA.map((c) => [c.id, c.defecto]));
+export const paletaPorDefecto = (): Paleta => Object.fromEntries(EDITABLES.map((c) => [c.id, c.defecto]));
 
-/** Deja solo ids conocidos con colores #rrggbb válidos (para lo leído de localStorage o de un JSON importado). */
+/** Deja solo los 3 ids editables con colores #rrggbb válidos (para localStorage o un JSON importado). */
 export function limpiarPaleta(x: unknown): Paleta {
   if (!x || typeof x !== "object") return {};
   return Object.fromEntries(
@@ -48,40 +54,59 @@ function guardar(cambios: Paleta) {
   }
 }
 
-/** Valor actual de un color de la paleta (lo editado o el de :root). Para quien no puede usar var(--x), como MapLibre. */
-export function colorDe(id: string): string {
-  const def = PALETA.find((c) => c.id === id)?.defecto ?? "#000000";
-  if (typeof window === "undefined") return def;
-  const v = getComputedStyle(document.documentElement).getPropertyValue(`--${id}`).trim();
-  return HEX.test(v) ? v : def;
+const aRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const aHex = (rgb: number[]) => "#" + rgb.map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
+
+/** Mezcla como color-mix(in srgb, a p%, b): canal a canal sobre los valores sRGB. */
+export function mezclar(a: string, pct: number, b: string): string {
+  const [x, y] = [aRgb(a), aRgb(b)];
+  return aHex(x.map((v, i) => (v * pct + y[i] * (100 - pct)) / 100));
 }
 
-/** Aplica una paleta completa o parcial: variables en :root, color de la barra del navegador, aviso al mapa y guardado. */
+/** Resuelve cualquier color de la paleta a #rrggbb a partir de los 3 editables dados. */
+export function resolver(id: string, base: Paleta): string {
+  if (HEX.test(id)) return id.toLowerCase();
+  if (base[id]) return base[id];
+  const fijo = FIJOS.find((c) => c.id === id);
+  if (fijo) return fijo.valor;
+  const d = DERIVADOS.find((c) => c.id === id);
+  if (d) return mezclar(resolver(d.mezcla[0], base), d.mezcla[1], resolver(d.mezcla[2], base));
+  return "#000000";
+}
+
+/** Los 3 colores editables vigentes en la página (lo editado o el valor de :root). */
+export function paletaActual(): Paleta {
+  const def = paletaPorDefecto();
+  if (typeof window === "undefined") return def;
+  const st = getComputedStyle(document.documentElement);
+  return Object.fromEntries(
+    EDITABLES.map((c) => {
+      const v = st.getPropertyValue(`--${c.id}`).trim();
+      return [c.id, HEX.test(v) ? v.toLowerCase() : def[c.id]];
+    }),
+  );
+}
+
+/** Valor actual de un color de la paleta como #rrggbb. Para quien no puede usar var(--x), como MapLibre. */
+export const colorDe = (id: string): string => resolver(id, paletaActual());
+
+/** Aplica los colores editables: variables en :root, barra del navegador, aviso al mapa y guardado. */
 export function aplicarPaleta(paleta: Paleta) {
   const def = paletaPorDefecto();
-  const cambios = Object.fromEntries(Object.entries(limpiarPaleta(paleta)).filter(([id, v]) => v !== def[id]));
+  const p = { ...def, ...limpiarPaleta(paleta) };
+  const cambios = Object.fromEntries(Object.entries(p).filter(([id, v]) => v !== def[id]));
   const raiz = document.documentElement.style;
-  for (const c of PALETA) {
+  for (const c of EDITABLES) {
     if (cambios[c.id]) raiz.setProperty(`--${c.id}`, cambios[c.id]);
     else raiz.removeProperty(`--${c.id}`);
   }
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", cambios.bg ?? def.bg);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", p.bg);
   guardar(cambios);
   window.dispatchEvent(new Event(EVENTO_PALETA));
 }
 
-/** Bloque :root listo para pegar en globals.css (reemplaza lo que hay entre `paleta:inicio` y `paleta:fin`). */
-export function aCssRoot(paleta: Paleta): string {
-  const p = { ...paletaPorDefecto(), ...limpiarPaleta(paleta) };
-  const filas = PALETA.map((c) => `  --${c.id}: ${p[c.id]}; /* ${c.nombre} */`);
-  return [":root {", "  /* paleta:inicio — generado por el editor de paleta (?paleta=1) */", ...filas, "  /* paleta:fin */", "}"].join("\n");
-}
-
-/**
- * Script en línea para <head>: aplica la paleta guardada antes del primer pintado (sin parpadeo).
- * Se genera con los ids conocidos para no aplicar claves ajenas.
- */
+/** Script en línea para <head>: aplica los colores guardados antes del primer pintado (sin parpadeo). */
 export function scriptInicialPaleta(): string {
-  const ids = JSON.stringify(PALETA.map((c) => c.id));
+  const ids = JSON.stringify(EDITABLES.map((c) => c.id));
   return `try{var p=JSON.parse(localStorage.getItem(${JSON.stringify(CLAVE_PALETA)})||"{}"),ids=${ids},s=document.documentElement.style;ids.forEach(function(i){var v=p[i];if(typeof v==="string"&&/^#[0-9a-f]{6}$/i.test(v))s.setProperty("--"+i,v)})}catch(e){}`;
 }

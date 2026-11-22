@@ -1,9 +1,10 @@
-// Paleta de colores (#131): mantiene lib/paleta.json y el bloque `paleta:inicio … paleta:fin` de
-// app/globals.css iguales.
+// Paleta de colores (#131): el bloque `paleta:inicio … paleta:fin` de app/globals.css se genera
+// desde lib/paleta.json (3 colores editables, derivados con color-mix() y fijos).
 //
-//   node scripts/paleta.mjs                  verifica que coincidan (corre solo antes de `npm run build`)
+//   node scripts/paleta.mjs                  verifica que globals.css esté al día (corre antes de `npm run build`)
+//   node scripts/paleta.mjs --escribir       regenera el bloque en globals.css desde paleta.json
 //   node scripts/paleta.mjs <paleta.json>    aplica la paleta exportada desde el editor (?paleta=1):
-//                                            actualiza los valores por defecto en ambos archivos
+//                                            cambia los valores por defecto y regenera el bloque
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,52 +12,61 @@ import { fileURLToPath } from "node:url";
 const raiz = join(dirname(fileURLToPath(import.meta.url)), "..");
 const RUTA_JSON = join(raiz, "lib", "paleta.json");
 const RUTA_CSS = join(raiz, "app", "globals.css");
-const BLOQUE = /( *\/\* paleta:inicio[^\n]*\n)([\s\S]*?)( *\/\* paleta:fin \*\/)/;
+const BLOQUE = / *\/\* paleta:inicio[\s\S]*?paleta:fin \*\/\r?\n?/;
 const HEX = /^#[0-9a-f]{6}$/i;
 
-const paleta = JSON.parse(readFileSync(RUTA_JSON, "utf8"));
+const ref = (x) => (HEX.test(x) ? x : `var(--${x})`);
+
+function generar(p) {
+  const l = ["  /* paleta:inicio — generado por scripts/paleta.mjs desde lib/paleta.json (#131). No editar a mano. */", "  /* Editables (?paleta=1) */"];
+  for (const c of p.editables) l.push(`  --${c.id}: ${c.defecto}; /* ${c.nombre} */`);
+  l.push("  /* Derivados de los editables */");
+  for (const c of p.derivados) {
+    const [a, pct, b] = c.mezcla;
+    const valor = a === b || pct === 100 ? ref(a) : `color-mix(in srgb, ${ref(a)} ${pct}%, ${ref(b)})`;
+    l.push(`  --${c.id}: ${valor}; /* ${c.nombre} */`);
+  }
+  l.push("  /* Fijos: tienen significado propio (peligro, correcto, advertencia, transporte) */");
+  for (const c of p.fijos) l.push(`  --${c.id}: ${c.valor}; /* ${c.nombre} */`);
+  l.push("  /* paleta:fin */");
+  return l.join("\n") + "\n";
+}
+
+const texto = readFileSync(RUTA_JSON, "utf8");
+const paleta = JSON.parse(texto);
 const css = readFileSync(RUTA_CSS, "utf8");
-const m = css.match(BLOQUE);
-if (!m) {
+if (!BLOQUE.test(css)) {
   console.error("paleta: no se encontró el bloque `paleta:inicio … paleta:fin` en app/globals.css");
   process.exit(1);
 }
-
-const lineas = (p) => p.map((c) => `  --${c.id}: ${c.defecto}; /* ${c.nombre} */`).join("\n") + "\n";
 const eol = css.includes("\r\n") ? "\r\n" : "\n";
+const escribirCss = () => writeFileSync(RUTA_CSS, css.replace(BLOQUE, generar(paleta).replace(/\n/g, eol)));
 
-const entrada = process.argv[2];
-if (entrada) {
-  const nueva = JSON.parse(readFileSync(entrada, "utf8"));
-  // Solo se reemplaza el valor `defecto` de cada color cambiado, en el texto: el formato de
-  // paleta.json (una línea por color) se conserva y el diff muestra solo lo que cambió.
-  let texto = readFileSync(RUTA_JSON, "utf8");
+const arg = process.argv[2];
+if (arg === "--escribir") {
+  escribirCss();
+  console.log("paleta: bloque de globals.css regenerado");
+} else if (arg) {
+  // Solo se reemplaza el `defecto` de cada editable cambiado, en el texto: se conserva el formato.
+  const nueva = JSON.parse(readFileSync(arg, "utf8"));
+  let json = texto;
   let cambiados = 0;
-  for (const c of paleta) {
+  for (const c of paleta.editables) {
     const v = nueva[c.id];
     if (typeof v === "string" && HEX.test(v) && v.toLowerCase() !== c.defecto) {
       c.defecto = v.toLowerCase();
-      texto = texto.replace(new RegExp(`("id": "${c.id}"[^\\n]*"defecto": ")#[0-9a-fA-F]{6}"`), `$1${c.defecto}"`);
+      json = json.replace(new RegExp(`("id": "${c.id}"[^\\n]*"defecto": ")#[0-9a-fA-F]{6}"`), `$1${c.defecto}"`);
       cambiados++;
     }
   }
-  writeFileSync(RUTA_JSON, texto);
-  writeFileSync(RUTA_CSS, css.replace(BLOQUE, (_, ini, __, fin) => ini + lineas(paleta).replace(/\n/g, eol) + fin));
-  console.log(`paleta: ${cambiados} colores actualizados en lib/paleta.json y app/globals.css`);
-  process.exit(0);
+  writeFileSync(RUTA_JSON, json);
+  escribirCss();
+  console.log(`paleta: ${cambiados} de ${paleta.editables.length} colores actualizados en lib/paleta.json y app/globals.css`);
+} else {
+  const actual = css.match(BLOQUE)[0].replace(/\r\n/g, "\n");
+  if (actual.trimEnd() !== generar(paleta).trimEnd()) {
+    console.error("paleta: app/globals.css no coincide con lib/paleta.json. Arreglo: npm run paleta -- --escribir");
+    process.exit(1);
+  }
+  console.log(`paleta: ${paleta.editables.length} editables, ${paleta.derivados.length} derivados, ${paleta.fijos.length} fijos; globals.css al día`);
 }
-
-// Verificación
-const enCss = Object.fromEntries([...m[2].matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})/g)].map(([, id, v]) => [id, v.toLowerCase()]));
-const errores = [];
-for (const c of paleta) {
-  if (!HEX.test(c.defecto)) errores.push(`--${c.id}: "${c.defecto}" no es un color #rrggbb`);
-  else if (enCss[c.id] !== c.defecto.toLowerCase()) errores.push(`--${c.id}: paleta.json dice ${c.defecto}, globals.css dice ${enCss[c.id] ?? "(falta)"}`);
-}
-for (const id of Object.keys(enCss)) if (!paleta.some((c) => c.id === id)) errores.push(`--${id} está en globals.css pero no en paleta.json`);
-if (errores.length) {
-  console.error("paleta: lib/paleta.json y app/globals.css no coinciden:\n  " + errores.join("\n  "));
-  console.error("Arreglo: node scripts/paleta.mjs lib/paleta-exportada.json, o corrige a mano uno de los dos.");
-  process.exit(1);
-}
-console.log(`paleta: ${paleta.length} colores, globals.css coincide`);
