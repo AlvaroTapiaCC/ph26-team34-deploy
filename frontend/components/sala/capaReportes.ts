@@ -128,5 +128,5 @@ export function useCapaReportes(reportes: ReporteMapa[], visible: boolean, onSel
       mapa.current = null;
     };
   }, [actualizar]);
-  return { onMapReady };
+  return { onMapReady, capa: SOURCE };
 }
