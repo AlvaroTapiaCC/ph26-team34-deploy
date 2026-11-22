@@ -2770,36 +2770,44 @@ p {
   color: var(--text-3);
 }
 
-/* Marcador de paradero en el mapa: rectángulo, para no confundirse con los pines de prioridad */
 .paradero {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+.paradero__badge {
   display: flex;
   align-items: center;
-  gap: 2px;
-  height: 22px;
-  padding: 0 5px;
-  border-radius: 6px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   background: var(--surface);
   color: var(--bus);
   box-shadow: inset 0 0 0 2px var(--bus), var(--sh-soft);
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 10px;
-  line-height: 1;
 }
-.paradero__signo {
-  font-size: 12px;
-}
-.paradero--expuesto {
-  background: var(--bus);
+.paradero--expuesto .paradero__badge {
+  background: var(--danger);
   color: var(--sobre-color);
+  box-shadow: inset 0 0 0 2px var(--danger), var(--sh-soft);
 }
-.paradero--alternativo {
-  background: var(--bus-dim);
-  box-shadow: inset 0 0 0 1.5px var(--bus), var(--sh-soft);
+.paradero--alternativo .paradero__badge {
+  color: var(--text-2);
+  box-shadow: inset 0 0 0 1px var(--text-3), var(--sh-soft);
 }
-.paradero.is-active {
+.paradero.is-active .paradero__badge {
+  transform: scale(1.15);
   outline: 3px solid var(--bus);
-  outline-offset: 2px;
+  outline-offset: 3px;
+}
+.paradero:focus-visible {
+  outline: 3px solid var(--secundario);
+  outline-offset: 5px;
 }
 
 /* Durante (vista de main: reportes, cadena aguas abajo, modal Simular y pestaña móvil) */
