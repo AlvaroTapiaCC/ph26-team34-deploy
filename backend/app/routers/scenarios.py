@@ -22,6 +22,7 @@ def get_ranking(
     background_tasks: BackgroundTasks,
     modo: Literal["antes", "durante"] = "antes",
     limit: int = Query(500, ge=1, le=5000),
+    zona: str | None = Query(None, max_length=64, description="Etiqueta de catastro, p. ej. zona_mut"),
 ):
     """Tabla de misiones: sumideros ordenados por prioridad, con su ubicación y desglose."""
     with get_conn() as conn:
@@ -36,11 +37,12 @@ def get_ranking(
               from scores sc
               join sumideros s on s.id = sc.sumidero_id
               left join intersections i on i.id = s.intersection_id
-             where sc.scenario_id = %s and sc.modo = %s
+             where sc.scenario_id = %(escenario)s and sc.modo = %(modo)s
+               and (%(zona)s::text is null or s.etiquetas @> array[%(zona)s]::text[])
              order by sc.rank
-             limit %s
+             limit %(limite)s
             """,
-            (scenario_id, modo, limit),
+            {"escenario": scenario_id, "modo": modo, "zona": zona, "limite": limit},
         ).fetchall()
     pendientes = []
     items = []

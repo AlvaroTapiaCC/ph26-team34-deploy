@@ -2,6 +2,7 @@
 // GET /crews, GET /crews/{id}/route, POST /missions/{id}/status y POST /missions/{id}/close.
 // Los POST llevan X-Crew-Token (NEXT_PUBLIC_CREW_TOKEN): es casi público, nunca el ADMIN_TOKEN.
 import { API_URL, ApiError } from "./api";
+import type { LngLat } from "./data";
 
 const CREW_TOKEN = process.env.NEXT_PUBLIC_CREW_TOKEN ?? "";
 
@@ -14,6 +15,8 @@ export interface Cuadrilla {
   estado: string;
   is_simulated: boolean;
   carga: number;
+  lat?: number | null;
+  lon?: number | null;
 }
 
 export interface Mision {
@@ -38,6 +41,7 @@ export interface UltimoCambio {
   hora: string;
   motivo: string | null;
   ruta_version: number | null;
+  observation_id?: string | null;
   siguiente_antes: ResumenParada | null;
   siguiente_despues: ResumenParada | null;
   observacion: {
@@ -50,12 +54,24 @@ export interface UltimoCambio {
   } | null;
 }
 
+export interface UltimoCierre {
+  mission_id: string;
+  sumidero_id: string | null;
+  nombre: string;
+  hora: string;
+  verificado: boolean;
+  rejilla: string | null;
+  confianza: string | null;
+}
+
 export interface RutaCuadrilla {
   crew_id: string;
   origen: "despacho" | "calculada" | "sin_misiones";
   version: number | null;
   misiones: Mision[];
+  geojson?: { type: "LineString"; coordinates: LngLat[] } | { type: "GeometryCollection" } | null;
   ultimo_cambio?: UltimoCambio | null;
+  ultimo_cierre?: UltimoCierre | null;
   posicion_oculta?: boolean;
 }
 
@@ -97,8 +113,8 @@ async function pedir<T>(ruta: string, init: RequestInit = {}, timeoutMs = 20_000
 
 const conToken = (h: Record<string, string> = {}) => (CREW_TOKEN ? { ...h, "X-Crew-Token": CREW_TOKEN } : h);
 
-export const getCuadrillas = () => pedir<Cuadrilla[]>("/crews", {}, 70_000);
-export const getRuta = (crewId: string) => pedir<RutaCuadrilla>(`/crews/${encodeURIComponent(crewId)}/route`);
+export const getCuadrillas = () => pedir<Cuadrilla[]>("/crews", { cache: "no-store" }, 70_000);
+export const getRuta = (crewId: string) => pedir<RutaCuadrilla>(`/crews/${encodeURIComponent(crewId)}/route`, { cache: "no-store" });
 
 export const cambiarEstado = (missionId: string, estado: Exclude<EstadoMision, "cerrada">) =>
   pedir<{ estado: EstadoMision }>(`/missions/${encodeURIComponent(missionId)}/status`, {

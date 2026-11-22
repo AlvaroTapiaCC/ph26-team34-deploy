@@ -47,6 +47,7 @@ def get_route(crew_id: str, x_admin_token: str | None = Header(default=None)):
 
     `ultimo_cambio` es el último re-planeo del despacho (motivo, hora, siguiente parada antes y
     después, y la clasificación de la observación que lo causó, sin su texto ni su foto) o `null`.
+    `ultimo_cierre` muestra la última misión cerrada y los campos públicos de su verificación.
     """
     try:
         with get_conn() as conn:

@@ -1,10 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { ScenarioId } from "@/lib/data";
+import Link from "next/link";
 import { CUADRILLAS_MAX, useStore, type Modo } from "@/lib/store";
 import { BarSegment, Dropdown, Logo } from "../ui";
 
 export default function TopBar() {
+  const router = useRouter();
   const { s, set, escenarios, comunas } = useStore();
   return (
     <header className="topbar">
@@ -40,8 +43,15 @@ export default function TopBar() {
           { id: "durante", label: "Durante" },
         ]}
         value={s.modo}
-        onChange={(modo) => set({ modo, ficha: null })}
+        onChange={(modo) => {
+          // Durante vive en su propia página (#125)
+          if (modo === "durante") router.push("/central/durante");
+          else set({ modo, ficha: null });
+        }}
       />
+      <Link href="/central/validacion" className="btn btn--secondary btn--md">
+        Validación histórica
+      </Link>
     </header>
   );
 }

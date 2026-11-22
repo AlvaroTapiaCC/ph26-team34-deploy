@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ESCURRIMIENTO, fmt, googleMapsTramos, MAX_WAYPOINTS_MOVIL, pad2, PUNTOS, statsPunto, textoWhatsApp, type LngLat, type ScenarioId } from "@/lib/data";
 import { boundsDe } from "@/lib/real";
@@ -107,6 +108,11 @@ function Prioridades() {
         </div>
         <div className="mob__pad">
           <Segmented<ScenarioId> size="lg" soft options={escenarios.map((x) => ({ id: x.id, label: x.short }))} value={s.scenario} onChange={(scenario) => set({ scenario })} />
+        </div>
+        <div className="mob__pad">
+          <Link href="/central/validacion" className="btn btn--secondary btn--md btn--block">
+            Validación histórica
+          </Link>
         </div>
         {s.status === "error" ? (
           <div className="mgap">
