@@ -118,12 +118,15 @@ export default function Transporte({
   estado,
   activo,
   onSelect,
+  className,
 }: {
   datos: Expuestos | null;
   calculadoAt: string | null;
   estado: EstadoConsulta;
   activo: string | null;
   onSelect: (id: string | null) => void;
+  /** Variante del contenedor: la Central la usa para quitar el alto máximo del tablero de escritorio. */
+  className?: string;
 }) {
   const fuente = useMemo(() => {
     if (!datos?.fuente) return "Fuente: GTFS de DTPM";
@@ -134,7 +137,7 @@ export default function Transporte({
   const vacio = datos && !datos.expuestos.length && !datos.en_riesgo.length;
 
   return (
-    <section className={`card tp ${datos?.expuestos.length ? "is-active" : ""}`} aria-live="polite">
+    <section className={`card tp ${datos?.expuestos.length ? "is-active" : ""} ${className ?? ""}`} aria-live="polite">
       <div className="tp__top">
         <Kicker tone={datos?.expuestos.length ? "danger" : undefined}>Paraderos de buses expuestos</Kicker>
         <span className="tp__ts">

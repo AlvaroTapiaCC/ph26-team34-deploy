@@ -3,13 +3,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
 import { getEscenarios, getFicha, getRanking } from "./api";
 import { buildRuta, CADENA, COMUNAS, PUNTOS, rankingFor, SCENARIOS, TOTAL_INTERSECCIONES, type Comuna, type RankedPunto, type RutaCuadrilla, type Scenario, type ScenarioId } from "./data";
+import type { EstadoRejilla } from "./flujo/config";
 import { aEscenario, aFichaReal, aRankingReal, type FichaReal, type RankingReal } from "./real";
+import { suscribirPuntajes } from "./supabase";
 
 // De dónde salen los datos del modo Antes: servidor real o respaldo de ejemplo (lib/data.ts)
 export type Fuente = "cargando" | "api" | "ejemplo";
 
 export type Modo = "antes" | "durante";
-export type Vista = "main" | "validacion" | "metodologia";
 export type Status = "ok" | "loading" | "error";
 export type Modal = null | "ruta" | "whatsapp" | "simular";
 export type Sensor = "escuchando" | "anegado" | "caido";
@@ -37,10 +38,11 @@ export interface Layers {
   transporte: boolean;
 }
 
+export const CUADRILLAS_MAX = 6;
+
 export interface State {
   scenario: ScenarioId;
   modo: Modo;
-  vista: Vista;
   comuna: "Todas" | Comuna;
   cuadrillas: number;
   ficha: string | null;
@@ -56,6 +58,8 @@ export interface State {
   markMode: boolean;
   reportes: Reporte[];
   enRuta: string[];
+  /** Estado de rejilla que marcó el operador (clic en el mapa o botones del panel); el flujo estimado lo usa al instante. */
+  rejillas: Record<string, EstadoRejilla>;
   hechos: string[]; // ids de paradas ya limpias (el avance se guarda por parada, no por posición)
   copied: boolean;
   mobileTab: MobileTab;
@@ -67,7 +71,6 @@ const REPORTE_BASE: Reporte = { id: "r1", nombre: "Grecia / Ossa", fuente: "Cuad
 export const initialState: State = {
   scenario: "13oct",
   modo: "antes",
-  vista: "main",
   comuna: "Todas",
   cuadrillas: 3,
   ficha: null,
@@ -75,7 +78,7 @@ export const initialState: State = {
   modal: null,
   toast: null,
   status: "loading",
-  layers: { prioridad: true, escurrimiento: true, limites: false, gore: false, rejillas: false, cadena: false, rayos: false, feed: true, reales: true, transporte: true },
+  layers: { prioridad: true, escurrimiento: true, limites: true, gore: false, rejillas: false, cadena: false, rayos: false, feed: true, reales: true, transporte: true },
   sensor: "escuchando",
   anegado: null,
   fuenteAnegamiento: null,
@@ -83,6 +86,7 @@ export const initialState: State = {
   markMode: false,
   reportes: [REPORTE_BASE],
   enRuta: [],
+  rejillas: {},
   hechos: [],
   copied: false,
   mobileTab: "prioridades",
@@ -94,7 +98,8 @@ type Action =
   | { type: "layer"; key: keyof Layers; value?: boolean }
   | { type: "flood"; id: string; fuente: "sensor" | "manual" }
   | { type: "addRuta"; id: string }
-  | { type: "resetSim" };
+  | { type: "resetSim" }
+  | { type: "rejillas"; estados: Record<string, EstadoRejilla>; toast?: string };
 
 function reducer(s: State, a: Action): State {
   switch (a.type) {
@@ -124,6 +129,8 @@ function reducer(s: State, a: Action): State {
     }
     case "resetSim":
       return { ...s, sensor: "escuchando", anegado: null, sensorAgo: "", markMode: false, reportes: [REPORTE_BASE], layers: { ...s.layers, cadena: false }, toast: "Simulación reiniciada" };
+    case "rejillas":
+      return { ...s, rejillas: { ...s.rejillas, ...a.estados }, toast: a.toast ?? s.toast };
     case "addRuta":
       return { ...s, enRuta: s.enRuta.includes(a.id) ? s.enRuta : [...s.enRuta, a.id], toast: "Agregado a la ruta de la cuadrilla" };
   }
@@ -136,6 +143,8 @@ interface Ctx {
   flood: (id: string, fuente?: "sensor" | "manual") => void;
   dispararReporte: () => Promise<void>;
   addRuta: (id: string) => void;
+  /** Cambia el estado de varias rejillas a la vez (botones del panel o clic en el mapa). */
+  setRejillas: (estados: Record<string, EstadoRejilla>, toast?: string) => void;
   reload: () => void;
   ranking: RankedPunto[];
   filtered: RankedPunto[];
@@ -161,12 +170,10 @@ function initFromUrl(): State {
   const esc = q.get("escenario");
   if (esc && SCENARIOS.some((x) => x.id === esc)) s.scenario = esc as ScenarioId;
   if (q.get("modo") === "durante") s.modo = "durante";
-  const v = q.get("vista");
-  if (v === "validacion" || v === "metodologia") s.vista = v;
   const c = q.get("comuna");
   if (c === "Providencia" || c === "Ñuñoa" || c === "Las Condes") s.comuna = c;
   const cu = Number(q.get("cuadrillas"));
-  if (cu >= 1 && cu <= 6) s.cuadrillas = cu;
+  if (cu >= 1 && cu <= CUADRILLAS_MAX) s.cuadrillas = cu;
   if (q.get("sensor") === "caido") {
     s.sensor = "caido";
     s.sensorAgo = "hace 5 min";
@@ -180,6 +187,7 @@ function initFromUrl(): State {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [s, dispatch] = useReducer(reducer, undefined, initFromUrl);
   const set = useCallback((patch: Partial<State>) => dispatch({ type: "set", patch }), []);
+  const setRejillas = useCallback((estados: Record<string, EstadoRejilla>, toast?: string) => dispatch({ type: "rejillas", estados, toast }), []);
   const loadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --- Datos reales del modo Antes (GET /scenarios, /scenarios/{id}/ranking, /sumideros/{id}) ---
@@ -248,6 +256,47 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (fuente === "api" && !rankings[s.scenario] && escenarios.some((x) => x.id === s.scenario)) cargarRanking(s.scenario);
   }, [fuente, s.scenario, rankings, escenarios, cargarRanking]);
+
+  const rankingCargado = Boolean(rankings[s.scenario]);
+  useEffect(() => {
+    if (fuente !== "api" || !rankingCargado) return;
+    const id = s.scenario;
+    let vigente = true;
+    let enCurso = false;
+    let pendiente = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    function invalidar() {
+      if (!vigente) return;
+      pendiente = true;
+      if (enCurso || timer !== undefined) return;
+      timer = setTimeout(() => {
+        timer = undefined;
+        void refrescar();
+      }, 250);
+    }
+
+    async function refrescar() {
+      pendiente = false;
+      enCurso = true;
+      try {
+        const respuesta = await getRanking(id, { cache: "no-store", reintentos: 0 });
+        if (vigente) setRankings((prev) => ({ ...prev, [id]: aRankingReal(respuesta) }));
+      } catch {
+        // Ante una caída transitoria se mantiene el último dato real.
+      } finally {
+        enCurso = false;
+        if (pendiente) invalidar();
+      }
+    }
+
+    const desuscribir = suscribirPuntajes(id, invalidar);
+    return () => {
+      vigente = false;
+      clearTimeout(timer);
+      desuscribir?.();
+    };
+  }, [fuente, rankingCargado, s.scenario]);
 
   // ?ficha= con ids reales: se aplica cuando llega el ranking
   useEffect(() => {
@@ -378,6 +427,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       else if (p && s.comuna !== "Todas" && p.comuna !== s.comuna) dispatch({ type: "set", patch: { toast: `${p.nombre} es de ${p.comuna}, fuera de ${s.comuna}` } });
       else dispatch({ type: "addRuta", id });
     },
+    setRejillas,
     reload: simulateLoad,
     ranking,
     filtered,

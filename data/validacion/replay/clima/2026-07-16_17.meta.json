@@ -1,0 +1,56 @@
+{
+  "generado_utc": "2026-11-22T01:27:38Z",
+  "evento": {
+    "nombre": "2026-07-16_17",
+    "desde_santiago": "2026-07-16",
+    "hasta_santiago": "2026-07-17",
+    "nota": "Plan B en Las Condes con los puntos críticos de invierno 2026 (#74)."
+  },
+  "ventana_utc": {
+    "desde_exclusivo": "2026-07-15T04:00:00Z",
+    "hasta_inclusivo": "2026-07-19T04:00:00Z"
+  },
+  "centro_pedido_latlon": [
+    -33.418,
+    -70.541
+  ],
+  "celda_open_meteo_latlon": [
+    -33.497364,
+    -70.618835
+  ],
+  "elevacion_celda_m": 700.0,
+  "fuentes": {
+    "observado": {
+      "api": "Open-Meteo Historical Forecast API",
+      "modelo": "best_match",
+      "url": "https://historical-forecast-api.open-meteo.com/v1/forecast?latitude=-33.418&longitude=-70.541&timezone=GMT&start_date=2026-07-14&end_date=2026-07-20&models=best_match&hourly=precipitation%2Cwind_gusts_10m%2Cwind_speed_10m",
+      "variables": [
+        "precipitation",
+        "wind_gusts_10m",
+        "wind_speed_10m"
+      ]
+    },
+    "pronostico_emitido_antes": {
+      "api": "Open-Meteo Previous Runs API",
+      "url": "https://previous-runs-api.open-meteo.com/v1/forecast?latitude=-33.418&longitude=-70.541&timezone=GMT&start_date=2026-07-14&end_date=2026-07-20&hourly=precipitation_previous_day1",
+      "variables": [
+        "precipitation_previous_day1"
+      ]
+    },
+    "licencia": "CC BY 4.0, https://open-meteo.com/en/license"
+  },
+  "config_clima": {
+    "ruta": "backend/config/clima.yaml",
+    "sha256": "e9a54df43280a245643e4a026561f7b25aba0ae0cbabd338c699c86108894d20",
+    "version": 1
+  },
+  "salida": {
+    "archivo": "2026-07-16_17.json",
+    "sha256": "83b7fd0f79c811c37b1a834bdcabb2f4a62c93a52aedccfc917f0028f527a478"
+  },
+  "script": {
+    "ruta": "pipeline/11_clima_historico.py",
+    "version": "1.0.0",
+    "sha256": "3ad803133f912a539fbd02695fa8658c0b3c3d075aa4825736655f794c5dbd95"
+  }
+}

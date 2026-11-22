@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   description: "Prioriza qué sumideros limpiar antes y durante una tormenta. Providencia · Ñuñoa · Las Condes.",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: EDITABLES.find((c) => c.id === "bg")!.defecto };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: EDITABLES.find((c) => c.id === "fondo")!.defecto };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

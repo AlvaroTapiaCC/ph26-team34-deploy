@@ -1,0 +1,112 @@
+{
+  "generado_utc": "2026-11-22T01:20:45+00:00",
+  "zona": {
+    "sufijo": "replay_julio",
+    "centro_lonlat": [
+      -70.541,
+      -33.418
+    ],
+    "radio_m": 1500,
+    "centro_confirmado": false,
+    "nota": "Concentración de puntos críticos públicos del invierno de 2026, al oriente de Rotonda Atenas",
+    "columna": "en_zona_replay_julio"
+  },
+  "rejillas": 568,
+  "variables": {
+    "arboles": "fracción WorldCover clase 10 a < 15 m",
+    "suelo": "fracción WorldCover clase 60 a < 100 m",
+    "feria": "max(0, 1 - d/300 m) al amenity=marketplace más cercano",
+    "obras": "1 si landuse/building=construction a <= 100 m",
+    "criticidad": "máximo peso de consecuencia.criticidad a <= 200 m (sin puntos críticos del Gobierno)"
+  },
+  "fuentes": {
+    "worldcover": {
+      "url": "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_S36W072_Map.tif",
+      "version": "v200 (2021)",
+      "recorte": "cache/worldcover/worldcover_-70.56052_-33.43364_-70.52579_-33.40135.tif",
+      "sha256_recorte": "f51c417bb273e78d848db3978d25d44a8b6a7cd23902285d15d0a5e7b48463fc"
+    },
+    "osm": {
+      "via": "OpenStreetMap XML, OSMnx 2.2.0 features_from_xml",
+      "radio_m": 1900,
+      "tags": {
+        "amenity": [
+          "marketplace",
+          "hospital",
+          "school"
+        ],
+        "landuse": "construction",
+        "building": "construction",
+        "railway": [
+          "station",
+          "subway_entrance"
+        ],
+        "tunnel": "yes"
+      },
+      "archivo": "osm_replay_julio.geojson",
+      "sha256": "81cd6c5d1166d816b87315b2adc8160b0b972ba7f6270b7ad38db95ff0779521",
+      "por_tipo": {
+        "colegio": 30,
+        "obra": 8,
+        "metro": 7,
+        "hospital": 2,
+        "feria": 1,
+        "paso_bajo_nivel": 1
+      },
+      "extracto_xml": {
+        "ruta": "data/fuente_osm_replay_julio.osm.bz2",
+        "sha256": "314854fdf073562f7e06d42010d870bdf30fc1734842114745519a43e72142f6"
+      }
+    }
+  },
+  "entradas": {
+    "terreno": {
+      "ruta": "data/terreno_replay_julio.csv",
+      "sha256": "6a33b5a975fff97f36a54933110dfb884aa5e5ccf30beb90e2bd56db74fcb8a8"
+    },
+    "rejillas": {
+      "ruta": "data/rejillas.geojson",
+      "sha256": "dde763af25b2afb38c8b17f9aa66c670c860fae797d1821c9191fd012c55de22"
+    },
+    "config": {
+      "ruta": "backend/config/formula_validacion.yaml",
+      "sha256": "fde77019056cd4a9fcb88d5ad58dabd85f5c25462cd8faf95d648322a6f3e848"
+    }
+  },
+  "resumen": {
+    "arboles": {
+      "media": 0.2613,
+      "max": 1.0,
+      "no_cero": 332
+    },
+    "suelo": {
+      "media": 0.0063,
+      "max": 0.1373,
+      "no_cero": 338
+    },
+    "feria": {
+      "media": 0.0014,
+      "max": 0.4556,
+      "no_cero": 3
+    },
+    "obras": {
+      "media": 0.0246,
+      "max": 1.0,
+      "no_cero": 14
+    },
+    "criticidad": {
+      "media": 0.2558,
+      "max": 1.0,
+      "no_cero": 188
+    }
+  },
+  "salida": {
+    "archivo": "variables_replay_julio.csv",
+    "sha256": "b356b99495555b79385a1981df0bef8210505762bee5e1829cb6176f8297585d"
+  },
+  "script": {
+    "ruta": "pipeline/04_variables.py",
+    "version": "0.4.0",
+    "sha256": "46fa217d5c997cbd5800bb8aef411730927c75f98934a8ee7ccfacdeccaf79a2"
+  }
+}

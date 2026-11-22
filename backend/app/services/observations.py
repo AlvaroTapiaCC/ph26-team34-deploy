@@ -197,25 +197,64 @@ def prioridad_de(conn: Connection, sumidero_id: str, scenario_id: str | None = N
 
 
 def listar(conn: Connection, desde: datetime | None, limite: int) -> list[dict[str, Any]]:
-    """Observaciones recientes con su clasificación y caso.
+    """Observaciones recientes con clasificación, caso y cambios de despacho.
 
-    Sin GPS exacto, texto original ni enlace de la foto: son datos personales de vecinos (revisión
-    del PR #57). De la lectura de un texto también se quitan `ubicacion_texto` y `desde_cuando`,
-    que repiten lo que escribió el vecino (puede ser un domicilio).
+    La ubicación se toma de casos_publicos. La clasificación expone categorías, sin los
+    campos libres que pueden incluir datos personales (#104).
     """
     return conn.execute(
         """
+        with recientes as (
+            select id, sumidero_id, fuente, tipo, ts, is_simulated, media_url
+              from observations
+             where (%(desde)s::timestamptz is null or ts >= %(desde)s)
+             order by ts desc, id
+             limit %(limite)s
+        ), eventos_recientes as (
+            select r.id as obs_id, e.id, e.tipo, e.ts, e.payload
+              from events e
+              join recientes r on r.id::text = e.payload->>'observation_id'
+             where e.tipo in ('prioridad_observacion', 'replan')
+        ), cambios_despacho as (
+            select distinct on (obs_id, payload->>'crew_id')
+                   obs_id, payload->>'crew_id' as crew_id, ts as hora,
+                   payload#>>'{siguiente_antes,nombre}' as siguiente_antes,
+                   payload#>>'{siguiente_despues,nombre}' as siguiente_despues
+              from eventos_recientes
+             where tipo = 'replan' and payload->>'crew_id' is not null
+             order by obs_id, payload->>'crew_id', id desc
+        )
         select o.id, o.sumidero_id, o.fuente, o.tipo, o.ts, o.is_simulated,
                o.media_url is not null as tiene_foto,
                co.case_id as caso_id, ca.urgente,
-               (select cl.resultado - 'ubicacion_texto' - 'desde_cuando' from classifications cl where cl.observation_id = o.id
-                 order by cl.created_at desc, cl.id desc limit 1) as clasificacion
-          from observations o
+               case when ca.id is not null then jsonb_build_object(
+                   'estado', ca.estado, 'lat', st_y(ca.geom), 'lon', st_x(ca.geom)
+               ) end as caso_publico,
+               (select cl.resultado - 'ubicacion_texto' - 'desde_cuando' - 'nota'
+                  from classifications cl where cl.observation_id = o.id
+                 order by cl.created_at desc, cl.id desc limit 1) as clasificacion,
+               p.prioridad, coalesce(d.despachos, '[]'::jsonb) as despachos
+          from recientes o
           left join case_observations co on co.observation_id = o.id
-          left join cases ca on ca.id = co.case_id
-         where (%(desde)s::timestamptz is null or o.ts >= %(desde)s)
+          left join casos_publicos ca on ca.id = co.case_id
+          left join (
+            select distinct on (e.obs_id) e.obs_id,
+                   jsonb_build_object('antes', e.payload->'antes', 'despues', e.payload->'despues') as prioridad
+              from eventos_recientes e
+             where e.tipo = 'prioridad_observacion'
+             order by e.obs_id, e.id desc
+          ) p on p.obs_id = o.id
+          left join (
+            select c.obs_id, jsonb_agg(jsonb_build_object(
+                'crew_id', c.crew_id, 'cuadrilla', coalesce(eq.nombre, c.crew_id),
+                'is_simulated', eq.is_simulated, 'hora', c.hora,
+                'siguiente_antes', c.siguiente_antes, 'siguiente_despues', c.siguiente_despues
+            ) order by c.crew_id) as despachos
+              from cambios_despacho c
+              left join crews eq on eq.id = c.crew_id
+             group by c.obs_id
+          ) d on d.obs_id = o.id
          order by o.ts desc, o.id
-         limit %(limite)s
         """,
         {"desde": desde, "limite": limite},
     ).fetchall()

@@ -1,0 +1,63 @@
+{
+  "generado_utc": "2026-11-21T20:36:23+00:00",
+  "metodo": "mismo que 03_terreno.py: elevación por nodo, relleno de depresiones y D8 sobre el grafo de calles",
+  "red_calles": {
+    "graphml": "cache\\osm\\red_drive_mut_2500m.graphml",
+    "sha256": "4cf78a8be6ad98591aac8fed9d6d11b3e53013360b99ba05dcbf893475fee661",
+    "radio_m": 2500.0,
+    "osmnx": "2.2.0"
+  },
+  "dem": {
+    "sha256": "a27fc1c1b4ef86047f3d7523c222fdbb322a3e3aff09bb6a7d5d30b6fe2c91c1"
+  },
+  "parametros": {
+    "ancho_aporte_m": 20.0,
+    "radio_export_m": 2300.0,
+    "snap_max_m": 30.0
+  },
+  "conteos": {
+    "tramos": 1606,
+    "sumideros": 544,
+    "comprobacion_terreno": {
+      "calzan": 539,
+      "de": 541
+    }
+  },
+  "salida": {
+    "archivo": "frontend/public/data/flujo.geojson",
+    "sha256": "2f8c6c3b52077fd90c38dd6ecad1895d6b3a30cc14cf171f5e1c1ad6bbd56106",
+    "bytes": 692609
+  },
+  "script": {
+    "ruta": "pipeline/04_flujo.py",
+    "version": "0.1.0",
+    "sha256": "cb1d9d414b2336f18f9e573871d8289d1790846e6407cc172d48c5df7479c643"
+  },
+  "pendientes": {
+    "generado_utc": "2026-11-21T22:56:19+00:00",
+    "fuente": "Copernicus DEM GLO-30, elevación por nodo de pipeline/04_flujo.py (PR #75)",
+    "fuente_respaldo": {
+      "url": "https://api.opentopodata.org/v1/srtm30m",
+      "lote": 100,
+      "pausa_s": 1.0,
+      "max_consultas_dia": 1000,
+      "puntos_consultados": 0
+    },
+    "suavizado": {
+      "pendiente_min": 0.003,
+      "pendiente_max": 0.25,
+      "tramos_suavizados": 488,
+      "de": 1606,
+      "regla": "mediana de la pendiente de los tramos vecinos que bajan (entrantes y siguiente), con piso y tope"
+    },
+    "nombres_calles": {
+      "fuente": "OpenStreetMap (red de 04_flujo.py en caché)",
+      "tramos_con_nombre": 1530
+    },
+    "script": {
+      "ruta": "pipeline/flujo/pendientes.py",
+      "version": "0.2.0",
+      "sha256": "b5c347568a42a213076592423ea7fe86c2b73b10e190171150779ee4f3117efe"
+    }
+  }
+}

@@ -281,9 +281,15 @@ def create_observation(
     recalculado = False
     try:
         with get_conn() as conn:
+            prioridad_anterior = svc.prioridad_de(conn, sumidero_id_final) if sumidero_id_final else None
             recalcular_todo(conn)
             if sumidero_id_final:
                 prioridad = svc.prioridad_de(conn, sumidero_id_final)
+                svc.registrar_evento(conn, "prioridad_observacion", {
+                    "observation_id": obs,
+                    "antes": prioridad_anterior,
+                    "despues": prioridad,
+                })
         recalculado = True
     except Exception:
         log.exception("No se pudo recalcular la prioridad tras la observación %s", obs)
@@ -316,7 +322,7 @@ def list_observations(
     desde: datetime | None = Query(default=None, description="ISO 8601; solo observaciones desde esa hora"),
     limit: int = Query(200, ge=1, le=1000),
 ):
-    """Observaciones recientes, de la más nueva a la más antigua (sin GPS exacto ni texto original)."""
+    """Observaciones recientes con casos y categorías públicas, de la más nueva a la más antigua."""
     with get_conn() as conn:
         items = svc.listar(conn, desde, limit)
     return {"desde": desde, "items": items}

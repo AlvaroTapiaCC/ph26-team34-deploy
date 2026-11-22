@@ -1,0 +1,91 @@
+{
+  "generado_utc": "2026-11-22T01:57:02Z",
+  "git_head_al_generar": "5d37f18a22254066535c58fc73f491095a9f061e",
+  "fuente": {
+    "nombre": "Atención Vecino (capa 6), Portal de Datos Abiertos de la Municipalidad de Las Condes",
+    "atribucion": "Municipalidad de Las Condes, Portal de Datos Abiertos, capa Atención Vecino.",
+    "portal": "https://datos.lascondes.cl/datos",
+    "descarga": "https://datos.lascondes.cl/download/capa/6/csv",
+    "ficha": "https://datos.lascondes.cl/capas/6/details",
+    "licencia": "La política del portal prevé licencias Creative Commons con atribución y exige declarar la licencia de cada conjunto. La variante y el permiso específico de Atención Vecino siguen pendientes de confirmación.",
+    "referencias_licencia": {
+      "politica": "https://archivos.lascondes.cl/descargas/transparencia/ordenanzas/2025/mayo/decreto.1862.30may2025.pdf#page=15",
+      "cuenta_publica": "https://archivos.lascondes.cl/descargas/municipalidad/2026/cuenta-publica/CUENTA-PUBLICA-LAS-CONDES-2025.pdf"
+    },
+    "descargado_utc": "2026-11-22T01:21:28Z",
+    "sha256_crudo": "6ce34ceec415e7c4345038082a08b3b2a9cef23b28f146e113704e23d35fe237",
+    "filas_crudo": 116304,
+    "columnas_usadas": [
+      "tipo_solicitud",
+      "ubicacion_solicitud",
+      "lat_solicitud",
+      "long_solicitud",
+      "fc_creacion"
+    ],
+    "privacidad": "Las direcciones y coordenadas se procesan en memoria. La salida publica totales y métricas por evento y sector."
+  },
+  "filtro": {
+    "tipos_solicitud": {
+      "Sumideros de Aguas Lluvias": "sumideros",
+      "Anegamiento por aguas lluvias o desbordamiento de canales": "anegamiento"
+    }
+  },
+  "evento": {
+    "nombre": "2026-10-13",
+    "desde_santiago": "2026-10-13",
+    "hasta_santiago": "2026-10-13",
+    "nota": "Evento principal si #73 entrega verdad de terreno suficiente."
+  },
+  "clima_meta": {
+    "ruta": "data/escenarios/2026-10-13.meta.json",
+    "sha256": "0dab264ac4caebc3c9c7086e246b483a73b1b07356ee20f12659dfb87575bbb7"
+  },
+  "agrupacion": "cuadra = calle normalizada (mayúsculas, sin tildes) + tramo de numeración de 100",
+  "metodo": {
+    "cortes": [
+      {
+        "top_porcentaje": 20,
+        "distancia_m_menor_que": 100
+      },
+      {
+        "top_porcentaje": 10,
+        "distancia_m_menor_que": 100
+      },
+      {
+        "top_porcentaje": 20,
+        "distancia_m_menor_que": 50
+      },
+      {
+        "top_porcentaje": 10,
+        "distancia_m_menor_que": 50
+      }
+    ],
+    "unidad": "cuadra con al menos un ticket dentro del sector",
+    "semilla": 86,
+    "permutaciones_azar": 1000,
+    "distancia": "Haversine",
+    "ventanas": "días completos del evento en hora de Santiago"
+  },
+  "formula": {
+    "config": {
+      "ruta": "backend/config/formula_validacion.yaml",
+      "sha256": "fde77019056cd4a9fcb88d5ad58dabd85f5c25462cd8faf95d648322a6f3e848"
+    },
+    "sha256_config_al_congelar": "fde77019056cd4a9fcb88d5ad58dabd85f5c25462cd8faf95d648322a6f3e848",
+    "prediccion": {
+      "ruta": "data/validacion/prediccion_congelada.csv",
+      "sha256": "584029a89d8a7aabbc3b14ec73ffefef05b145246fb57619e258635971f9637f"
+    },
+    "git_head_al_generar_prediccion": "48d9904901ceec572acf26762e193664ea3f6d9d"
+  },
+  "script": {
+    "ruta": "pipeline/14_reclamos.py",
+    "version": "1.2.0",
+    "sha256": "53570d43aa78bccd01d8236f0a55aa92a335315145fe0695a301538675d7b41f"
+  },
+  "salida": {
+    "archivo": "2026-10-13_mut.json",
+    "sha256": "b1a4e178b73f0194ef92e9efcf791ad0099652e157747d04ad13c744a8edecdd",
+    "procedencia": "Totales y métricas preservados del cálculo versionado con el script 1.1.0."
+  }
+}

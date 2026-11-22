@@ -1,5 +1,5 @@
-// Paleta de colores del front (#131). Una sola fuente de verdad: `paleta.json`.
-// - 3 colores editables (fondo, texto y acento). El resto se deriva de ellos con mezclas
+// Paleta de colores del front (#131). Una sola fuente de verdad: `paleta.json`. Guía: docs/colores.md.
+// - 3 colores editables: principal, secundario y fondo. El resto se deriva de ellos con mezclas
 //   (`derivados`) o es fijo porque tiene significado propio (`fijos`: peligro, correcto,
 //   advertencia, transporte).
 // - globals.css declara todo en :root entre `paleta:inicio` y `paleta:fin`; ese bloque lo genera
@@ -18,7 +18,7 @@ export type Paleta = Record<string, string>;
 export const EDITABLES: ColorEditable[] = DEFINICION.editables;
 export const DERIVADOS: ColorDerivado[] = DEFINICION.derivados as ColorDerivado[];
 export const FIJOS: ColorFijo[] = DEFINICION.fijos;
-export const CLAVE_PALETA = "drena.paleta.v2";
+export const CLAVE_PALETA = "drena.paleta.v3";
 export const EVENTO_PALETA = "drena:paleta";
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -71,7 +71,7 @@ export function resolver(id: string, base: Paleta): string {
   if (fijo) return fijo.valor;
   const d = DERIVADOS.find((c) => c.id === id);
   if (d) return mezclar(resolver(d.mezcla[0], base), d.mezcla[1], resolver(d.mezcla[2], base));
-  return "#000000";
+  return "#000000"; // paleta-ok: id desconocido
 }
 
 /** Los 3 colores editables vigentes en la página (lo editado o el valor de :root). */
@@ -100,7 +100,7 @@ export function aplicarPaleta(paleta: Paleta) {
     if (cambios[c.id]) raiz.setProperty(`--${c.id}`, cambios[c.id]);
     else raiz.removeProperty(`--${c.id}`);
   }
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", p.bg);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", p.fondo);
   guardar(cambios);
   window.dispatchEvent(new Event(EVENTO_PALETA));
 }

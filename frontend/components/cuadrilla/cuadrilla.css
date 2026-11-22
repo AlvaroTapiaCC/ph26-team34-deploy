@@ -8,7 +8,7 @@
 .cq-live { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--ok); }
 .cq-live::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
 .cq-live.is-off { color: var(--danger); }
-.cq-aviso { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: var(--r-10); background: var(--text); color: var(--texto-inv); animation: cq-entra 0.3s ease-out; }
+.cq-aviso { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: var(--r-10); background: var(--secundario); color: var(--texto-inv); animation: cq-entra 0.3s ease-out; }
 .cq-aviso div { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .cq-aviso b { font-size: 16px; }
 .cq-aviso span { font-size: 14px; opacity: 0.85; }

@@ -5,8 +5,8 @@
 //   node scripts/paleta.mjs --escribir       regenera el bloque en globals.css desde paleta.json
 //   node scripts/paleta.mjs <paleta.json>    aplica la paleta exportada desde el editor (?paleta=1):
 //                                            cambia los valores por defecto y regenera el bloque
-import { readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -68,5 +68,48 @@ if (arg === "--escribir") {
     console.error("paleta: app/globals.css no coincide con lib/paleta.json. Arreglo: npm run paleta -- --escribir");
     process.exit(1);
   }
-  console.log(`paleta: ${paleta.editables.length} editables, ${paleta.derivados.length} derivados, ${paleta.fijos.length} fijos; globals.css al día`);
+  const fijos = buscarColoresFijos();
+  if (fijos.length) {
+    console.error("paleta: hay colores escritos a mano fuera de la paleta. Usa var(--…) en CSS o colorDe(\"…\") en TS:");
+    for (const f of fijos) console.error("  " + f);
+    console.error("Si un caso lo necesita a propósito, agrega el comentario `paleta-ok` en esa línea.");
+    process.exit(1);
+  }
+  console.log(`paleta: ${paleta.editables.length} editables, ${paleta.derivados.length} derivados, ${paleta.fijos.length} fijos; globals.css al día; sin colores fijos fuera de la paleta`);
+}
+
+/**
+ * Colores escritos a mano en app/, components/ y lib/ (fuera del bloque de la paleta).
+ * - Hex: #rgb o #rrggbb con alguna letra, o entre comillas / después de ":" (así no confunde "#124", un issue).
+ * - rgb()/rgba()/hsl(): salvo negro y blanco con transparencia (sombras y brillos neutros).
+ */
+function buscarColoresFijos() {
+  const HEXRE = /#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/g;
+  const FUNC = /\b(?:rgba?|hsla?)\(\s*([^)]*)\)/g;
+  const NEUTRO = /^(?:0,\s*0,\s*0|255,\s*255,\s*255)\s*,/;
+  const encontrados = [];
+  const recorrer = (dir) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const ruta = join(dir, e.name);
+      if (e.isDirectory()) recorrer(ruta);
+      else if (/\.(css|tsx?)$/.test(e.name)) revisar(ruta);
+    }
+  };
+  const revisar = (ruta) => {
+    let enBloque = false;
+    readFileSync(ruta, "utf8").split(/\r?\n/).forEach((linea, i) => {
+      if (linea.includes("paleta:inicio")) enBloque = true;
+      if (linea.includes("paleta:fin")) enBloque = false;
+      if (enBloque || linea.includes("paleta-ok")) return;
+      const malos = [];
+      for (const m of linea.matchAll(HEXRE)) {
+        const antes = linea.slice(Math.max(0, m.index - 2), m.index);
+        if (/[a-fA-F]/.test(m[0]) || /["'`]$|:\s?$/.test(antes)) malos.push(m[0]);
+      }
+      for (const m of linea.matchAll(FUNC)) if (!NEUTRO.test(m[1].trim())) malos.push(m[0]);
+      if (malos.length) encontrados.push(`${relative(raiz, ruta).replace(/\\/g, "/")}:${i + 1}  ${malos.join(" ")}`);
+    });
+  };
+  for (const d of ["app", "components", "lib"]) recorrer(join(raiz, d));
+  return encontrados;
 }

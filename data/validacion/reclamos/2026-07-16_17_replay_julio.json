@@ -1,0 +1,102 @@
+{
+  "rotulo": "Totales y métricas por evento y sector a partir de registros del portal municipal.",
+  "evento": "2026-07-16_17",
+  "sector": {
+    "nombre": "replay_julio",
+    "centro_lonlat": [
+      -70.541,
+      -33.418
+    ],
+    "radio_m": 1500.0,
+    "rejillas": 562
+  },
+  "resolucion_temporal": "día (fc_creacion), sin hora",
+  "ventanas": {
+    "principal": {
+      "desde_santiago": "2026-07-16",
+      "hasta_santiago": "2026-07-17",
+      "tickets_comuna": 12,
+      "tickets_en_sector": 6,
+      "cuadras_en_sector": 3,
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_sin_clima": {
+            "aciertos": 0,
+            "total": 3,
+            "porcentaje": 0.0
+          },
+          "solo_area_aporte": {
+            "aciertos": 1,
+            "total": 3,
+            "porcentaje": 33.3333
+          },
+          "azar": {
+            "aciertos": 0.686,
+            "total": 3,
+            "porcentaje": 22.8667
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_sin_clima": {
+            "aciertos": 0,
+            "total": 3,
+            "porcentaje": 0.0
+          },
+          "solo_area_aporte": {
+            "aciertos": 0,
+            "total": 3,
+            "porcentaje": 0.0
+          },
+          "azar": {
+            "aciertos": 0.344,
+            "total": 3,
+            "porcentaje": 11.4667
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_sin_clima": {
+            "aciertos": 0,
+            "total": 3,
+            "porcentaje": 0.0
+          },
+          "solo_area_aporte": {
+            "aciertos": 0,
+            "total": 3,
+            "porcentaje": 0.0
+          },
+          "azar": {
+            "aciertos": 0.162,
+            "total": 3,
+            "porcentaje": 5.4
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_sin_clima": {
+            "aciertos": 0,
+            "total": 3,
+            "porcentaje": 0.0
+          },
+          "solo_area_aporte": {
+            "aciertos": 0,
+            "total": 3,
+            "porcentaje": 0.0
+          },
+          "azar": {
+            "aciertos": 0.086,
+            "total": 3,
+            "porcentaje": 2.8667
+          }
+        }
+      ]
+    }
+  },
+  "ranking_horario_b": "No aplica: los tickets solo traen el día de creación."
+}

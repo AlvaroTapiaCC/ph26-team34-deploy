@@ -171,6 +171,7 @@ def test_ruta_trae_el_ultimo_cambio_sin_datos_del_vecino(escena):
         r = client.get(f"/crews/{escena.crew}/route")
         c = r.json()["ultimo_cambio"]
         assert c["motivo"] == "observacion" and c["ruta_version"] == 2
+        assert c["observation_id"] == str(obs)
         assert c["siguiente_despues"]["sumidero_id"] == escena.s2
         assert c["observacion"] == {"tipo": "foto_rejilla", "fuente": "vecino", "is_simulated": False,
                                     "rejilla": "tapada", "nivel_agua": "sin_agua", "material": ["hojas"]}
@@ -225,6 +226,10 @@ def test_cierre_con_foto(escena, monkeypatch):
     m = str(escena.m3)
 
     monkeypatch.setattr("app.routers.missions.clasificar_rejilla", lambda data: None)  # Claude caído: sin verificar
+    # Sin re-planificar: la cuadrilla de prueba es simulada y el despacho real le quitaría m1 (y movería
+    # el plan de las cuadrillas de la demo en la base compartida). El re-planeo tras el cierre se prueba
+    # en test_cierre.py y test_dispatch.py.
+    monkeypatch.setattr("app.routers.missions.dispatch.replanificar_seguro", lambda *a, **k: {"despachado": False})
 
     # No se puede cerrar desde pendiente: se responde antes de subir la foto (ni de llamar a Claude)
     r = client.post(f"/missions/{m}/close", files={"foto": ("x.jpg", _jpeg(), "image/jpeg")})
@@ -237,6 +242,11 @@ def test_cierre_con_foto(escena, monkeypatch):
     assert j["mision"]["estado"] == "cerrada" and j["cierre"]["verificado"] is False
     assert j["cierre"]["foto_url"].startswith("cierres/") and j["cierre"]["foto_url_firmada"].startswith("https://")
     assert subidas[-1][1][:2] == b"\xff\xd8"  # se guarda un JPEG re-codificado
+    ruta_publica = client.get(f"/crews/{escena.crew}/route").json()
+    assert ruta_publica["ultimo_cierre"]["mission_id"] == m
+    assert ruta_publica["ultimo_cierre"]["verificado"] is False
+    assert ruta_publica["ultimo_cierre"]["rejilla"] is None
+    assert "foto_url" not in ruta_publica["ultimo_cierre"]
 
     # Cerrar dos veces: 409; imagen ilegible: 422; misión inexistente: 404
     assert client.post(f"/missions/{m}/close", files={"foto": ("x.jpg", _jpeg(), "image/jpeg")}).status_code == 409

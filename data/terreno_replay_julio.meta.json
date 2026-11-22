@@ -1,0 +1,71 @@
+{
+  "generado_utc": "2026-11-22T01:20:44+00:00",
+  "metodo": "plan B: elevación por nodo (OSMnx) y flujo por el grafo de calles",
+  "zona": {
+    "sufijo": "replay_julio",
+    "centro_lonlat": [
+      -70.541,
+      -33.418
+    ],
+    "radio_m": 1500,
+    "centro_confirmado": false,
+    "nota": "Concentración de puntos críticos públicos del invierno de 2026, al oriente de Rotonda Atenas",
+    "columna": "en_zona_replay_julio"
+  },
+  "red_calles": {
+    "fuente": "OpenStreetMap XML vía OSMnx",
+    "network_type": "drive",
+    "radio_m": 2500.0,
+    "osmnx": "2.2.0",
+    "graphml": "cache/osm/red_drive_-33.418000_-70.541000_2500m_314854fdf073.graphml",
+    "sha256": "5f0bf20e86d996577ff7946a26ae2f52879f4d9edb1fb61e4d800c60f567c20e",
+    "extracto_xml": {
+      "ruta": "data/fuente_osm_replay_julio.osm.bz2",
+      "sha256": "314854fdf073562f7e06d42010d870bdf30fc1734842114745519a43e72142f6"
+    }
+  },
+  "dem": {
+    "fuente": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_S34_00_W071_00_DEM/Copernicus_DSM_COG_10_S34_00_W071_00_DEM.tif",
+    "tesela": "Copernicus_DSM_COG_10_S34_00_W071_00_DEM",
+    "sha256": "a27fc1c1b4ef86047f3d7523c222fdbb322a3e3aff09bb6a7d5d30b6fe2c91c1",
+    "muestreo": "mínimo de 3×3 píxeles por nodo"
+  },
+  "parametros": {
+    "ancho_aporte_m": 20.0,
+    "pendiente_ref": 0.04026,
+    "pendiente_ref_regla": "percentil 90 de pendiente_tramo de las rejillas en_zona_replay_julio",
+    "snap_max_m": 30.0,
+    "cadena_max_m": 3000.0
+  },
+  "entradas": {
+    "rejillas": {
+      "ruta": "data/rejillas.geojson",
+      "sha256": "dde763af25b2afb38c8b17f9aa66c670c860fae797d1821c9191fd012c55de22"
+    }
+  },
+  "salidas": {
+    "terreno_replay_julio.csv": "6a33b5a975fff97f36a54933110dfb884aa5e5ccf30beb90e2bd56db74fcb8a8",
+    "street_chains_replay_julio.json": "afd38d52f522e6548096bdbbb09263567d4f52b9392bc6ce61185a52dbc857a2"
+  },
+  "conteos": {
+    "nodos": 3289,
+    "tramos": 4392,
+    "nodos_pozo_dem": 897,
+    "nodos_salida_tras_relleno": 381,
+    "salidas_interiores": 0,
+    "nodos_sin_elevacion": 0,
+    "rejillas_en_red": 733,
+    "rejillas_fuera_de_red": 6,
+    "zona_replay_julio": {
+      "rejillas": 568,
+      "fuera_de_red": 6,
+      "en_alguna_cadena": 562
+    },
+    "cadenas": 222
+  },
+  "script": {
+    "ruta": "pipeline/03_terreno.py",
+    "version": "0.5.0",
+    "sha256": "3390ba95842a7a71d14805696b442ffd31a45c2a08f3c0b910b408a3acb48cf7"
+  }
+}

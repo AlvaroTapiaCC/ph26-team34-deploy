@@ -2,13 +2,18 @@
 from fastapi import APIRouter, HTTPException
 
 from app.db import get_conn
+from app.services.scoring import senales_sumidero
 
 router = APIRouter(prefix="/sumideros", tags=["sumideros"])
 
 
 @router.get("/{sumidero_id}")
 def get_sumidero(sumidero_id: str, scenario_id: str = "base"):
-    """Variables, cadena aguas abajo, observaciones recientes, scores y explicación."""
+    """Variables, cadena aguas abajo, observaciones recientes, señales, scores y explicación.
+
+    `senales` resume las observaciones vigentes que entran al cálculo, con fuente, hora de
+    captura (UTC), confianza de Claude y el factor que aplica la fórmula (#124).
+    """
     with get_conn() as conn:
         s = conn.execute(
             """
@@ -68,10 +73,13 @@ def get_sumidero(sumidero_id: str, scenario_id: str = "base"):
             (sumidero_id,),
         ).fetchone()
 
+        senales = senales_sumidero(conn, sumidero_id)
+
     return {
         **s,
         "cadena": cadena,
         "scores": {r["modo"]: r for r in scores},
         "observaciones": observaciones,
+        "senales": senales,
         "ultima_limpieza": ultima_limpieza,
     }

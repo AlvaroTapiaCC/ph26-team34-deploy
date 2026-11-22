@@ -12,16 +12,18 @@ Salidas (en frontend/public/data/):
     recorridos.geojson  trazado de cada servicio y sentido del extracto GTFS de DTPM
                         (backend/data/transporte_mut.json, pipeline/09_gtfs.py). El tablero
                         dibuja los servicios de los paraderos expuestos (issue #92)
+    cadenas_mut.geojson  tramos dirigidos de las cadenas que pasan por la zona MUT
 
     python pipeline/publicar_front.py --solo-recorridos   # solo recorridos.geojson
 
-Correr este script cada vez que cambie data/comunas.geojson o data/rejillas.geojson,
-para que el mapa no quede desalineado de los datos.
+Correr este script cuando cambie el catastro, el terreno o las cadenas.
 """
 
 import argparse
+import csv
 import hashlib
 import json
+import math
 import shutil
 from pathlib import Path
 
@@ -59,6 +61,51 @@ def publicar_recorridos(origen, destino):
     print(f"{ruta}  sha256={sha256(ruta)[:12]}…  {len(salida['features'])} recorridos")
 
 
+def publicar_cadenas(datos, destino, coordenadas):
+    """Une rejillas consecutivas de la cadena en el sentido de la pendiente."""
+    origen = datos / "street_chains_mut.json"
+    terreno = datos / "terreno_mut.csv"
+    if not origen.exists() or not terreno.exists():
+        print("Sin cadenas o terreno MUT: no se publica cadenas_mut.geojson")
+        return
+
+    with terreno.open(newline="", encoding="utf-8") as archivo:
+        zona = {fila["ID_IDE"] for fila in csv.DictReader(archivo) if fila["en_zona_mut"].lower() in ("true", "1")}
+    tramos = {}
+    for cadena in json.loads(origen.read_text(encoding="utf-8")):
+        ids = cadena["sumidero_ids"]
+        if zona.isdisjoint(ids):
+            continue
+        distancias = [float(d) for d in cadena["distancias_m"]]
+        if len(ids) != len(distancias) or not all(math.isfinite(d) for d in distancias):
+            raise ValueError(f"Distancias inválidas en {cadena['street_id']}")
+        for anterior, siguiente, inicio, fin in zip(ids, ids[1:], distancias, distancias[1:]):
+            if fin < inicio:
+                raise ValueError(f"Distancias decrecientes en {cadena['street_id']}")
+            a, b = coordenadas.get(anterior), coordenadas.get(siguiente)
+            if a is None or b is None or a == b:
+                continue
+            clave = anterior, siguiente
+            distancia = round(fin - inicio, 1)
+            tramos[clave] = min(tramos.get(clave, distancia), distancia)
+
+    salida = {
+        "type": "FeatureCollection",
+        "fuentes_sha256": {ruta.name: sha256(ruta) for ruta in (origen, terreno, datos / "rejillas.geojson")},
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {"desde": a, "hasta": b, "distancia_m": distancia},
+                "geometry": {"type": "LineString", "coordinates": [coordenadas[a], coordenadas[b]]},
+            }
+            for (a, b), distancia in sorted(tramos.items())
+        ],
+    }
+    ruta = Path(destino) / "cadenas_mut.geojson"
+    ruta.write_text(json.dumps(salida, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    print(f"{ruta}  sha256={sha256(ruta)[:12]}…  {len(tramos)} tramos dirigidos")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--datos", default="data")
@@ -91,6 +138,8 @@ def main():
         ],
     }
     (destino / "rejillas.geojson").write_text(json.dumps(liviano, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    coordenadas = {f["properties"]["id"]: f["geometry"]["coordinates"] for f in liviano["features"]}
+    publicar_cadenas(datos, destino, coordenadas)
 
     for nombre in ("comunas.geojson", "rejillas.geojson"):
         print(f"{destino / nombre}  sha256={sha256(destino / nombre)[:12]}…")

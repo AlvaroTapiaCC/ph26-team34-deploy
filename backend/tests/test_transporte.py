@@ -81,6 +81,39 @@ def test_una_observacion_posterior_sin_agua_apaga_la_cadena_en_esa_rejilla():
     assert {p["sumidero_id"] for p in agua} == {"r1"}
 
 
+# Cadena A → B → C dentro de 150 m (revisión de #136): r1 junto al paradero B, r3 junto a C.
+# El mapa (frontend/lib/cadenas.test.ts) prueba el mismo caso con la misma regla.
+CADENA_CORTA = StreetChain("flujo:r1-corta", ["r1", "r2", "r3"], [0.0, 50.0, 120.0])
+
+
+def test_sin_observacion_calle_abajo_el_agua_llega_a_la_tercera_rejilla():
+    agua = {p["sumidero_id"]: p for p in svc.puntos_con_agua([obs("r1", "cuneta")], [CADENA_CORTA], COORDS, 150)}
+    assert agua["r3"]["via"] == "calle_abajo" and agua["r3"]["calle_abajo_m"] == 120
+    r = calcular([obs("r1", "cuneta")], chains=(CADENA_CORTA,))
+    assert {e["id"] for e in r["expuestos"]} == {"B", "C"}
+
+
+def test_una_rejilla_seca_corta_el_agua_inferida_calle_abajo():
+    # A con agua, B seca, C sin observación: ni B ni C quedan con agua inferida desde A
+    ultimas = [obs("r1", "cuneta"), obs("r2", "sin_agua")]
+    agua = svc.puntos_con_agua(ultimas, [CADENA_CORTA], COORDS, 150)
+    assert {p["sumidero_id"] for p in agua} == {"r1"}
+    assert [e["id"] for e in calcular(ultimas, chains=(CADENA_CORTA,))["expuestos"]] == ["B"]
+
+
+def test_la_rejilla_tras_la_seca_se_marca_por_otra_cadena_que_no_pasa_por_ella():
+    atajo = StreetChain("flujo:r1-r3", ["r1", "r3"], [0.0, 100.0])
+    agua = svc.puntos_con_agua([obs("r1", "cuneta"), obs("r2", "sin_agua")], [CADENA_CORTA, atajo], COORDS, 150)
+    por_id = {p["sumidero_id"]: p for p in agua}
+    assert set(por_id) == {"r1", "r3"} and por_id["r3"]["calle_abajo_m"] == 100
+
+
+def test_la_rejilla_tras_la_seca_con_agua_propia_sigue_expuesta():
+    agua = svc.puntos_con_agua([obs("r1", "cuneta"), obs("r2", "sin_agua"), obs("r3", "cuneta")],
+                               [CADENA_CORTA], COORDS, 150)
+    assert {p["sumidero_id"]: p["via"] for p in agua} == {"r1": "observado", "r3": "observado"}
+
+
 # --- R3: faltante no es un valor válido ----------------------------------------------------
 def test_sin_observaciones_no_hay_expuestos():
     assert calcular([])["expuestos"] == []
@@ -111,17 +144,50 @@ def test_todos_expuestos_responde_sin_alternativo():
 def test_sin_archivo_responde_lista_vacia_con_aviso(monkeypatch, tmp_path):
     assert svc.cargar_datos(tmp_path / "no.json", tmp_path / "no.meta.json") is None
     monkeypatch.setattr(svc, "cargar_datos", lambda: None)
+    monkeypatch.setattr(router, "ejecutar_con_plazo", base_caida)
     r = client.get("/transporte/expuestos")
     assert r.status_code == 200
     assert r.json()["expuestos"] == [] and "transporte_mut.json" in r.json()["aviso"]
+    assert r.json()["evidencia_agua"] is None
+
+
+def base_caida(fn, plazo):
+    raise DatabaseUnavailable("La base no respondió a tiempo")
 
 
 def test_base_caida_es_503_y_no_500(monkeypatch):
-    def caida(fn, plazo):
-        raise DatabaseUnavailable("La base no respondió a tiempo")
-    monkeypatch.setattr(router, "ejecutar_con_plazo", caida)
+    monkeypatch.setattr(router, "ejecutar_con_plazo", base_caida)
     r = client.get("/transporte/expuestos")
     assert r.status_code == 503
+
+
+@pytest.mark.parametrize("datos", [DATOS, None])
+def test_evidencia_publica_para_el_mapa_usa_la_misma_consulta(monkeypatch, datos):
+    mojada = {**obs("r1", "cuneta"), "texto": "privado", "media_url": "privada", "geom": "privada"}
+    seca = obs("r2", "sin_agua")
+    conn = object()
+    llamadas = []
+
+    def ultima(conexion, vigencia, incluir_simulados):
+        llamadas.append((conexion, vigencia, incluir_simulados))
+        return [mojada, seca]
+
+    monkeypatch.setattr(router, "ejecutar_con_plazo", lambda fn, *_: fn(conn))
+    monkeypatch.setattr(svc, "cargar_datos", lambda: datos)
+    monkeypatch.setattr(svc, "ultimas_observaciones_agua", ultima)
+    monkeypatch.setattr(svc, "cadenas_y_coords", lambda *_: ([CADENA_CORTA], COORDS))
+    monkeypatch.setattr(svc, "puntos_en_riesgo", lambda *_: [])
+
+    r = client.get("/transporte/expuestos?scenario=lluvia&incluir_simulados=false")
+    assert r.status_code == 200
+    respuesta = r.json()
+    assert respuesta["scenario_id"] == "lluvia"
+    assert llamadas == [(conn, respuesta["parametros"]["vigencia_agua_horas"], False)]
+    assert respuesta["evidencia_agua"] == [
+        {"sumidero_id": sid, "nivel": nivel, "ts": AHORA.isoformat(), "is_simulated": False}
+        for sid, nivel in (("r1", "cuneta"), ("r2", "sin_agua"))
+    ]
+    assert [p["id"] for p in respuesta["expuestos"]] == (["B"] if datos else [])
 
 
 def test_archivo_real_carga():
@@ -164,14 +230,69 @@ def test_integracion_observacion_vigente_marca_pc1329_y_la_vencida_no():
             insertar(conn, seca, lejos["lat"] + 0.0001, lejos["lon"], ["hasta_vereda", "sin_agua"], 0)
         r = client.get("/transporte/expuestos")
         assert r.status_code == 200
-        exp = {e["id"]: e for e in r.json()["expuestos"]}
+        resultado = r.json()
+        exp = {e["id"]: e for e in resultado["expuestos"]}
         assert exp["PC1329"]["causa"]["sumidero_id"] == viva
         assert exp["PC1329"]["causa"]["nivel"] == "hasta_vereda"
         assert all(s["alternativo"] or s["motivo"] for s in exp["PC1329"]["servicios"])
-        causas = {e["causa"]["sumidero_id"] for e in r.json()["expuestos"]}
+        causas = {e["causa"]["sumidero_id"] for e in resultado["expuestos"]}
         assert vieja not in causas and seca not in causas
+        niveles = {e["sumidero_id"]: e["nivel"] for e in resultado["evidencia_agua"]}
+        assert niveles[viva] == "hasta_vereda" and niveles[seca] == "sin_agua" and vieja not in niveles
     finally:
         with get_conn() as conn:
             ids = [viva, vieja, seca]
             conn.execute("delete from observations where sumidero_id = any(%s)", (ids,))
             conn.execute("delete from sumideros where id = any(%s)", (ids,))
+
+
+@integracion
+def test_evidencia_agua_sigue_disponible_tras_100_textos_posteriores():
+    from app.db import get_conn
+
+    rejilla = f"test-tr-feed-{uuid.uuid4().hex[:10]}"
+    pc = svc.cargar_datos().paraderos["PC1329"]
+    try:
+        with get_conn() as conn:
+            conn.execute(
+                "insert into sumideros (id, geom, fuente, is_simulated)"
+                " values (%s, st_point(%s, %s, 4326), 'manual', true)",
+                (rejilla, pc["lon"], pc["lat"]),
+            )
+            o = conn.execute(
+                "insert into observations (sumidero_id, fuente, tipo, ts, is_simulated)"
+                " values (%s, 'vecino', 'foto_agua', now() - interval '1 hour', true) returning id",
+                (rejilla,),
+            ).fetchone()["id"]
+            conn.execute(
+                "insert into classifications (observation_id, resultado, modelo, prompt_version)"
+                " values (%s, %s, 'test', 'v0')",
+                (o, json.dumps({"nivel_agua": "cuneta", "evaluable": True})),
+            )
+            conn.execute(
+                "insert into observations (sumidero_id, fuente, tipo, texto, ts, is_simulated)"
+                " select %s, 'vecino', 'texto', 'Reporte de prueba', now() - interval '1 minute', true"
+                " from generate_series(1, 100)",
+                (rejilla,),
+            )
+
+        feed = client.get("/observations?limit=100")
+        assert feed.status_code == 200
+        items = feed.json()["items"]
+        assert len(items) == 100
+        assert all(item["id"] != str(o) for item in items)
+
+        r = client.get("/transporte/expuestos?incluir_simulados=true")
+        assert r.status_code == 200
+        resultado = r.json()
+        evidencia = next(e for e in resultado["evidencia_agua"] if e["sumidero_id"] == rejilla)
+        assert evidencia["nivel"] == "cuneta" and evidencia["is_simulated"] is True
+        expuesto = next(p for p in resultado["expuestos"] if p["id"] == "PC1329")
+        assert expuesto["causa"]["observation_id"] == str(o)
+        sin_simulados = client.get("/transporte/expuestos?incluir_simulados=false")
+        assert sin_simulados.status_code == 200
+        assert all(e["sumidero_id"] != rejilla for e in sin_simulados.json()["evidencia_agua"])
+    finally:
+        with get_conn() as conn:
+            conn.execute("delete from observations where sumidero_id = %s", (rejilla,))
+            conn.execute("delete from sumideros where id = %s", (rejilla,))

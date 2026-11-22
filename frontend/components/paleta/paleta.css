@@ -10,7 +10,7 @@
   flex-direction: column;
   border-radius: var(--r-16);
   background: var(--surface);
-  color: var(--text);
+  color: var(--secundario);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), inset 0 0 0 1px var(--line);
   font-family: var(--font-body);
   font-size: 13px;
@@ -92,7 +92,7 @@
 .pal__txt i {
   font-style: normal;
   font-weight: 500;
-  color: var(--acento);
+  color: var(--principal);
 }
 .pal__fila code,
 .pal__nota code {
@@ -125,8 +125,8 @@
   font-weight: 600;
 }
 .pal__pie button:first-child {
-  background: var(--acento);
-  color: var(--acento-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
 }
 .pal__pie button:disabled {
   opacity: 0.4;
@@ -145,7 +145,7 @@
   bottom: 12px;
   padding: 8px 12px;
   border-radius: var(--r-10);
-  background: var(--text);
+  background: var(--secundario);
   color: var(--texto-inv);
   font-size: 12px;
   text-align: center;
@@ -161,7 +161,7 @@
   padding: 8px 12px;
   border-radius: 999px;
   background: var(--surface);
-  color: var(--text);
+  color: var(--secundario);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16), inset 0 0 0 1px var(--line);
   font-size: 13px;
   font-weight: 600;

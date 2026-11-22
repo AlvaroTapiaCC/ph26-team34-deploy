@@ -156,3 +156,98 @@ def test_explicacion_se_borra_solo_si_cambia_la_prioridad(red):
     otros = [red[k] for k in ("real", "foto", "sim", "urg")]
     assert any(rank_antes[o] != rank_despues[o] for o in otros)          # el test sí movió ranks
     assert all(filas[o] == "vieja" for o in otros)                      # y conservan su explicación
+
+
+def test_confianza_desde_classifications(red):
+    """#124: scoring lee `confianza` de la última clasificación y la ficha la muestra."""
+    from app.config import get_formula_config
+    from app.db import get_conn
+    from app.main import app
+    from app.services.scoring import calcular
+
+    cfg = get_formula_config()
+    tag = uuid.uuid4().hex[:10]
+    foto, agua = f"test-sc-conf-foto-{tag}", f"test-sc-conf-agua-{tag}"
+    try:
+        with get_conn() as conn:
+            for sid in (foto, agua):
+                conn.execute("insert into sumideros (id, geom, fuente, features) values"
+                             " (%s, st_point(-70.6,-33.45,4326), 'manual', %s)",
+                             (sid, json.dumps({"arboles": 0.5, "area_aporte": 1000})))
+
+            def obs(sid, tipo, res, fuente="vecino"):
+                o = conn.execute("insert into observations (sumidero_id, fuente, tipo) values (%s, %s, %s)"
+                                 " returning id", (sid, fuente, tipo)).fetchone()["id"]
+                conn.execute("insert into classifications (observation_id, resultado, modelo, prompt_version)"
+                             " values (%s, %s, 'test', 'v0')", (o, json.dumps(res)))
+                return str(o)
+
+            obs(foto, "foto_rejilla", {"evaluable": True, "rejilla": "tapada", "confianza": "baja",
+                                       "nivel_agua": "sin_agua"})
+            # sobre_vereda·0,4 = 0,4 pierde contra hasta_vereda·1,0 = 0,6
+            obs(agua, "cuadro_camara", {"evaluable": True, "nivel_agua": "sobre_vereda", "confianza": "baja"},
+                fuente="camara")
+            elegida = obs(agua, "foto_agua", {"evaluable": True, "nivel_agua": "hasta_vereda", "confianza": "alta"})
+
+            s = _por_id(calcular(conn, red["sc"], "durante"))
+        det = s[foto].detalle
+        assert det["confianza_foto"] == "baja" and det["factor_confianza_foto"] == cfg["confianza"]["baja"]
+        assert s[foto].p == pytest.approx(s[foto].p_pred + 0.4 * (s[foto].p_obs - s[foto].p_pred))
+        assert s[agua].detalle["nivel_agua"] == "hasta_vereda"
+        assert s[agua].detalle["factor_confianza_agua"] == cfg["confianza"]["alta"]
+
+        ficha = TestClient(app).get(f"/sumideros/{agua}")
+        assert ficha.status_code == 200
+        senales = [x for x in ficha.json()["senales"] if x["senal"] == "agua"]
+        assert len(senales) == 2
+        assert [x["observation_id"] for x in senales if x["usada"]] == [elegida]
+        assert {(x["fuente"], x["confianza"], x["factor_confianza"]) for x in senales} == {
+            ("camara", "baja", 0.4), ("vecino", "alta", 1.0)}
+    finally:
+        with get_conn() as conn:
+            conn.execute("delete from observations where sumidero_id = any(%s)", ([foto, agua],))
+            conn.execute("delete from sumideros where id = any(%s)", ([foto, agua],))
+
+
+def test_confianza_del_texto_de_punta_a_punta(red, monkeypatch):
+    """Revisión de #135: la confianza que entrega el clasificador de texto llega a scores.detalle."""
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from app.db import get_conn
+    from app.services import cache, claude_common
+    from app.services import observations as svc
+    from app.services.claude_text import leer_texto
+    from app.services.scoring import recalcular
+
+    respuestas = [json.dumps({"tipo": "basura", "gravedad": "media", "personas_en_riesgo": False,
+                              "ubicacion_texto": None, "desde_cuando": None, "nivel_agua": "sin_agua",
+                              "confianza": "media"})]
+    cliente = SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(create=lambda **k: SimpleNamespace(
+        stop_reason="end_turn", model="claude-test", stop_details=None,
+        content=[SimpleNamespace(type="text", text=respuestas.pop(0))]))))
+    monkeypatch.setattr(claude_common, "get_client", lambda: cliente)
+    monkeypatch.setattr(cache, "get", lambda k: None)
+    monkeypatch.setattr(cache, "put", lambda *a: None)
+
+    sid = f"test-sc-conf-texto-{uuid.uuid4().hex[:10]}"
+    try:
+        r = leer_texto(f"Basura acumulada tapando el sumidero {sid}")
+        assert not r.fallo and r.resultado.confianza == "media"
+        with get_conn() as conn:
+            conn.execute("insert into sumideros (id, geom, fuente, features) values"
+                         " (%s, st_point(-70.6,-33.45,4326), 'manual', %s)",
+                         (sid, json.dumps({"area_aporte": 1000})))
+            obs = svc.insertar_observacion(conn, obs_id=None, sumidero_id=sid, lat=None, lon=None, fuente="vecino",
+                                           tipo="texto", media_url=None, texto="(prueba)",
+                                           ts=datetime.now(UTC))
+            svc.insertar_clasificacion(conn, obs, r.resultado, r.meta(), r.respuesta_cruda)
+            recalcular(conn, red["sc"], "antes")
+            det = conn.execute("select detalle from scores where scenario_id = %s and modo = 'antes'"
+                               " and sumidero_id = %s", (red["sc"], sid)).fetchone()["detalle"]
+        assert det["factores_confianza_texto"] == [0.7]
+    finally:
+        with get_conn() as conn:
+            conn.execute("delete from scores where sumidero_id = %s", (sid,))
+            conn.execute("delete from observations where sumidero_id = %s", (sid,))
+            conn.execute("delete from sumideros where id = %s", (sid,))

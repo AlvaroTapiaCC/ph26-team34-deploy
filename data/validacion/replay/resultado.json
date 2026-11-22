@@ -1,0 +1,4042 @@
+{
+  "evento": "2026-07-16_17",
+  "tipo_evidencia": "puntos-criticos",
+  "sector": {
+    "centro_lonlat": [
+      -70.541,
+      -33.418
+    ],
+    "radio_m": 1500.0,
+    "rejillas": 562
+  },
+  "lugares_evaluados": 8,
+  "lugares_por_tipo_hora": {
+    "punto_critico": 8
+  },
+  "horas_sin_clima": 0,
+  "cobertura": [
+    {
+      "top_porcentaje": 20,
+      "distancia_m_menor_que": 100,
+      "formula_sin_clima": {
+        "aciertos": 3,
+        "total": 8,
+        "porcentaje": 37.5
+      },
+      "formula_horaria_al_registro": null,
+      "solo_area_aporte": {
+        "aciertos": 2,
+        "total": 8,
+        "porcentaje": 25.0
+      },
+      "azar": {
+        "aciertos": 1.808,
+        "total": 8,
+        "porcentaje": 22.6
+      }
+    },
+    {
+      "top_porcentaje": 10,
+      "distancia_m_menor_que": 100,
+      "formula_sin_clima": {
+        "aciertos": 1,
+        "total": 8,
+        "porcentaje": 12.5
+      },
+      "formula_horaria_al_registro": null,
+      "solo_area_aporte": {
+        "aciertos": 0,
+        "total": 8,
+        "porcentaje": 0.0
+      },
+      "azar": {
+        "aciertos": 1.119,
+        "total": 8,
+        "porcentaje": 13.9875
+      }
+    },
+    {
+      "top_porcentaje": 20,
+      "distancia_m_menor_que": 50,
+      "formula_sin_clima": {
+        "aciertos": 1,
+        "total": 8,
+        "porcentaje": 12.5
+      },
+      "formula_horaria_al_registro": null,
+      "solo_area_aporte": {
+        "aciertos": 2,
+        "total": 8,
+        "porcentaje": 25.0
+      },
+      "azar": {
+        "aciertos": 1.027,
+        "total": 8,
+        "porcentaje": 12.8375
+      }
+    },
+    {
+      "top_porcentaje": 10,
+      "distancia_m_menor_que": 50,
+      "formula_sin_clima": {
+        "aciertos": 0,
+        "total": 8,
+        "porcentaje": 0.0
+      },
+      "formula_horaria_al_registro": null,
+      "solo_area_aporte": {
+        "aciertos": 0,
+        "total": 8,
+        "porcentaje": 0.0
+      },
+      "azar": {
+        "aciertos": 0.571,
+        "total": 8,
+        "porcentaje": 7.1375
+      }
+    }
+  ],
+  "cobertura_por_hora": [
+    {
+      "hora_utc": "2026-07-15T05:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T06:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T07:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T08:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T09:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T10:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T11:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T12:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T13:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T14:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T15:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T16:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T17:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T18:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T19:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T20:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T21:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T22:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-15T23:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T00:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T01:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T02:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T03:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T04:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T05:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T06:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T07:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T08:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T09:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T10:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T11:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T12:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T13:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T14:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T15:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T16:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T17:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T18:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T19:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T20:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T21:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T22:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-16T23:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T00:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T01:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T02:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T03:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T04:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T05:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T06:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T07:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T08:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T09:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T10:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T11:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T12:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T13:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T14:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T15:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T16:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T17:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T18:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T19:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T20:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T21:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T22:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-17T23:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T00:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T01:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T02:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T03:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T04:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T05:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T06:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T07:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T08:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T09:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T10:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T11:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T12:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T13:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T14:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T15:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T16:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T17:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T18:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T19:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T20:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T21:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T22:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-18T23:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-19T00:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 3,
+            "total": 8,
+            "porcentaje": 37.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-19T01:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-19T02:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-19T03:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "hora_utc": "2026-07-19T04:00:00Z",
+      "cobertura": [
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 2,
+            "total": 8,
+            "porcentaje": 25.0
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 100,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        },
+        {
+          "top_porcentaje": 20,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 1,
+            "total": 8,
+            "porcentaje": 12.5
+          }
+        },
+        {
+          "top_porcentaje": 10,
+          "distancia_m_menor_que": 50,
+          "formula_horaria": {
+            "aciertos": 0,
+            "total": 8,
+            "porcentaje": 0.0
+          }
+        }
+      ]
+    }
+  ],
+  "tiempo": {
+    "primera_alerta_utc": "2026-07-15T16:00:00+00:00",
+    "primer_registro_utc": null,
+    "horas_entre_alerta_y_registro": null
+  }
+}

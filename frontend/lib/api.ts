@@ -15,6 +15,7 @@ export class ApiError extends Error {
 export interface GetOpts {
   timeoutMs?: number;
   reintentos?: number;
+  cache?: RequestCache;
   /** Se llama una vez si la respuesta tarda más de `lentoMs`: el servidor probablemente está despertando. */
   onLento?: () => void;
   lentoMs?: number;
@@ -23,13 +24,13 @@ export interface GetOpts {
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function apiGet<T>(ruta: string, o: GetOpts = {}): Promise<T> {
-  const { timeoutMs = 70_000, reintentos = 2, onLento, lentoMs = 5_000 } = o;
+  const { timeoutMs = 70_000, reintentos = 2, cache, onLento, lentoMs = 5_000 } = o;
   let ultimo: unknown;
   const aviso = onLento ? setTimeout(onLento, lentoMs) : null;
   try {
     for (let i = 0; i <= reintentos; i++) {
       try {
-        const r = await fetch(`${API_URL}${ruta}`, { signal: AbortSignal.timeout(timeoutMs) });
+        const r = await fetch(`${API_URL}${ruta}`, { cache, signal: AbortSignal.timeout(timeoutMs) });
         if (r.ok) return (await r.json()) as T;
         // 4xx (salvo 408/429) no mejora reintentando
         if (r.status >= 400 && r.status < 500 && r.status !== 408 && r.status !== 429) throw new ApiError(`El servidor respondió ${r.status}`, r.status);
@@ -63,7 +64,35 @@ export interface ApiDetalle {
   area_norm?: number;
   criticidad?: number;
   area_faltante?: boolean;
+  // Confianza de Claude y el factor que aplicó la fórmula (#88, #124)
+  confianza_foto?: ApiConfianza | null;
+  factor_confianza_foto?: number;
+  factores_confianza_texto?: number[];
+  nivel_agua?: string;
+  confianza_agua?: ApiConfianza | null;
+  factor_confianza_agua?: number;
   [k: string]: unknown;
+}
+
+export type ApiConfianza = "alta" | "media" | "baja";
+
+/** Señal vigente que entra al cálculo de un sumidero (GET /sumideros/{id}, #124). */
+export interface ApiSenal {
+  observation_id: string;
+  senal: "rejilla" | "texto" | "agua";
+  fuente: string;
+  tipo_observacion: string;
+  /** Hora de captura, UTC. */
+  ts: string;
+  /** Lo que leyó Claude: estado de la rejilla, tipo de texto o nivel de agua. */
+  valor: string;
+  /** null: la clasificación no trae confianza (textos, clasificaciones antiguas). */
+  confianza: ApiConfianza | null;
+  factor_confianza: number;
+  aplica_en: ("antes" | "durante")[];
+  /** Si la fórmula la toma hoy. */
+  usada: boolean;
+  is_simulated: boolean;
 }
 
 export interface ApiRankingItem {
@@ -127,11 +156,16 @@ export interface ApiFicha {
     ts: string;
     clasificacion: unknown;
   }[];
+  senales: ApiSenal[];
   ultima_limpieza: { fecha: string; is_simulated: boolean } | null;
 }
 
 export const getEscenarios = (o?: GetOpts) => apiGet<ApiEscenario[]>("/scenarios", o);
-export const getRanking = (id: string, o?: GetOpts) => apiGet<ApiRanking>(`/scenarios/${encodeURIComponent(id)}/ranking?modo=antes&limit=5000`, o);
+export function getRanking(id: string, o?: GetOpts, modo: ApiRanking["modo"] = "antes", zona?: string) {
+  const query = new URLSearchParams({ modo, limit: "5000" });
+  if (zona) query.set("zona", zona);
+  return apiGet<ApiRanking>(`/scenarios/${encodeURIComponent(id)}/ranking?${query}`, o);
+}
 export const getFicha = (id: string, escenario: string, o?: GetOpts) => apiGet<ApiFicha>(`/sumideros/${encodeURIComponent(id)}?scenario_id=${encodeURIComponent(escenario)}`, o);
 
 // --- Clima en vivo (backend/app/routers/clima.py, issue #13) ---

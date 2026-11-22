@@ -134,7 +134,7 @@ def mundo(monkeypatch):
         riesgo = m.riesgo or "atrapad" in texto
         return res(LecturaTexto(tipo="anegamiento", gravedad="alta" if riesgo else "media",
                                 personas_en_riesgo=riesgo, ubicacion_texto=None, desde_cuando=None,
-                                nivel_agua="sobre_vereda"), "texto-v1")
+                                nivel_agua="sobre_vereda", confianza="alta"), "texto-v2")
 
     monkeypatch.setattr(router, "leer_texto", leer)
 
@@ -325,7 +325,8 @@ def test_camara_fija_clasifica_agua_y_recalcula_el_tramo(mundo, monkeypatch):
     assert r.status_code == 200, r.text
     d = r.json()
     observacion = mundo.observaciones[d["id"]]
-    assert observacion["fuente"] == mundo.eventos[-1][1]["fuente"] == "camara"
+    evento = next(payload for tipo, payload in mundo.eventos if tipo == "observacion")
+    assert observacion["fuente"] == evento["fuente"] == "camara"
     assert observacion["tipo"] == "foto_agua"
     assert d["sumidero_id"] == "C" and d["caso_id"]
     assert d["clasificacion"]["nivel_agua"] == "cuneta"
@@ -347,7 +348,7 @@ def test_acepta_el_formato_datos_de_reportar_y_modo_campo(mundo):
     assert r.status_code == 200, r.text
     # En modo campo manda el ID del catastro elegido, aunque el GPS caiga entre A y B
     assert r.json()["sumidero_id"] == "C"
-    ev = mundo.eventos[-1][1]
+    ev = next(payload for tipo, payload in mundo.eventos if tipo == "observacion")
     assert ev["campo"] is True and ev["rejilla_n"] == 7 and ev["precision_m"] == 8
 
 
@@ -399,6 +400,20 @@ def test_la_foto_dispara_el_despacho_y_devuelve_la_siguiente_parada(mundo):
     assert r.status_code == 200
     assert mundo.despachos == [("observacion", d["id"], "C", d["caso_id"])]
     assert d["despacho"]["despachado"] and d["despacho"]["siguiente_despues"] == {"sumidero_id": "C"}
+
+
+def test_el_recalculo_registra_la_prioridad_de_la_observacion(mundo, monkeypatch):
+    valores = iter([{"scenario_id": "base", "prioridad": 0}, {"scenario_id": "base", "prioridad": 0.8}])
+    monkeypatch.setattr(svc, "prioridad_de", lambda conn, sid: next(valores))
+
+    d = _enviar(lat=-33.46003, lon=-70.61001).json()
+    eventos = [payload for tipo, payload in mundo.eventos if tipo == "prioridad_observacion"]
+
+    assert eventos == [{
+        "observation_id": d["id"],
+        "antes": {"scenario_id": "base", "prioridad": 0},
+        "despues": d["prioridad_nueva"],
+    }]
 
 
 def test_si_el_despacho_falla_el_reporte_queda_guardado(mundo):
