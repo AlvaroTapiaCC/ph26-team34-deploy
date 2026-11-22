@@ -149,6 +149,38 @@ def test_ruta_publica_de_cuadrilla_real_no_revela_su_posicion(escena, monkeypatc
 
 
 @INTEGRACION
+def test_ruta_trae_el_ultimo_cambio_sin_datos_del_vecino(escena):
+    from app.db import get_conn
+
+    assert client.get(f"/crews/{escena.crew}/route").json()["ultimo_cambio"] is None
+    secreto = f"vivo en el 1234 {escena.run}"
+    with get_conn() as conn:
+        obs = conn.execute(
+            "insert into observations (sumidero_id, fuente, tipo, texto, media_url, geom) values"
+            " (%s, 'vecino', 'foto_rejilla', %s, 'observaciones/secreta.jpg', st_point(-70.6011, -33.4511, 4326))"
+            " returning id", (escena.s2, secreto)).fetchone()["id"]
+        conn.execute("insert into classifications (observation_id, resultado, modelo, prompt_version) values"
+                     " (%s, %s, 'm', 'v')", (obs, Jsonb({"evaluable": True, "rejilla": "tapada", "material": ["hojas"],
+                                                        "nivel_agua": "sin_agua", "nota": secreto})))
+        for v, motivo in ((1, "plan_inicial"), (2, "observacion")):
+            conn.execute("insert into events (tipo, payload) values ('replan', %s)",
+                         (Jsonb({"crew_id": escena.crew, "motivo": motivo, "ruta_version": v,
+                                 "observation_id": str(obs) if v == 2 else None,
+                                 "siguiente_antes": {"sumidero_id": escena.s1}, "siguiente_despues": {"sumidero_id": escena.s2}}),))
+    try:
+        r = client.get(f"/crews/{escena.crew}/route")
+        c = r.json()["ultimo_cambio"]
+        assert c["motivo"] == "observacion" and c["ruta_version"] == 2
+        assert c["siguiente_despues"]["sumidero_id"] == escena.s2
+        assert c["observacion"] == {"tipo": "foto_rejilla", "fuente": "vecino", "is_simulated": False,
+                                    "rejilla": "tapada", "nivel_agua": "sin_agua", "material": ["hojas"]}
+        assert secreto not in r.text and "secreta" not in r.text and "-70.6011" not in r.text
+    finally:
+        with get_conn() as conn:
+            conn.execute("delete from observations where id = %s", (obs,))
+
+
+@INTEGRACION
 def test_transiciones_y_sincronizacion(escena):
     from app.db import get_conn
 
