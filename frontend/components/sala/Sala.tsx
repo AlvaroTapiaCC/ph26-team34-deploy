@@ -16,6 +16,9 @@ import { APORTES, CATASTRO, dos, nombreFila, puntaje, SalaProvider, useSala, typ
 import { horaSantiago, NIVEL_AGUA, useRecorridos, type EstadoConsulta, type EvidenciaAgua } from "@/lib/transporte";
 import { useCapaCadenas } from "../central/capaCadenas";
 import { useCapaContexto } from "./capaContexto";
+import { useCapaReportes } from "./capaReportes";
+import LeyendaMapa, { type CapasMapa } from "./LeyendaMapa";
+import { reportesParaMapa } from "@/lib/reportesMapa";
 import Transporte, { capasTransporte } from "../desktop/Transporte";
 import DrenaMap, { type MapLabel, type MapPunto } from "../map/DrenaMap";
 import { ESTADOS, FLUJO_CONFIG, picoEscenario, type EstadoRejilla } from "@/lib/flujo/config";
@@ -679,7 +682,7 @@ function Misiones() {
 const SIN_AGUA: readonly EvidenciaAgua[] = [];
 const SIN_ESTADOS: Record<string, EstadoRejilla> = {};
 
-type Capas = { agua: boolean; calor: boolean; cadenas: boolean; transporte: boolean; limites: boolean; catastro: boolean; infra: boolean; colectores: boolean; criticos: boolean };
+type Capas = CapasMapa;
 type ModoAgua = "real" | "simulada";
 
 const Mapa = memo(function Mapa({
@@ -717,7 +720,7 @@ const Mapa = memo(function Mapa({
   setModoAgua: (m: ModoAgua) => void;
   sinLluvia: boolean;
 }) {
-  const { observaciones, transporte, cuadrilla, ruta } = useSala();
+  const { observaciones, transporte, ruta } = useSala();
   const [tresD, setTresD] = useState(false);
   const [menu, setMenu] = useState(false);
   const durante = vista === "durante";
@@ -725,6 +728,13 @@ const Mapa = memo(function Mapa({
   const prioridades = useMemo(() => new Map(filas.flatMap((p) => (p.prioridad == null ? [] : [[p.sumidero_id, p.prio] as const]))), [filas]);
   const cadenas = useCapaCadenas(prioridades, durante ? observaciones.datos : [], durante ? (transporte.datos?.evidencia_agua ?? SIN_AGUA) : SIN_AGUA, capas.cadenas && !simulacion, transporte.datos?.parametros.vigencia_agua_horas ?? 6, transporte.datos?.parametros.aguas_abajo_m ?? 150);
   const verTransporte = capas.transporte && !simulacion;
+  const [ahoraReportes, setAhoraReportes] = useState(Date.now);
+  useEffect(() => {
+    const reloj = setInterval(() => setAhoraReportes(Date.now()), 30_000);
+    return () => clearInterval(reloj);
+  }, []);
+  const reportes = useMemo(() => reportesParaMapa(observaciones.datos, filas, ahoraReportes), [observaciones.datos, filas, ahoraReportes]);
+  const incidentes = useCapaReportes(reportes, capas.reportes && durante, onSel);
   const contexto = useCapaContexto({ infra: capas.infra && !simulacion, colectores: capas.colectores && !simulacion, criticos: capas.criticos && !simulacion });
   const recorridos = useRecorridos(verTransporte);
   const recorridosFondo = useMemo(() => (verTransporte ? recorridos.flatMap((r) => r.tramos) : []), [verTransporte, recorridos]);
@@ -737,14 +747,14 @@ const Mapa = memo(function Mapa({
         ? []
         : (() => {
             const max = Math.max(...filas.map((f) => f.prioridad ?? 0), 0.0001);
-            return filas.map((p) => ({
+            return filas.filter((p) => p.prioridad != null).map((p) => ({
               id: p.sumidero_id,
               coord: [p.lon, p.lat] as LngLat,
               prio: p.prio,
               top: p.puesto <= TOP_DESTACADOS,
               peso: Math.pow((p.prioridad ?? 0) / max, 2),
               nombre: `${p.puesto} · ${nombreFila(p)}`,
-              sub: `Puntaje ${puntaje(p.prioridad)}`,
+              sub: `Prioridad ${p.prio} · puesto ${p.puesto} de ${filas.length}${p.is_simulated ? " · simulado" : ""}`,
             }));
           })(),
     [filas, simulacion],
@@ -753,11 +763,10 @@ const Mapa = memo(function Mapa({
     const out: MapLabel[] = [];
     if (simulacion) return out;
     if (durante) for (const p of filas) if (p.detalle?.urgente) out.push({ coord: [p.lon, p.lat], text: "Urgente", tone: "danger", offset: [0, -16], anchor: "bottom" });
-    if (cuadrilla?.is_simulated && cuadrilla.lon != null && cuadrilla.lat != null) out.push({ coord: [cuadrilla.lon, cuadrilla.lat], text: `${cuadrilla.nombre} · simulada`, tone: "dark", offset: [10, 0] });
     const e = filas.find((p) => p.sumidero_id === sel);
     if (e) out.push({ coord: [e.lon, e.lat], text: `${e.puesto} · ${nombreFila(e)}`, tone: "card", offset: [14, 0] });
     return out;
-  }, [filas, durante, simulacion, cuadrilla, sel]);
+  }, [filas, durante, simulacion, sel]);
 
   const lineas = useMemo(() => (!simulacion && ruta?.geojson?.type === "LineString" ? [ruta.geojson.coordinates as LngLat[]] : []), [ruta, simulacion]);
   const clave = filas.map((p) => p.sumidero_id).sort().join("|");
@@ -768,13 +777,15 @@ const Mapa = memo(function Mapa({
       const a = cadenas.onMapReady(m) as unknown;
       const b = flujo.alMapaListo(m);
       const c = contexto.onMapReady(m, ml);
+      const d = incidentes.onMapReady(m, ml);
       return () => {
         if (typeof a === "function") (a as () => void)();
         b();
         c();
+        d();
       };
     },
-    [cadenas, flujo, contexto, onListo],
+    [cadenas, flujo, contexto, incidentes, onListo],
   );
   const alternar = (k: keyof Capas) => setCapas({ ...capas, [k]: !capas[k] });
 
@@ -823,16 +834,18 @@ const Mapa = memo(function Mapa({
               </button>
               {menu && (
                 <div className={s.capasMenu} role="group" aria-label="Filtros del mapa">
-                  <p className={s.capasGrupo}>Agua</p>
-                  <CapaCheck on={capas.agua} onClick={() => alternar("agua")} titulo="Agua en las calles" sub="Agua corriendo por las calles según la pendiente y la lluvia, con columnas donde no cabe. Con datos reales usa la lluvia de Open-Meteo y las rejillas que Claude vio tapadas; simulada supone un 20 % de rejillas tapadas" muestra="agua" />
-                  <CapaCheck on={capas.calor} onClick={() => alternar("calor")} titulo="Mapa de calor de riesgo" sub="Zonas donde se concentra el puntaje de prioridad; donde el riesgo es bajo el mapa queda gris" muestra="calor" />
+                  <p className={s.capasGrupo}>Evidencia y cálculo</p>
+                  {durante && <CapaCheck on={capas.reportes} onClick={() => alternar("reportes")} titulo="Reportes en el mapa" sub="Último reporte por lugar de las últimas 72 horas. Toca el anillo para ver fuente y hora; no confirma un cierre vial. Los simulados se identifican en el globo." muestra="reporte" />}
+                  <CapaCheck on={capas.agua} onClick={() => alternar("agua")} titulo="Escurrimiento estimado" sub="Modelo por pendiente, no agua medida. Puede usar lluvia pronosticada y reportes recibidos, o un escenario con lluvia supuesta y 20 % de rejillas tapadas. Para ver incidentes usa Reportes." muestra="agua" />
+                  <CapaCheck on={capas.calor} onClick={() => alternar("calor")} titulo="Concentración de prioridad" sub="Agrupa puntajes de limpieza, no mide probabilidad de inundación. Sin halo puede significar que no hay ranking en esa zona." muestra="calor" />
                   <CapaCheck on={capas.cadenas} onClick={() => alternar("cadenas")} titulo="Cadenas calle abajo" sub="Qué rejillas reciben el agua de cuál, según la pendiente (estimado). Si una se tapa, revisa las de abajo" muestra="cadena" />
-                  <CapaCheck on={capas.criticos} onClick={() => alternar("criticos")} titulo="Anegamientos registrados" sub="Lugares donde la Municipalidad de Las Condes registró anegamientos o riesgo en la temporada de lluvias 2026. Es el único registro público de este tipo que conseguimos; sirve de referencia de dónde ya se ha inundado" muestra="critico" />
+                  <CapaCheck on={capas.criticos} onClick={() => alternar("criticos")} titulo="Puntos críticos históricos" sub="Registro de invierno 2026 de la Municipalidad de Las Condes: contexto histórico de riesgo, no anegamientos activos." muestra="critico" />
                   <p className={s.capasGrupo}>Ciudad</p>
                   <CapaCheck on={capas.infra} onClick={() => alternar("infra")} titulo="Infraestructura crítica" sub="Metro, pasos bajo nivel, hospital y colegios (OSM): suben la consecuencia" muestra="infra" />
                   <CapaCheck on={capas.transporte} onClick={() => alternar("transporte")} titulo="Transporte público" sub="Recorridos de la zona (tenues), los afectados resaltados, paraderos expuestos y caminata al alternativo (GTFS DTPM)" muestra="bus" />
                   <CapaCheck on={capas.limites} onClick={() => alternar("limites")} titulo="Límites comunales" sub="Providencia, Ñuñoa y Las Condes" muestra="limite" />
-                  <CapaCheck on={capas.catastro} onClick={() => alternar("catastro")} titulo="Catastro completo" sub="3.002 rejillas DOH; el ranking existe solo en la zona MUT" muestra="catastro" />
+                  <CapaCheck on={capas.catastro} onClick={() => alternar("catastro")} titulo="Rejillas del catastro parcial" sub="3.002 rejillas SIALL / DOH en tres comunas, visibles de cerca. Gris significa contexto sin prioridad mostrada; no riesgo bajo. El ranking se calcula en zona MUT." muestra="catastro" />
+                  <CapaCheck on={capas.colectores} onClick={() => alternar("colectores")} titulo="Colectores de aguas lluvia" sub="Red SIALL / DOH cercana al MUT. Trazado catalogado, no estado ni capacidad actual del colector." muestra="colector" />
                 </div>
               )}
             </span>
@@ -851,48 +864,7 @@ const Mapa = memo(function Mapa({
           {capas.cadenas && !simulacion && cadenas.estado === "cargando" && <span className={s.chipInfo}>Cargando cadenas…</span>}
         </div>
         {!simulacion && (
-          <ul className={s.leyendaMapa} aria-label="Leyenda">
-            <li>
-              <i className={s.lgTop} />5 primeras
-            </li>
-            <li>
-              <i className={s.lgAlta} />
-              Alta
-            </li>
-            <li>
-              <i className={s.lgMedia} />
-              Media
-            </li>
-            <li>
-              <i className={s.lgBaja} />
-              Baja
-            </li>
-            {durante && (
-              <li>
-                <i className={s.lgAgua} />
-                Agua observada
-              </li>
-            )}
-            {capas.infra && (
-              <>
-                <li>
-                  <i className={s.lgMetro} />
-                  Metro
-                </li>
-                <li>
-                  <i className={s.lgPbn} />
-                  Paso bajo nivel
-                </li>
-              </>
-            )}
-            {capas.cadenas && (
-              <li>
-                <i className={s.lgEscurre} />
-                Escurrimiento ›
-              </li>
-            )}
-
-          </ul>
+          <LeyendaMapa capas={capas} durante={durante} nReportes={reportes.length} modoAgua={modoAgua} />
         )}
       </DrenaMap>
     </div>
@@ -900,13 +872,14 @@ const Mapa = memo(function Mapa({
 });
 
 /** Un filtro del mapa: casilla para mostrarlo u ocultarlo y una «i» que despliega qué muestra. */
-function CapaCheck({ on, onClick, titulo, sub }: { on: boolean; onClick: () => void; titulo: string; sub: string; muestra?: string }) {
+function CapaCheck({ on, onClick, titulo, sub, muestra }: { on: boolean; onClick: () => void; titulo: string; sub: string; muestra?: string }) {
   const [info, setInfo] = useState(false);
   return (
     <div className={s.filtro}>
       <label className={`${s.capa} ${on ? s.capaOn : ""}`}>
         <input type="checkbox" checked={on} onChange={onClick} className={s.filtroCheck} />
         <span className={s.filtroCaja} aria-hidden />
+        <span className={s.capaMuestra} data-m={muestra} aria-hidden />
         <b>{titulo}</b>
       </label>
       <button type="button" className={`${s.filtroInfo} ${info ? s.filtroInfoOn : ""}`} onClick={() => setInfo(!info)} aria-expanded={info} aria-label={`Qué muestra: ${titulo}`}>
@@ -1121,8 +1094,8 @@ function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, nuevo, p
 
 /* ───────────────────────── Sala ───────────────────────── */
 
-const CAPAS_ANTES: Capas = { agua: true, calor: true, cadenas: false, transporte: false, limites: true, catastro: false, infra: false, colectores: false, criticos: false };
-const CAPAS_DURANTE: Capas = { agua: true, calor: true, cadenas: false, transporte: true, limites: true, catastro: false, infra: false, colectores: false, criticos: false };
+const CAPAS_ANTES: Capas = { agua: false, calor: false, cadenas: false, transporte: false, limites: true, catastro: true, infra: false, colectores: false, criticos: false, reportes: false };
+const CAPAS_DURANTE: Capas = { agua: false, calor: false, cadenas: false, transporte: true, limites: true, catastro: true, infra: false, colectores: false, criticos: false, reportes: true };
 
 function SalaInterior({ children }: { children: ReactNode }) {
   const vista = vistaDe(usePathname() ?? "/");
@@ -1255,7 +1228,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
             conMapa(vista) && <Riel fase={fase} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} nuevo={nuevo} pestana={pestana} setPestana={setPestana} />
           )}
         </aside>
-        {conMapa(vista) && (
+        {simulando && (
           <div className={s.faseSello} key={`sello-${vista}`}>
             {sello}
           </div>

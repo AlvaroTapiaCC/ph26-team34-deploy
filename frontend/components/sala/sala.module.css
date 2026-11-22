@@ -1830,7 +1830,7 @@
   border-radius: 11px;
 }
 .filtro .capa {
-  grid-template-columns: 1.1rem minmax(0, 1fr);
+  grid-template-columns: 1.1rem 1.5rem minmax(0, 1fr);
   cursor: pointer;
 }
 .filtroCheck {
@@ -1898,4 +1898,69 @@
   font-size: 0.75rem;
   line-height: 1.4;
   animation: cruza 180ms var(--ease-out);
+}
+
+/* Una clave compacta y estable; el detalle de las fuentes se abre a demanda. */
+.lecturaMapa {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  z-index: 4;
+  width: 17.5rem;
+  max-width: calc(100% - 28px);
+  max-height: calc(100% - 76px);
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid var(--vidrio-borde);
+  border-radius: 14px;
+  background: var(--vidrio);
+  box-shadow: var(--sombra-alta);
+  color: var(--text-2);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  overscroll-behavior: contain;
+}
+.lecturaMapa h2 {
+  margin: 0 0 2px;
+  color: var(--secundario);
+  font: 650 0.875rem/1.4 var(--font-body);
+}
+.lecturaMapa p { margin: 0; }
+.clavesMapa,
+.clavesDetalle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 6px;
+}
+.clavesDetalle {
+  display: grid;
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px solid var(--vidrio-borde);
+}
+.clavesMapa li,
+.clavesDetalle li { display: flex; align-items: center; gap: 7px; }
+.clavesMapa i,
+.clavesDetalle i { flex: none; width: 9px; height: 9px; border-radius: 50%; }
+.clavesMapa .lgAlta { background: var(--prio-alta); }
+.clavesMapa .lgMedia { background: var(--prio-media); }
+.clavesMapa .lgBaja { background: var(--prio-baja); }
+.clavesDetalle small { display: block; margin-top: 2px; font-size: 0.6875rem; }
+.claveNota { font-size: 0.6875rem; }
+.clavesDetalle .lgReporte { width: 12px; height: 12px; border: 2px solid var(--danger); }
+.clavesDetalle .lgRuta { width: 18px; height: 0; border-radius: 0; border-top: 2px dashed var(--principal); }
+.clavesDetalle .lgCatastro { width: 5px; height: 5px; margin-inline: 3px 4px; background: var(--contexto); }
+.clavesDetalle .lgAgua { width: 18px; height: 0; border-radius: 0; border-top: 2px solid var(--agua); }
+.lgBus { flex: none; color: var(--bus); font: 700 0.6875rem/1.3 var(--font-body); white-space: nowrap; }
+.fuentesMapa { margin-top: 10px; border-top: 1px solid var(--vidrio-borde); padding-top: 8px; }
+.fuentesMapa summary { cursor: pointer; color: var(--secundario); font-weight: 600; }
+.fuentesMapa p { margin-top: 8px; }
+.capaMuestra[data-m="reporte"] { width: 14px; height: 14px; border: 2px solid var(--danger); border-radius: 50%; }
+@media (max-width: 68rem) {
+  .lecturaMapa { width: 16rem; padding: 10px 12px; max-height: calc(52vh - 76px); }
+  .clavesDetalle { display: none; }
+  .fuentesMapa[open] { max-height: 7rem; overflow-y: auto; }
 }
