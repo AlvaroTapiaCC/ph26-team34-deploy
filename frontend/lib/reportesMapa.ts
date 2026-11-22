@@ -28,11 +28,11 @@ export function reportesParaMapa(
     const ts = Date.parse(o.ts);
     // El mapa muestra evidencia reciente; el sello de captura sigue visible en el globo.
     if (!Number.isFinite(ts) || ts > ahora || ahora - ts >= 72 * 3600_000) continue;
+    const caso = o.caso_publico;
+    if (caso && ["cerrado", "descartado"].includes(caso.estado)) continue;
     const clave = o.sumidero_id ?? o.caso_id ?? o.id;
     if (vistos.has(clave)) continue;
     vistos.add(clave);
-    const caso = o.caso_publico;
-    if (caso && ["cerrado", "descartado"].includes(caso.estado)) continue;
     const coord: LngLat | undefined = caso ? [caso.lon, caso.lat] : o.sumidero_id ? coordenadas.get(o.sumidero_id) : undefined;
     if (!coord || !coord.every(Number.isFinite) || Math.abs(coord[0]) > 180 || Math.abs(coord[1]) > 90) continue;
     const c = o.clasificacion;
