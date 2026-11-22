@@ -20,6 +20,12 @@ INTEGRACION = pytest.mark.skipif(os.getenv("DRENA_TEST_INTEGRACION") != "1",
                                  reason="DRENA_TEST_INTEGRACION=1 para correrlo")
 
 
+@pytest.fixture(autouse=True)
+def sin_crew_token(monkeypatch):
+    """Las pruebas no mandan X-Crew-Token: un CREW_TOKEN en el .env local no debe hacerlas fallar."""
+    monkeypatch.setattr("app.seguridad.get_settings", lambda: SimpleNamespace(crew_token="", admin_token=""))
+
+
 def _jpeg():
     b = io.BytesIO()
     Image.new("RGB", (40, 30), (80, 80, 80)).save(b, "JPEG")
