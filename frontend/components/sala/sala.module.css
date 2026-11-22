@@ -1756,6 +1756,36 @@
   font: 650 0.875rem/1.4 var(--font-body);
 }
 .lecturaMapa p { margin: 0; }
+.lecturaResumen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 24px;
+  cursor: pointer;
+  color: var(--secundario);
+  font-weight: 650;
+  list-style: none;
+}
+.lecturaResumen::-webkit-details-marker { display: none; }
+.lecturaResumen::after {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-135deg);
+}
+.lecturaMapa[open] .lecturaResumen::after { transform: rotate(45deg); }
+.lecturaEscala,
+.lecturaEscala > span { display: flex; align-items: center; gap: 5px; }
+.lecturaEscala { gap: 10px; font-size: 0.6875rem; font-weight: 500; }
+.lecturaEscala i { width: 7px; height: 7px; border-radius: 50%; }
+.lecturaEscala .lgAlta { background: var(--prio-alta); }
+.lecturaEscala .lgMedia { background: var(--prio-media); }
+.lecturaEscala .lgBaja { background: var(--prio-baja); }
+.lecturaContenido { padding-top: 12px; }
 .clavesMapa,
 .clavesDetalle {
   display: flex;
@@ -1791,6 +1821,5 @@
 .capaMuestra[data-m="reporte"] { width: 14px; height: 14px; border: 2px solid var(--danger); border-radius: 50%; }
 @media (max-width: 68rem) {
   .lecturaMapa { width: 16rem; padding: 10px 12px; max-height: calc(52vh - 76px); }
-  .clavesDetalle { display: none; }
   .fuentesMapa[open] { max-height: 7rem; overflow-y: auto; }
 }

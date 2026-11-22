@@ -8,7 +8,16 @@ export default function LeyendaMapa({ capas, durante, nReportes, modoAgua }: { c
   const { antes, durante: rankingDurante, clima, observaciones, transporte, ruta, cuadrilla } = useSala();
   const ranking = durante ? rankingDurante : antes;
   return (
-    <section className={s.lecturaMapa} aria-label="Cómo leer el mapa">
+    <details className={s.lecturaMapa} aria-label="Cómo leer el mapa">
+      <summary className={s.lecturaResumen}>
+        Guía
+        <span className={s.lecturaEscala}>
+          <span><i className={s.lgAlta} />Alta</span>
+          <span><i className={s.lgMedia} />Media</span>
+          <span><i className={s.lgBaja} />Baja</span>
+        </span>
+      </summary>
+      <div className={s.lecturaContenido}>
       <h2>Prioridad de limpieza</h2>
       <p>{ranking.estado === "cargando" ? "Consultando prioridades…" : `${ranking.filas.filter((p) => p.prioridad != null).length} rejillas priorizadas · ${ranking.estado === "error" ? "sin actualizar" : "zona MUT"}`}</p>
       <ul className={s.clavesMapa}>
@@ -41,6 +50,7 @@ export default function LeyendaMapa({ capas, durante, nReportes, modoAgua }: { c
         {capas.criticos && <p><b>Las Condes · invierno 2026.</b> Puntos críticos históricos, no anegamientos activos.</p>}
         {capas.cadenas && <p><b>Calles y elevación.</b> Flechas calle abajo: dirección de escurrimiento estimada, no desvíos de tránsito.</p>}
       </details>
-    </section>
+      </div>
+    </details>
   );
 }
