@@ -63,7 +63,35 @@ export interface ApiDetalle {
   area_norm?: number;
   criticidad?: number;
   area_faltante?: boolean;
+  // Confianza de Claude y el factor que aplicó la fórmula (#88, #124)
+  confianza_foto?: ApiConfianza | null;
+  factor_confianza_foto?: number;
+  factores_confianza_texto?: number[];
+  nivel_agua?: string;
+  confianza_agua?: ApiConfianza | null;
+  factor_confianza_agua?: number;
   [k: string]: unknown;
+}
+
+export type ApiConfianza = "alta" | "media" | "baja";
+
+/** Señal vigente que entra al cálculo de un sumidero (GET /sumideros/{id}, #124). */
+export interface ApiSenal {
+  observation_id: string;
+  senal: "rejilla" | "texto" | "agua";
+  fuente: string;
+  tipo_observacion: string;
+  /** Hora de captura, UTC. */
+  ts: string;
+  /** Lo que leyó Claude: estado de la rejilla, tipo de texto o nivel de agua. */
+  valor: string;
+  /** null: la clasificación no trae confianza (textos, clasificaciones antiguas). */
+  confianza: ApiConfianza | null;
+  factor_confianza: number;
+  aplica_en: ("antes" | "durante")[];
+  /** Si la fórmula la toma hoy. */
+  usada: boolean;
+  is_simulated: boolean;
 }
 
 export interface ApiRankingItem {
@@ -127,6 +155,7 @@ export interface ApiFicha {
     ts: string;
     clasificacion: unknown;
   }[];
+  senales: ApiSenal[];
   ultima_limpieza: { fecha: string; is_simulated: boolean } | null;
 }
 

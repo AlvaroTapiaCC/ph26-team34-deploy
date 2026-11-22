@@ -156,3 +156,54 @@ def test_explicacion_se_borra_solo_si_cambia_la_prioridad(red):
     otros = [red[k] for k in ("real", "foto", "sim", "urg")]
     assert any(rank_antes[o] != rank_despues[o] for o in otros)          # el test sí movió ranks
     assert all(filas[o] == "vieja" for o in otros)                      # y conservan su explicación
+
+
+def test_confianza_desde_classifications(red):
+    """#124: scoring lee `confianza` de la última clasificación y la ficha la muestra."""
+    from app.config import get_formula_config
+    from app.db import get_conn
+    from app.main import app
+    from app.services.scoring import calcular
+
+    cfg = get_formula_config()
+    tag = uuid.uuid4().hex[:10]
+    foto, agua = f"test-sc-conf-foto-{tag}", f"test-sc-conf-agua-{tag}"
+    try:
+        with get_conn() as conn:
+            for sid in (foto, agua):
+                conn.execute("insert into sumideros (id, geom, fuente, features) values"
+                             " (%s, st_point(-70.6,-33.45,4326), 'manual', %s)",
+                             (sid, json.dumps({"arboles": 0.5, "area_aporte": 1000})))
+
+            def obs(sid, tipo, res, fuente="vecino"):
+                o = conn.execute("insert into observations (sumidero_id, fuente, tipo) values (%s, %s, %s)"
+                                 " returning id", (sid, fuente, tipo)).fetchone()["id"]
+                conn.execute("insert into classifications (observation_id, resultado, modelo, prompt_version)"
+                             " values (%s, %s, 'test', 'v0')", (o, json.dumps(res)))
+                return str(o)
+
+            obs(foto, "foto_rejilla", {"evaluable": True, "rejilla": "tapada", "confianza": "baja",
+                                       "nivel_agua": "sin_agua"})
+            # sobre_vereda·0,4 = 0,4 pierde contra hasta_vereda·1,0 = 0,6
+            obs(agua, "cuadro_camara", {"evaluable": True, "nivel_agua": "sobre_vereda", "confianza": "baja"},
+                fuente="camara")
+            elegida = obs(agua, "foto_agua", {"evaluable": True, "nivel_agua": "hasta_vereda", "confianza": "alta"})
+
+            s = _por_id(calcular(conn, red["sc"], "durante"))
+        det = s[foto].detalle
+        assert det["confianza_foto"] == "baja" and det["factor_confianza_foto"] == cfg["confianza"]["baja"]
+        assert s[foto].p == pytest.approx(s[foto].p_pred + 0.4 * (s[foto].p_obs - s[foto].p_pred))
+        assert s[agua].detalle["nivel_agua"] == "hasta_vereda"
+        assert s[agua].detalle["factor_confianza_agua"] == cfg["confianza"]["alta"]
+
+        ficha = TestClient(app).get(f"/sumideros/{agua}")
+        assert ficha.status_code == 200
+        senales = [x for x in ficha.json()["senales"] if x["senal"] == "agua"]
+        assert len(senales) == 2
+        assert [x["observation_id"] for x in senales if x["usada"]] == [elegida]
+        assert {(x["fuente"], x["confianza"], x["factor_confianza"]) for x in senales} == {
+            ("camara", "baja", 0.4), ("vecino", "alta", 1.0)}
+    finally:
+        with get_conn() as conn:
+            conn.execute("delete from observations where sumidero_id = any(%s)", ([foto, agua],))
+            conn.execute("delete from sumideros where id = any(%s)", ([foto, agua],))
