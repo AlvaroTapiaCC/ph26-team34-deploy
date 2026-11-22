@@ -301,6 +301,10 @@ export function useFlujo(opts: {
     leerMotor();
   }, [scenario, puntosKey, ui.cargado, leerMotor]);
 
+  useEffect(() => {
+    motor.current?.setFuente(fuente.id);
+  }, [fuente.id, ui.cargado]);
+
   // Estados de rejilla del operador: se aplican al instante, también con el flujo en pausa
   useEffect(() => {
     const m = motor.current;
@@ -308,7 +312,7 @@ export function useFlujo(opts: {
     m.setEstadosManuales(estados);
     capa.current?.actualizarEstado(); // las rejillas cambian al instante; el agua, cuando llega la foto del motor
     leerMotor();
-  }, [estados, ui.cargado, leerMotor]);
+  }, [estados, fuente.id, ui.cargado, leerMotor]);
 
   // Observaciones de la fuente elegida
   useEffect(() => {
