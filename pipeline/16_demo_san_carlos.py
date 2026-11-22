@@ -11,6 +11,7 @@ import yaml
 REPO = Path(__file__).resolve().parents[1]
 replay = importlib.import_module("10_replay")
 from app.services.formula import calcular_ranking
+from app.services.transporte import cargar_datos, calcular, puntos_con_agua
 
 
 def main():
@@ -43,7 +44,28 @@ def main():
         "config_sha256": hashlib.sha256(replay.CONFIG.read_bytes()).hexdigest(),
         "nota": "Fórmula congelada aplicada retrospectivamente. Foto y agua añadidas son simuladas; no predicción emitida antes del evento."}}
     (REPO / "frontend/lib/demo-san-carlos.json").write_text(json.dumps(resultado, ensure_ascii=False, separators=(",", ":")) + "\n")
+    # Mismo cruce puro que la API, sin base de datos ni escrituras a producción.
+    archivo_gtfs = REPO / "frontend/public/data/transporte_san_carlos.json"
+    datos_gtfs = cargar_datos(archivo_gtfs, REPO / "backend/data/transporte_san_carlos.meta.json")
+    if datos_gtfs is None:
+        raise ValueError("Falta el extracto GTFS de San Carlos")
+    hora = cortes[-1]["hora"]["hora_utc"]
+    evidencia = {"observation_id": "demo-san-carlos-agua", "sumidero_id": "AL13SU012988",
+        "nivel": "hasta_vereda", "ts": hora, "tipo": "foto_agua", "fuente": "vecino", "is_simulated": True}
+    latlon = {sid: (coord[1], coord[0]) for sid, coord in coords.items()}
+    agua = puntos_con_agua([evidencia], cadenas, latlon, 150)
+    riesgo = [{"sumidero_id": p["sumidero_id"], "prioridad": p["prioridad"], "puesto": p["rank"],
+        "lat": latlon[p["sumidero_id"]][0], "lon": latlon[p["sumidero_id"]][1]} for p in cortes[-1]["ranking"][:5]]
+    transporte = {"scenario_id": "demo-san-carlos", "calculado_at": hora,
+        "nota": "Reconstrucción San Carlos · agua simulada; GTFS DTPM de noviembre, no operación histórica de octubre.",
+        "aviso": "Sin avisos ni despachos reales. Los desvíos requieren confirmación de Red.",
+        "fuente": datos_gtfs.fuente,
+        "parametros": {"radio_m": 80, "aguas_abajo_m": 150, "riesgo_top_n": 5, "vigencia_agua_horas": 6},
+        "evidencia_agua": [{k: evidencia[k] for k in ("sumidero_id", "nivel", "ts", "is_simulated")}],
+        **calcular(datos_gtfs, agua, riesgo, 80)}
+    (REPO / "frontend/public/data/demo-san-carlos-transporte.json").write_text(json.dumps(transporte, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(f"{len(coords)} rejillas, {len(cortes)} cortes; foto y agua simuladas separadas de la lluvia histórica")
+    print(f"{len(transporte['expuestos'])} paraderos expuestos al incidente simulado")
 
 
 if __name__ == "__main__":
