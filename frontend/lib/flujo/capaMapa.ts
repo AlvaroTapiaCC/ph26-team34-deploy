@@ -400,9 +400,12 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorRemoto, opts: { onCli
   const pasoTrazo = [-1, -1, -1];
   let pop: { id: string; t0: number } | null = null;
   let reloj = 0;
+  let visible = true;
+  let habiaDesbordes = false;
 
   function cuadro(dtS: number, tS: number) {
     reloj = tS;
+    if (!visible) return;
     // Trazo: cada capa avanza su patrón a su velocidad
     TRAZOS.forEach((id, k) => {
       fase[k] = (fase[k] + dtS * cfg.trazoPasosPorS[k]) % PATRON.length;
@@ -413,32 +416,36 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorRemoto, opts: { onCli
       }
     });
 
-    // Columnas: alto según el volumen que no entró a la rejilla, crecen al aparecer y respiran suavemente
-    const respira = 1 + 0.08 * Math.sin(tS * 2.2);
-    map.getSource(SRC.columnas)?.setData(
-      fc(
-        conAguaIdx.map((i) => {
-          const alto = Math.min(cfg.columnaAltoMaxM, 6 + (motor.volumen[i] ?? 0) * cfg.columnaMPorM3);
-          return { type: "Feature", properties: { h: alto * respira }, geometry: { type: "Polygon", coordinates: cuadrado(sumideros[i].coord, cfg.columnaLadoM) } };
-        }),
-      ),
-    );
+    // No mandar GeoJSON vacío al worker en cada cuadro. Al secarse, se limpia una sola vez.
+    if (conAguaIdx.length > 0 || habiaDesbordes) {
+      // Columnas: alto según el volumen que no entró a la rejilla, crecen al aparecer y respiran suavemente
+      const respira = 1 + 0.08 * Math.sin(tS * 2.2);
+      map.getSource(SRC.columnas)?.setData(
+        fc(
+          conAguaIdx.map((i) => {
+            const alto = Math.min(cfg.columnaAltoMaxM, 6 + (motor.volumen[i] ?? 0) * cfg.columnaMPorM3);
+            return { type: "Feature", properties: { h: alto * respira }, geometry: { type: "Polygon", coordinates: cuadrado(sumideros[i].coord, cfg.columnaLadoM) } };
+          }),
+        ),
+      );
 
-    // Flecha: avanza por el tramo siguiente, hacia donde se va el agua
-    const avance = (tS * 0.8) % 1;
-    const flechas = conAguaIdx.slice(0, 20).flatMap((i) => {
-      const s = sumideros[i];
-      if (s.tramo === null) return [];
-      let t = tramos[s.tramo];
-      let m = s.pos * t.L + 12 + 30 * avance;
-      if (m > t.L && t.sig !== null && tramos[t.sig]) {
-        m -= t.L;
-        t = tramos[t.sig];
-      }
-      const { coord, rumbo } = puntoEnTramo(t, m);
-      return [{ type: "Feature", properties: { rumbo, o: avance < 0.85 ? 1 : (1 - avance) / 0.15 }, geometry: { type: "Point", coordinates: coord } }];
-    });
-    map.getSource(SRC.flecha)?.setData(fc(flechas));
+      // Flecha: avanza por el tramo siguiente, hacia donde se va el agua
+      const avance = (tS * 0.8) % 1;
+      const flechas = conAguaIdx.slice(0, 20).flatMap((i) => {
+        const s = sumideros[i];
+        if (s.tramo === null) return [];
+        let t = tramos[s.tramo];
+        let m = s.pos * t.L + 12 + 30 * avance;
+        if (m > t.L && t.sig !== null && tramos[t.sig]) {
+          m -= t.L;
+          t = tramos[t.sig];
+        }
+        const { coord, rumbo } = puntoEnTramo(t, m);
+        return [{ type: "Feature", properties: { rumbo, o: avance < 0.85 ? 1 : (1 - avance) / 0.15 }, geometry: { type: "Point", coordinates: coord } }];
+      });
+      map.getSource(SRC.flecha)?.setData(fc(flechas));
+      habiaDesbordes = conAguaIdx.length > 0;
+    }
 
     // Clic en una rejilla: un anillo que crece y se apaga
     if (pop) {
@@ -459,6 +466,7 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorRemoto, opts: { onCli
     actualizarEstado,
     cuadro,
     setVisible(v, soloAgua = false) {
+      visible = v;
       // soloAgua: muestra el agua y sus columnas, sin las rejillas de la red ni su zona de clic
       const rejillas = new Set(["flujo-rej", "flujo-rej-tap", "flujo-rej-ico", "flujo-sel", "flujo-pop", "flujo-hit", "flujo-flecha"]);
       LAYERS.forEach((id) => map.getLayer(id) && map.setLayoutProperty(id, "visibility", v && !(soloAgua && rejillas.has(id)) ? "visible" : "none"));
