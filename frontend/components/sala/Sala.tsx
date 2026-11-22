@@ -15,7 +15,7 @@ import type { LngLat } from "@/lib/data";
 import { boundsDe } from "@/lib/real";
 import { APORTES, dos, nombreFila, puntaje, SalaProvider, useSala, type Fila } from "@/lib/sala";
 import { puestosReporte } from "@/lib/queCambio";
-import { horaSantiago, NIVEL_AGUA, useRecorridos, type EstadoConsulta, type EvidenciaAgua } from "@/lib/transporte";
+import { horaSantiago, NIVEL_AGUA, useRecorridos, useRecorridoCompleto, type EstadoConsulta, type EvidenciaAgua, type ZonaTransporte } from "@/lib/transporte";
 import { useCapaCadenas } from "../central/capaCadenas";
 import { useCapaContexto } from "./capaContexto";
 import { useCapaReportes } from "./capaReportes";
@@ -586,6 +586,7 @@ const Mapa = memo(function Mapa({
   modoAgua,
   setModoAgua,
   textoPronostico,
+  zonaTransporte,
 }: {
   filas: Fila[];
   vista: Vista;
@@ -604,6 +605,7 @@ const Mapa = memo(function Mapa({
   modoAgua: ModoAgua;
   setModoAgua: (m: ModoAgua) => void;
   textoPronostico?: string;
+  zonaTransporte: ZonaTransporte;
 }) {
   const { observaciones, transporte, ruta, demo } = useSala();
   const [tresD, setTresD] = useState(false);
@@ -622,7 +624,9 @@ const Mapa = memo(function Mapa({
   const reportes = useMemo(() => reportesParaMapa(observaciones.datos, filas, horaReportes), [observaciones.datos, filas, horaReportes]);
   const incidentes = useCapaReportes(reportes, capas.reportes && durante, onSel);
   const contexto = useCapaContexto({ infra: capas.infra && !simulacion, colectores: capas.colectores && !simulacion, criticos: capas.criticos && !simulacion });
-  const recorridos = useRecorridos(verTransporte, demo.activo ? "san-carlos" : "mut");
+  const zonaActiva = demo.activo ? "san-carlos" : zonaTransporte;
+  const recorridos = useRecorridos(verTransporte, zonaActiva);
+  const recorridoCompleto = useRecorridoCompleto(verTransporte ? servicio : null, zonaActiva);
   const recorridosFondo = useMemo(() => (verTransporte && !demo.activo ? recorridos.flatMap((r) => r.tramos) : []), [verTransporte, recorridos, demo.activo]);
   const tp = useMemo(() => (verTransporte ? capasTransporte(transporte.datos, recorridos, paradero, onParadero, servicio) : { paraderos: [], recorridos: [], recorridosDestacados: [], caminatas: [] }), [verTransporte, transporte.datos, recorridos, paradero, onParadero, servicio]);
 
@@ -700,6 +704,7 @@ const Mapa = memo(function Mapa({
         paraderos={tp.paraderos}
         recorridos={tp.recorridos}
         recorridosDestacados={tp.recorridosDestacados}
+        recorridoCompleto={recorridoCompleto}
         recorridosFondo={recorridosFondo}
         calor={capas.calor && !simulacion}
         caminatas={tp.caminatas}
@@ -1004,7 +1009,7 @@ function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, servicio
 const CAPAS_ANTES: Capas = { agua: false, calor: false, cadenas: false, transporte: false, limites: true, catastro: true, infra: false, colectores: false, criticos: false, reportes: false, ruta: true };
 const CAPAS_DURANTE: Capas = { agua: false, calor: false, cadenas: false, transporte: true, limites: true, catastro: true, infra: false, colectores: false, criticos: false, reportes: true, ruta: true };
 
-function SalaInterior({ children }: { children: ReactNode }) {
+function SalaInterior({ children, zonaTransporte }: { children: ReactNode; zonaTransporte: ZonaTransporte }) {
   const router = useRouter();
   const vista = vistaDe(usePathname() ?? "/");
   const sala = useSala();
@@ -1154,7 +1159,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
     <div className={`${s.sala} ${presentacion ? s.presentacion : ""}`} data-vista={vista}>
       <Barra vista={vista} />
       <main className={s.escena}>
-        <Mapa filas={filas} vista={vista} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} servicio={servicio} foco={foco} onListo={listo} flujo={flujo} capas={capas} setCapas={setCapas} modoAgua={modoAgua} setModoAgua={setModoAgua} textoPronostico={demoActivo ? undefined : pronostico.texto} />
+        <Mapa filas={filas} vista={vista} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} servicio={servicio} foco={foco} onListo={listo} flujo={flujo} capas={capas} setCapas={setCapas} modoAgua={modoAgua} setModoAgua={setModoAgua} textoPronostico={demoActivo ? undefined : pronostico.texto} zonaTransporte={zonaTransporte} />
         {conMapa(vista) && <EsqueletoMapa key={`esq-${vista}`} listo={mapaListo && (!simulando || flujo.ui.cargado || flujo.ui.error)} />}
         <Inicio activo={vista === "inicio"} mapaListo={mapaListo} />
         {vista === "validacion" && <div className={s.pagina}>{children}</div>}
@@ -1178,10 +1183,10 @@ function SalaInterior({ children }: { children: ReactNode }) {
   );
 }
 
-export default function Sala({ children }: { children: ReactNode }) {
+export default function Sala({ children, zonaTransporte = "mut" }: { children: ReactNode; zonaTransporte?: ZonaTransporte }) {
   return (
     <SalaProvider>
-      <SalaInterior>{children}</SalaInterior>
+      <SalaInterior zonaTransporte={zonaTransporte}>{children}</SalaInterior>
     </SalaProvider>
   );
 }

@@ -173,3 +173,31 @@ def test_publicar_zona_no_reemplaza_mut(tmp_path):
     assert mut.read_text() == "mut intacto"
     assert json.loads((tmp_path/"transporte_san_carlos.json").read_text()) == datos
     assert len(json.loads((tmp_path/"recorridos_san_carlos.geojson").read_text())["features"]) == 1
+
+
+def test_completo_conserva_shape_y_secuencia_fuera_de_zona(monkeypatch):
+    tablas = {
+        "stops": [{"stop_id": id, "stop_name": id, "stop_lon": str(x), "stop_lat": "-33.418", "location_type": "0"}
+                  for id, x in [("fuera", -70.63), ("local", -70.601), ("local2", -70.602)]],
+        "routes": [{"route_id": "r", "route_short_name": "1", "route_type": "3"}],
+        "trips": [{"trip_id": "t", "route_id": "r", "direction_id": "0", "trip_headsign": "X", "shape_id": "s"}],
+        "stop_times": [{"trip_id": "t", "stop_id": id, "stop_sequence": str(i)}
+                       for i, id in [(3, "local2"), (1, "fuera"), (2, "local")]],
+        "shapes": [{"shape_id": "s", "shape_pt_sequence": str(i), "shape_pt_lon": str(x), "shape_pt_lat": "-33.418"}
+                   for i, x in [(2, -70.601), (1, -70.63), (3, -70.602)]],
+    }
+    monkeypatch.setattr(gtfs, "filas", lambda _, nombre: iter(tablas[nombre]))
+    completos = []
+    local = gtfs.extraer(None, completos=completos)
+    assert local == gtfs.extraer(None)
+    assert local["recorridos"][0]["paraderos"] == ["local", "local2"]
+    assert [p["id"] for p in completos[0]["paraderos"]] == ["fuera", "local", "local2"]
+    assert completos[0]["geometria"][0] == (-70.63, -33.418)
+    assert gtfs.distancia(completos[0]["geometria"][0], gtfs.CENTRO) > gtfs.RADIO
+
+
+def test_completos_sin_servicios(monkeypatch):
+    monkeypatch.setattr(gtfs, "filas", lambda *_: iter([]))
+    completos = []
+    assert gtfs.extraer(None, completos=completos) == {"paraderos": [], "recorridos": []}
+    assert completos == []

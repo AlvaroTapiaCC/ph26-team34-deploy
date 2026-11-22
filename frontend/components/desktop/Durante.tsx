@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { CELDA, ESCURRIMIENTO, MAP_BOUNDS, PUNTOS, RAYOS, type LngLat } from "@/lib/data";
 import { useStore } from "@/lib/store";
-import { useExpuestos, useRecorridos, type Expuestos } from "@/lib/transporte";
+import { useExpuestos, useRecorridos, useRecorridoCompleto, type Expuestos, type ZonaTransporte } from "@/lib/transporte";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Button, Check, EstadoChip, Kicker, PrioChip, Toast } from "../ui";
 import Transporte, { capasTransporte } from "./Transporte";
@@ -142,9 +142,10 @@ interface TransporteMapa {
   servicioActivo: string | null;
 }
 
-function DuranteMap({ tp }: { tp: TransporteMapa }) {
+function DuranteMap({ tp, zonaTransporte }: { tp: TransporteMapa; zonaTransporte: ZonaTransporte }) {
   const { s, ranking, cadena, toggleLayer, flood } = useStore();
-  const recorridos = useRecorridos(s.layers.transporte);
+  const recorridos = useRecorridos(s.layers.transporte, zonaTransporte);
+  const recorridoCompleto = useRecorridoCompleto(s.layers.transporte ? tp.servicioActivo : null, zonaTransporte);
   const capas = useMemo(
     () => (s.layers.transporte ? capasTransporte(tp.datos, recorridos, tp.activo, (id) => tp.onSelect(tp.activo === id ? null : id), tp.servicioActivo) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -191,6 +192,7 @@ function DuranteMap({ tp }: { tp: TransporteMapa }) {
       paraderos={capas?.paraderos}
       recorridos={capas?.recorridos}
       recorridosDestacados={capas?.recorridosDestacados}
+      recorridoCompleto={recorridoCompleto}
       caminatas={capas?.caminatas}
       pins={L.prioridad ? pins : pins.filter((p) => p.id === "flood")}
       labels={[...labels, ...celdaLabel]}
@@ -213,7 +215,7 @@ function DuranteMap({ tp }: { tp: TransporteMapa }) {
   );
 }
 
-export default function Durante() {
+export default function Durante({ zonaTransporte = "mut" }: { zonaTransporte?: ZonaTransporte }) {
   const { s, fuente } = useStore();
   // Con datos de ejemplo el escenario no existe en el servidor: el agua observada se cruza igual con "base"
   const escenario = fuente === "api" ? s.scenario : "base";
@@ -240,7 +242,7 @@ export default function Durante() {
         {s.layers.transporte && <Transporte datos={datos} calculadoAt={calculadoAt} estado={estado} activo={activo} onSelect={elegirParadero} servicioActivo={tp.servicioActivo} onServicio={elegirServicio} />}
       </div>
       <div className="col col--r">
-        <DuranteMap tp={tp} />
+        <DuranteMap tp={tp} zonaTransporte={zonaTransporte} />
       </div>
     </main>
   );

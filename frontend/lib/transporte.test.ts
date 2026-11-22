@@ -10,10 +10,10 @@ const codigo = ts.transpileModule(readFileSync(new URL("./transporte.ts", import
   compilerOptions: { module: ts.ModuleKind.CommonJS },
 }).outputText;
 
-function cargar(fetch: typeof globalThis.fetch) {
+function cargar(fetch: typeof globalThis.fetch, completo = false) {
   const exports: Record<string, (zona?: string) => Promise<unknown[]>> = {};
   runInNewContext(codigo, { exports, fetch, require: (id: string) => id === "react" ? require("react") : {} });
-  return exports.cargarRecorridos;
+  return completo ? exports.cargarRecorridosCompletos : exports.cargarRecorridos;
 }
 
 test("recorridos: MUT por defecto, caché independiente por zona", async () => {
@@ -53,4 +53,33 @@ test("recorridos: un error permite reintentar sin invalidar otra zona", async ()
   fallar = false;
   assert.equal((await loader("san-carlos")).length, 0);
   assert.equal(await loader(), mut);
+});
+
+test("completos: carga diferida, caché por zona y paraderos de todo el viaje", async () => {
+  const urls: string[] = [];
+  const loader = cargar((async (url: string) => {
+    urls.push(url);
+    return { ok: true, json: async () => [{ servicio: "1", sentido: "0", geometria: [[-70.63, -33.418]], paraderos: [{ id: "fuera" }] }] };
+  }) as typeof fetch, true);
+  assert.equal(urls.length, 0);
+  const mut = await loader();
+  const sc = await loader("san-carlos");
+  assert.equal(await loader(), mut);
+  assert.equal(await loader("san-carlos"), sc);
+  assert.deepEqual(urls, ["/data/recorridos_completos_mut.json", "/data/recorridos_completos_san_carlos.json"]);
+  assert.equal(mut.length, 1);
+});
+
+test("completos: vacío válido y reintento tras error", async () => {
+  let consultas = 0;
+  const loader = cargar((async () => {
+    consultas++;
+    if (consultas === 1) throw new Error("sin red");
+    return { ok: true, json: async () => [] };
+  }) as typeof fetch, true);
+  await assert.rejects(loader(), /sin red/);
+  const vacio = await loader();
+  assert.equal(vacio.length, 0);
+  assert.equal(await loader(), vacio);
+  assert.equal(consultas, 2);
 });

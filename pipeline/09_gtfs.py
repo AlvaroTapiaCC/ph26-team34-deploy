@@ -159,12 +159,14 @@ def tramos(puntos, centro=CENTRO, radio=RADIO):
     return partes
 
 
-def extraer(z, ajustador=None, centro=CENTRO, radio=RADIO):
+def extraer(z, ajustador=None, centro=CENTRO, radio=RADIO, completos=None):
     paraderos = {}
+    todos_paraderos = {}
     for r in filas(z, "stops"):
         if r["location_type"] not in ("", "0"):
             continue
         lon, lat = float(r["stop_lon"]), float(r["stop_lat"])
+        todos_paraderos[r["stop_id"]] = dict(id=r["stop_id"], nombre=r["stop_name"], lon=lon, lat=lat)
         if distancia((lon, lat), centro) < radio:
             paraderos[r["stop_id"]] = dict(id=r["stop_id"], nombre=r["stop_name"], lon=lon, lat=lat)
     buses = {r["route_id"]: r["route_short_name"] for r in filas(z, "routes") if r["route_type"] == "3"}
@@ -186,6 +188,12 @@ def extraer(z, ajustador=None, centro=CENTRO, radio=RADIO):
             elegidos[clave] = tid
 
     formas = {viajes[tid]["shape_id"]: [] for tid in elegidos.values()}
+    secuencias_completas = defaultdict(list)
+    if completos is not None:
+        tids = set(elegidos.values())
+        for r in filas(z, "stop_times"):
+            if r["trip_id"] in tids:
+                secuencias_completas[r["trip_id"]].append((int(r["stop_sequence"]), r["stop_id"]))
     for r in filas(z, "shapes"):
         if r["shape_id"] in formas:
             formas[r["shape_id"]].append((int(r["shape_pt_sequence"]), float(r["shape_pt_lon"]), float(r["shape_pt_lat"])))
@@ -195,6 +203,9 @@ def extraer(z, ajustador=None, centro=CENTRO, radio=RADIO):
         puntos = [(lon, lat) for _, lon, lat in sorted(formas[v["shape_id"]])]
         if ajustador:
             puntos = ajustador.ajustar(puntos, v["shape_id"])
+        if completos is not None:
+            completos.append(dict(servicio=servicio, sentido=sentido, destino=v["trip_headsign"], geometria=puntos,
+                                  paraderos=[todos_paraderos[pid] for _, pid in sorted(secuencias_completas[tid])]))
         lineas.append(dict(servicio=servicio, sentido=sentido, destino=v["trip_headsign"], viaje=tid,
                            paraderos=[p for _, p in sorted(secuencias[tid])], geometria=tramos(puntos, centro, radio)))
     stops = []
@@ -256,13 +267,15 @@ def main():
     parser.add_argument("--zona", choices=("mut", "san-carlos"), default="mut")
     parser.add_argument("--ranking", type=Path, default=ROOT/"data/validacion/prediccion_replay_julio.csv")
     parser.add_argument("--rejillas", type=Path, default=ROOT/"data/rejillas.geojson")
+    parser.add_argument("--solo-completos", action="store_true", help="Publica solo los recorridos completos del frontend")
     args = parser.parse_args()
     centro, radio, sector, derivacion = CENTRO, RADIO, None, None
     if args.zona == "san-carlos":
         centro, radio, sector, derivacion = zona_san_carlos(args.ranking, args.rejillas)
     ajustador = AjustadorOSRM(args.osrm_url, args.cache_osrm, args.solo_cache_osrm)
+    completos = []
     with ZipFile(args.zip) as z:
-        datos = extraer(z, ajustador, centro, radio)
+        datos = extraer(z, ajustador, centro, radio, completos)
     with args.zip.open("rb") as f:
         digest = hashlib.file_digest(f, "sha256").hexdigest()
     meta = dict(fuente="GTFS de DTPM", url=args.url, fecha_descarga=args.fecha,
@@ -273,6 +286,13 @@ def main():
         meta["derivacion_zona"] = derivacion
     meta["ajuste_geometria"] = ajustador.metadatos()
     nombre = "san_carlos" if args.zona == "san-carlos" else "mut"
+    ruta_completa = ROOT/f"frontend/public/data/recorridos_completos_{nombre}.json"
+    ruta_completa.write_text(json.dumps(completos, ensure_ascii=False, separators=(",", ":"))+"\n", encoding="utf-8")
+    meta_completa = {**meta, "geometria": "Shape completo sin recorte; paraderos ordenados del viaje elegido",
+                     "sha256_salida": hashlib.sha256(ruta_completa.read_bytes()).hexdigest()}
+    ruta_completa.with_suffix(".meta.json").write_text(json.dumps(meta_completa, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+    if args.solo_completos:
+        return
     dest = ROOT/f"backend/data/transporte_{nombre}.json"
     dest.write_bytes((json.dumps(datos, ensure_ascii=False, separators=(",", ":"))+"\n").encode())
     meta["sha256_salida"] = hashlib.sha256(dest.read_bytes()).hexdigest()
