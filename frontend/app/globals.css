@@ -3164,3 +3164,66 @@ p {
     transform: scale(0.55);
   }
 }
+
+/* Botones con respuesta física: levantan al pasar, se hunden al presionar; el principal tiene un brillo que cruza */
+.btn {
+  transition: transform var(--t-rapido) var(--ease-out), background-color var(--t-rapido) var(--ease-out), opacity var(--t-rapido) var(--ease-out);
+}
+.btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+.btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+.btn--primary {
+  position: relative;
+  overflow: hidden;
+}
+.btn--primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%); /* paleta-ok: brillo */
+  transform: translateX(-120%);
+  transition: transform 650ms var(--ease-out);
+  pointer-events: none;
+}
+.btn--primary:not(:disabled):hover::after {
+  transform: translateX(120%);
+}
+/* Globo del mapa (nombre y puntaje al pasar el mouse) */
+.globo .maplibregl-popup-content {
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--fondo) 94%, var(--secundario));
+  color: var(--secundario);
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.6), inset 0 0 0 1px color-mix(in srgb, var(--secundario) 10%, transparent);
+  font: 600 13px/1.3 var(--font-body);
+  animation: globo-entra 160ms var(--ease-out);
+}
+.globo .maplibregl-popup-content span {
+  color: var(--text-2);
+  font-weight: 500;
+  font-size: 12px;
+}
+.globo .maplibregl-popup-tip {
+  display: none;
+}
+@keyframes globo-entra {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+/* Pin resaltado desde la lista */
+.pin svg {
+  transition: transform var(--t-rapido) var(--ease-out);
+}
+.pin.is-resaltado svg {
+  transform: scale(1.25);
+}
+.pin.is-resaltado {
+  z-index: 2;
+}

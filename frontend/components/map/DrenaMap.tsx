@@ -357,7 +357,7 @@ export default function DrenaMap(props: DrenaMapProps) {
             type: "circle",
             source: "puntos",
             filter: ["==", ["get", "id"], ""],
-            paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 9, 16, 14], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2.5 },
+            paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 9, 16, 14], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2.5 }, // paleta-ok: relleno transparente
           });
           map.addLayer({
             id: "puntos-brillo",

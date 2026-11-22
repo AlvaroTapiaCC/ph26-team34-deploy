@@ -4,7 +4,7 @@
 .sala {
   --vidrio: color-mix(in srgb, var(--fondo) 94%, var(--secundario));
   --vidrio-borde: color-mix(in srgb, var(--secundario) 9%, transparent);
-  --sombra-alta: 0 24px 60px -12px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --sombra-alta: 0 24px 60px -12px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.35); /* paleta-ok: sombra */
   --brillo: color-mix(in srgb, var(--principal) 35%, transparent);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -521,7 +521,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%);
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%); /* paleta-ok: brillo */
   transform: translateX(-120%);
   transition: transform 700ms var(--ease-out);
 }
@@ -1275,7 +1275,8 @@
     display: none;
   }
   .tabs {
-    min-height: 30rem;
+    height: 75vh;
+    flex: none;
   }
   .mapaChips {
     max-width: calc(100% - 28px);
