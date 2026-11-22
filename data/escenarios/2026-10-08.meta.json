@@ -1,0 +1,56 @@
+{
+  "generado_utc": "2026-11-22T07:52:41Z",
+  "evento": {
+    "nombre": "2026-10-08",
+    "desde_santiago": "2026-10-06",
+    "hasta_santiago": "2026-10-08",
+    "nota": "Caso San Carlos: reconstrucción del aluvión de Quebrada Honda, no validación."
+  },
+  "ventana_utc": {
+    "desde_exclusivo": "2026-10-05T03:00:00Z",
+    "hasta_inclusivo": "2026-10-10T03:00:00Z"
+  },
+  "centro_pedido_latlon": [
+    -33.418,
+    -70.541
+  ],
+  "celda_open_meteo_latlon": [
+    -33.497364,
+    -70.618835
+  ],
+  "elevacion_celda_m": 700.0,
+  "fuentes": {
+    "observado": {
+      "api": "Open-Meteo Historical Forecast API",
+      "modelo": "best_match",
+      "url": "https://historical-forecast-api.open-meteo.com/v1/forecast?latitude=-33.418&longitude=-70.541&timezone=GMT&start_date=2026-10-04&end_date=2026-10-11&models=best_match&hourly=precipitation%2Cwind_gusts_10m%2Cwind_speed_10m",
+      "variables": [
+        "precipitation",
+        "wind_gusts_10m",
+        "wind_speed_10m"
+      ]
+    },
+    "pronostico_emitido_antes": {
+      "api": "Open-Meteo Previous Runs API",
+      "url": "https://previous-runs-api.open-meteo.com/v1/forecast?latitude=-33.418&longitude=-70.541&timezone=GMT&start_date=2026-10-04&end_date=2026-10-11&hourly=precipitation_previous_day1",
+      "variables": [
+        "precipitation_previous_day1"
+      ]
+    },
+    "licencia": "CC BY 4.0, https://open-meteo.com/en/license"
+  },
+  "config_clima": {
+    "ruta": "backend/config/clima.yaml",
+    "sha256": "e9a54df43280a245643e4a026561f7b25aba0ae0cbabd338c699c86108894d20",
+    "version": 1
+  },
+  "salida": {
+    "archivo": "2026-10-08.json",
+    "sha256": "87c7643724f46620246bcebf0b10708c5c928f99f4006892c10a06e9a48c0f2a"
+  },
+  "script": {
+    "ruta": "pipeline/11_clima_historico.py",
+    "version": "1.0.0",
+    "sha256": "303a3614f9e42d14f0abce7220ef7ceff4350b5b9adb50a4cabfe6a475911d9a"
+  }
+}

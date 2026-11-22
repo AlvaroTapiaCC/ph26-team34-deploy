@@ -1,0 +1,74 @@
+{
+  "generado_utc": "2026-11-22T07:53:15.017321+00:00",
+  "etiqueta": "Reconstrucción · datos reproducidos",
+  "entradas": [
+    {
+      "ruta": "data/validacion/prediccion_replay_julio.csv",
+      "sha256": "7f29c8e13fb57a50d748b7a23241c709cc5f058bc24d4d3fcdc6cd7acab674f1"
+    },
+    {
+      "ruta": "data/validacion/prediccion_replay_julio.meta.json",
+      "sha256": "f2ee9c907ea52387ab3c6eda2b52242aad28a5f67af50e0796b3072625a22cce"
+    },
+    {
+      "ruta": "data/street_chains_replay_julio.json",
+      "sha256": "afd38d52f522e6548096bdbbb09263567d4f52b9392bc6ce61185a52dbc857a2"
+    },
+    {
+      "ruta": "data/escenarios/2026-10-08.json",
+      "sha256": "87c7643724f46620246bcebf0b10708c5c928f99f4006892c10a06e9a48c0f2a"
+    },
+    {
+      "ruta": "data/escenarios/2026-10-08.meta.json",
+      "sha256": "149d465b1431213d2982ff1d72c9046566b92f3e9f88eefd6d7a4d7d89537425"
+    },
+    {
+      "ruta": "data/las_condes/puntos_criticos_invierno_2026.geojson",
+      "sha256": "21aa3c73de1c418ecddeb978d2b8c2a20c5b25f5822e540beda29cef047edd0b"
+    },
+    {
+      "ruta": "data/las_condes/puntos_criticos_invierno_2026.meta.json",
+      "sha256": "381bde707a9d719cc1f6af109f75ba3debe509fb2515c4313e29f3009d6e7bb7"
+    },
+    {
+      "ruta": "data/fuente_osm_replay_julio.osm.bz2",
+      "sha256": "314854fdf073562f7e06d42010d870bdf30fc1734842114745519a43e72142f6"
+    },
+    {
+      "ruta": "data/fuente_osm_replay_julio.meta.json",
+      "sha256": "dd7037e690986b7de2500d0bb09a98a50f84f1ef6be9aab5490aadad6e367c67"
+    },
+    {
+      "ruta": "data/validacion/san_carlos/antecedentes.json",
+      "sha256": "70f86eb7c31356034eb635c1407f6bd1377693f2f483548d84a8c06b6cfa106b"
+    },
+    {
+      "ruta": "backend/config/formula_validacion.yaml",
+      "sha256": "fde77019056cd4a9fcb88d5ad58dabd85f5c25462cd8faf95d648322a6f3e848"
+    },
+    {
+      "ruta": "backend/config/clima.yaml",
+      "sha256": "e9a54df43280a245643e4a026561f7b25aba0ae0cbabd338c699c86108894d20"
+    },
+    {
+      "ruta": "backend/app/services/formula.py",
+      "sha256": "390a019aea959cc353f6961e4c40f429c3cbf23a848c3a50dc074c5a964975ea"
+    },
+    {
+      "ruta": "pipeline/10_replay.py",
+      "sha256": "30b733aaa99a4c61a00da3fb0d4b30fba02825345384c8894ae97d78cf4095af"
+    },
+    {
+      "ruta": "pipeline/validacion_ranking.py",
+      "sha256": "4dbe0828e5e87b8dc845e35ad7558b64c8cfcf3c5bc17021b86b14cae1c6af4f"
+    },
+    {
+      "ruta": "pipeline/15_caso_san_carlos.py",
+      "sha256": "db4a4ec3976c6fbb6c59fbe7136fc3e61090af590f363b3e049abb271e825453"
+    }
+  ],
+  "salida": {
+    "ruta": "data/validacion/san_carlos/caso.json",
+    "sha256": "9f56d4caedf7f6dae033bd8ab2aa3297e8e074a97bd5528a430a0ebcd22f4e71"
+  }
+}

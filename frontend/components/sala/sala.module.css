@@ -232,7 +232,7 @@
 }
 /* En el inicio el mapa se monta y carga oculto: aparece listo al entrar a la central */
 .sala[data-vista="inicio"] .mapa,
-.sala[data-vista="validacion"] .mapa {
+.sala:is([data-vista="validacion"], [data-vista="san-carlos"]) .mapa {
   opacity: 0;
   visibility: hidden;
 }
@@ -1265,7 +1265,7 @@
     height: 52vh;
     flex: none;
   }
-  .sala:is([data-vista="inicio"], [data-vista="validacion"]) .mapa {
+  .sala:is([data-vista="inicio"], [data-vista="validacion"], [data-vista="san-carlos"]) .mapa {
     position: absolute;
     inset: 0;
     height: auto;
@@ -1291,7 +1291,7 @@
     width: auto;
     margin: 10px;
   }
-  .sala:is([data-vista="inicio"], [data-vista="validacion"]) .riel {
+  .sala:is([data-vista="inicio"], [data-vista="validacion"], [data-vista="san-carlos"]) .riel {
     display: none;
   }
   .tabs {

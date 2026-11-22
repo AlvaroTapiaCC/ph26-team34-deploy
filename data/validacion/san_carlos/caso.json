@@ -1,0 +1,1432 @@
+{
+  "etiqueta": "Reconstrucción · datos reproducidos",
+  "evento": "2026-10-08",
+  "hora_aluvion_utc": "2026-10-08T20:00:00Z",
+  "primera_hora_por_modo_utc": {
+    "seco": null,
+    "tormenta_inminente": "2026-10-06T13:00:00Z",
+    "durante": "2026-10-06T03:00:00Z",
+    "despues": "2026-10-07T15:00:00Z",
+    "sin_dato": null
+  },
+  "primera_tormenta_7_8_utc": "2026-10-07T21:00:00Z",
+  "adelanto_horas": 23.0,
+  "adelanto_primera_tormenta_ventana_horas": 55.0,
+  "lluvia_8_oct": {
+    "pronostico_mm": 22.5,
+    "observado_mm": 37.5,
+    "centro_latlon": [
+      -33.418,
+      -70.541
+    ]
+  },
+  "referencia_otro_centro": {
+    "centro_latlon": [
+      -33.4,
+      -70.52
+    ],
+    "pronostico_mm": 26.7,
+    "observado_mm": 26.9,
+    "nota": "Cifras de referencia aportadas para otra coordenada; no son el insumo del ranking ni de la curva.",
+    "fuente_url": "https://open-meteo.com/en/docs/previous-runs-api"
+  },
+  "lluvia_6_8_mm": 96.1,
+  "horas": [
+    {
+      "hora_utc": "2026-10-06T03:00:00Z",
+      "hora_santiago": "2026-10-06T00:00-03:00",
+      "lluvia_mm": 1.0,
+      "racha_kmh": 12.6,
+      "viento_kmh": 4.2,
+      "lluvia_pronosticada_mm": 0.3,
+      "lluvia_acum_24h_mm": 9.0,
+      "racha_max_6h_kmh": 17.3,
+      "lluvia_pronosticada_prox_24h_mm": 17.8,
+      "clima": 0.18,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T04:00:00Z",
+      "hora_santiago": "2026-10-06T01:00-03:00",
+      "lluvia_mm": 0.7,
+      "racha_kmh": 11.9,
+      "viento_kmh": 6.0,
+      "lluvia_pronosticada_mm": 1.0,
+      "lluvia_acum_24h_mm": 9.7,
+      "racha_max_6h_kmh": 12.6,
+      "lluvia_pronosticada_prox_24h_mm": 20.0,
+      "clima": 0.194,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T05:00:00Z",
+      "hora_santiago": "2026-10-06T02:00-03:00",
+      "lluvia_mm": 0.9,
+      "racha_kmh": 11.9,
+      "viento_kmh": 4.6,
+      "lluvia_pronosticada_mm": 0.2,
+      "lluvia_acum_24h_mm": 10.6,
+      "racha_max_6h_kmh": 12.6,
+      "lluvia_pronosticada_prox_24h_mm": 23.0,
+      "clima": 0.212,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T06:00:00Z",
+      "hora_santiago": "2026-10-06T03:00-03:00",
+      "lluvia_mm": 0.5,
+      "racha_kmh": 10.1,
+      "viento_kmh": 6.9,
+      "lluvia_pronosticada_mm": 0.2,
+      "lluvia_acum_24h_mm": 11.1,
+      "racha_max_6h_kmh": 12.6,
+      "lluvia_pronosticada_prox_24h_mm": 24.9,
+      "clima": 0.222,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T07:00:00Z",
+      "hora_santiago": "2026-10-06T04:00-03:00",
+      "lluvia_mm": 1.1,
+      "racha_kmh": 16.9,
+      "viento_kmh": 7.9,
+      "lluvia_pronosticada_mm": 0.3,
+      "lluvia_acum_24h_mm": 12.2,
+      "racha_max_6h_kmh": 16.9,
+      "lluvia_pronosticada_prox_24h_mm": 28.0,
+      "clima": 0.244,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T08:00:00Z",
+      "hora_santiago": "2026-10-06T05:00-03:00",
+      "lluvia_mm": 3.4,
+      "racha_kmh": 16.6,
+      "viento_kmh": 4.0,
+      "lluvia_pronosticada_mm": 0.3,
+      "lluvia_acum_24h_mm": 15.6,
+      "racha_max_6h_kmh": 16.9,
+      "lluvia_pronosticada_prox_24h_mm": 29.8,
+      "clima": 0.312,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T09:00:00Z",
+      "hora_santiago": "2026-10-06T06:00-03:00",
+      "lluvia_mm": 1.7,
+      "racha_kmh": 11.2,
+      "viento_kmh": 4.1,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 17.3,
+      "racha_max_6h_kmh": 16.9,
+      "lluvia_pronosticada_prox_24h_mm": 31.2,
+      "clima": 0.346,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T10:00:00Z",
+      "hora_santiago": "2026-10-06T07:00-03:00",
+      "lluvia_mm": 3.3,
+      "racha_kmh": 22.7,
+      "viento_kmh": 5.2,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 20.6,
+      "racha_max_6h_kmh": 22.7,
+      "lluvia_pronosticada_prox_24h_mm": 31.8,
+      "clima": 0.439,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T11:00:00Z",
+      "hora_santiago": "2026-10-06T08:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 11.5,
+      "viento_kmh": 5.8,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 20.6,
+      "racha_max_6h_kmh": 22.7,
+      "lluvia_pronosticada_prox_24h_mm": 31.8,
+      "clima": 0.439,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T12:00:00Z",
+      "hora_santiago": "2026-10-06T09:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 11.5,
+      "viento_kmh": 2.8,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 20.6,
+      "racha_max_6h_kmh": 22.7,
+      "lluvia_pronosticada_prox_24h_mm": 32.0,
+      "clima": 0.439,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T13:00:00Z",
+      "hora_santiago": "2026-10-06T10:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 12.2,
+      "viento_kmh": 3.2,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 20.6,
+      "racha_max_6h_kmh": 22.7,
+      "lluvia_pronosticada_prox_24h_mm": 32.0,
+      "clima": 0.439,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-06T15:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-06T14:00:00Z",
+      "hora_santiago": "2026-10-06T11:00-03:00",
+      "lluvia_mm": 0.1,
+      "racha_kmh": 37.4,
+      "viento_kmh": 8.3,
+      "lluvia_pronosticada_mm": 0.3,
+      "lluvia_acum_24h_mm": 20.6,
+      "racha_max_6h_kmh": 37.4,
+      "lluvia_pronosticada_prox_24h_mm": 31.7,
+      "clima": 0.586,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-06T15:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-06T15:00:00Z",
+      "hora_santiago": "2026-10-06T12:00-03:00",
+      "lluvia_mm": 0.6,
+      "racha_kmh": 24.1,
+      "viento_kmh": 5.2,
+      "lluvia_pronosticada_mm": 0.5,
+      "lluvia_acum_24h_mm": 21.1,
+      "racha_max_6h_kmh": 37.4,
+      "lluvia_pronosticada_prox_24h_mm": 31.2,
+      "clima": 0.596,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-06T16:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-06T16:00:00Z",
+      "hora_santiago": "2026-10-06T13:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 25.6,
+      "viento_kmh": 6.7,
+      "lluvia_pronosticada_mm": 0.5,
+      "lluvia_acum_24h_mm": 21.1,
+      "racha_max_6h_kmh": 37.4,
+      "lluvia_pronosticada_prox_24h_mm": 30.8,
+      "clima": 0.596,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-06T17:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-06T17:00:00Z",
+      "hora_santiago": "2026-10-06T14:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 23.8,
+      "viento_kmh": 2.1,
+      "lluvia_pronosticada_mm": 1.1,
+      "lluvia_acum_24h_mm": 21.1,
+      "racha_max_6h_kmh": 37.4,
+      "lluvia_pronosticada_prox_24h_mm": 29.7,
+      "clima": 0.596,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-06T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-06T18:00:00Z",
+      "hora_santiago": "2026-10-06T15:00-03:00",
+      "lluvia_mm": 0.3,
+      "racha_kmh": 21.2,
+      "viento_kmh": 6.5,
+      "lluvia_pronosticada_mm": 0.8,
+      "lluvia_acum_24h_mm": 21.3,
+      "racha_max_6h_kmh": 37.4,
+      "lluvia_pronosticada_prox_24h_mm": 28.9,
+      "clima": 0.6,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-06T19:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-06T19:00:00Z",
+      "hora_santiago": "2026-10-06T16:00-03:00",
+      "lluvia_mm": 1.5,
+      "racha_kmh": 21.6,
+      "viento_kmh": 3.4,
+      "lluvia_pronosticada_mm": 0.8,
+      "lluvia_acum_24h_mm": 22.3,
+      "racha_max_6h_kmh": 37.4,
+      "lluvia_pronosticada_prox_24h_mm": 28.2,
+      "clima": 0.62,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T20:00:00Z",
+      "hora_santiago": "2026-10-06T17:00-03:00",
+      "lluvia_mm": 2.5,
+      "racha_kmh": 11.9,
+      "viento_kmh": 1.9,
+      "lluvia_pronosticada_mm": 1.1,
+      "lluvia_acum_24h_mm": 24.4,
+      "racha_max_6h_kmh": 25.6,
+      "lluvia_pronosticada_prox_24h_mm": 27.2,
+      "clima": 0.544,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T21:00:00Z",
+      "hora_santiago": "2026-10-06T18:00-03:00",
+      "lluvia_mm": 2.6,
+      "racha_kmh": 11.2,
+      "viento_kmh": 1.6,
+      "lluvia_pronosticada_mm": 1.2,
+      "lluvia_acum_24h_mm": 26.7,
+      "racha_max_6h_kmh": 25.6,
+      "lluvia_pronosticada_prox_24h_mm": 26.4,
+      "clima": 0.59,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T22:00:00Z",
+      "hora_santiago": "2026-10-06T19:00-03:00",
+      "lluvia_mm": 2.0,
+      "racha_kmh": 21.2,
+      "viento_kmh": 2.7,
+      "lluvia_pronosticada_mm": 2.5,
+      "lluvia_acum_24h_mm": 27.7,
+      "racha_max_6h_kmh": 23.8,
+      "lluvia_pronosticada_prox_24h_mm": 24.1,
+      "clima": 0.592,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-06T23:00:00Z",
+      "hora_santiago": "2026-10-06T20:00-03:00",
+      "lluvia_mm": 1.8,
+      "racha_kmh": 21.6,
+      "viento_kmh": 3.9,
+      "lluvia_pronosticada_mm": 1.3,
+      "lluvia_acum_24h_mm": 28.1,
+      "racha_max_6h_kmh": 21.6,
+      "lluvia_pronosticada_prox_24h_mm": 22.8,
+      "clima": 0.578,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T00:00:00Z",
+      "hora_santiago": "2026-10-06T21:00-03:00",
+      "lluvia_mm": 2.1,
+      "racha_kmh": 11.2,
+      "viento_kmh": 9.3,
+      "lluvia_pronosticada_mm": 1.0,
+      "lluvia_acum_24h_mm": 29.3,
+      "racha_max_6h_kmh": 21.6,
+      "lluvia_pronosticada_prox_24h_mm": 21.8,
+      "clima": 0.602,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T01:00:00Z",
+      "hora_santiago": "2026-10-06T22:00-03:00",
+      "lluvia_mm": 2.7,
+      "racha_kmh": 21.6,
+      "viento_kmh": 4.4,
+      "lluvia_pronosticada_mm": 1.4,
+      "lluvia_acum_24h_mm": 30.4,
+      "racha_max_6h_kmh": 21.6,
+      "lluvia_pronosticada_prox_24h_mm": 20.4,
+      "clima": 0.616,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T02:00:00Z",
+      "hora_santiago": "2026-10-06T23:00-03:00",
+      "lluvia_mm": 4.0,
+      "racha_kmh": 7.9,
+      "viento_kmh": 3.7,
+      "lluvia_pronosticada_mm": 1.8,
+      "lluvia_acum_24h_mm": 32.8,
+      "racha_max_6h_kmh": 21.6,
+      "lluvia_pronosticada_prox_24h_mm": 18.6,
+      "clima": 0.616,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T03:00:00Z",
+      "hora_santiago": "2026-10-07T00:00-03:00",
+      "lluvia_mm": 3.7,
+      "racha_kmh": 9.7,
+      "viento_kmh": 6.7,
+      "lluvia_pronosticada_mm": 1.5,
+      "lluvia_acum_24h_mm": 35.5,
+      "racha_max_6h_kmh": 21.6,
+      "lluvia_pronosticada_prox_24h_mm": 17.1,
+      "clima": 0.616,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T04:00:00Z",
+      "hora_santiago": "2026-10-07T01:00-03:00",
+      "lluvia_mm": 2.9,
+      "racha_kmh": 14.4,
+      "viento_kmh": 6.2,
+      "lluvia_pronosticada_mm": 3.2,
+      "lluvia_acum_24h_mm": 37.7,
+      "racha_max_6h_kmh": 21.6,
+      "lluvia_pronosticada_prox_24h_mm": 13.9,
+      "clima": 0.616,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T05:00:00Z",
+      "hora_santiago": "2026-10-07T02:00-03:00",
+      "lluvia_mm": 6.3,
+      "racha_kmh": 13.7,
+      "viento_kmh": 7.9,
+      "lluvia_pronosticada_mm": 3.2,
+      "lluvia_acum_24h_mm": 43.1,
+      "racha_max_6h_kmh": 21.6,
+      "lluvia_pronosticada_prox_24h_mm": 10.7,
+      "clima": 0.616,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T06:00:00Z",
+      "hora_santiago": "2026-10-07T03:00-03:00",
+      "lluvia_mm": 3.7,
+      "racha_kmh": 16.6,
+      "viento_kmh": 9.9,
+      "lluvia_pronosticada_mm": 2.1,
+      "lluvia_acum_24h_mm": 46.3,
+      "racha_max_6h_kmh": 21.6,
+      "lluvia_pronosticada_prox_24h_mm": 8.6,
+      "clima": 0.616,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T07:00:00Z",
+      "hora_santiago": "2026-10-07T04:00-03:00",
+      "lluvia_mm": 2.7,
+      "racha_kmh": 18.7,
+      "viento_kmh": 9.5,
+      "lluvia_pronosticada_mm": 3.4,
+      "lluvia_acum_24h_mm": 47.9,
+      "racha_max_6h_kmh": 18.7,
+      "lluvia_pronosticada_prox_24h_mm": 5.2,
+      "clima": 0.6,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T08:00:00Z",
+      "hora_santiago": "2026-10-07T05:00-03:00",
+      "lluvia_mm": 2.1,
+      "racha_kmh": 20.5,
+      "viento_kmh": 9.9,
+      "lluvia_pronosticada_mm": 2.1,
+      "lluvia_acum_24h_mm": 46.6,
+      "racha_max_6h_kmh": 20.5,
+      "lluvia_pronosticada_prox_24h_mm": 3.1,
+      "clima": 0.605,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T09:00:00Z",
+      "hora_santiago": "2026-10-07T06:00-03:00",
+      "lluvia_mm": 1.0,
+      "racha_kmh": 19.4,
+      "viento_kmh": 8.3,
+      "lluvia_pronosticada_mm": 1.4,
+      "lluvia_acum_24h_mm": 45.9,
+      "racha_max_6h_kmh": 20.5,
+      "lluvia_pronosticada_prox_24h_mm": 1.7,
+      "clima": 0.605,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T10:00:00Z",
+      "hora_santiago": "2026-10-07T07:00-03:00",
+      "lluvia_mm": 0.6,
+      "racha_kmh": 16.6,
+      "viento_kmh": 7.4,
+      "lluvia_pronosticada_mm": 0.6,
+      "lluvia_acum_24h_mm": 43.2,
+      "racha_max_6h_kmh": 20.5,
+      "lluvia_pronosticada_prox_24h_mm": 1.1,
+      "clima": 0.605,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T11:00:00Z",
+      "hora_santiago": "2026-10-07T08:00-03:00",
+      "lluvia_mm": 0.5,
+      "racha_kmh": 14.8,
+      "viento_kmh": 5.4,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 43.7,
+      "racha_max_6h_kmh": 20.5,
+      "lluvia_pronosticada_prox_24h_mm": 1.1,
+      "clima": 0.605,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T12:00:00Z",
+      "hora_santiago": "2026-10-07T09:00-03:00",
+      "lluvia_mm": 0.7,
+      "racha_kmh": 11.5,
+      "viento_kmh": 6.5,
+      "lluvia_pronosticada_mm": 0.2,
+      "lluvia_acum_24h_mm": 44.4,
+      "racha_max_6h_kmh": 20.5,
+      "lluvia_pronosticada_prox_24h_mm": 0.9,
+      "clima": 0.605,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T13:00:00Z",
+      "hora_santiago": "2026-10-07T10:00-03:00",
+      "lluvia_mm": 0.4,
+      "racha_kmh": 11.5,
+      "viento_kmh": 1.5,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 44.8,
+      "racha_max_6h_kmh": 20.5,
+      "lluvia_pronosticada_prox_24h_mm": 0.9,
+      "clima": 0.605,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T14:00:00Z",
+      "hora_santiago": "2026-10-07T11:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 13.0,
+      "viento_kmh": 0.5,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 44.7,
+      "racha_max_6h_kmh": 19.4,
+      "lluvia_pronosticada_prox_24h_mm": 0.9,
+      "clima": 0.6,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T15:00:00Z",
+      "hora_santiago": "2026-10-07T12:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 17.3,
+      "viento_kmh": 1.3,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 44.1,
+      "racha_max_6h_kmh": 17.3,
+      "lluvia_pronosticada_prox_24h_mm": 0.9,
+      "clima": 0.6,
+      "modo": "despues",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T16:00:00Z",
+      "hora_santiago": "2026-10-07T13:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 29.9,
+      "viento_kmh": 6.4,
+      "lluvia_pronosticada_mm": 0.1,
+      "lluvia_acum_24h_mm": 44.1,
+      "racha_max_6h_kmh": 29.9,
+      "lluvia_pronosticada_prox_24h_mm": 0.9,
+      "clima": 0.699,
+      "modo": "despues",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T17:00:00Z",
+      "hora_santiago": "2026-10-07T14:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 36.0,
+      "viento_kmh": 6.7,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 44.1,
+      "racha_max_6h_kmh": 36.0,
+      "lluvia_pronosticada_prox_24h_mm": 1.1,
+      "clima": 0.76,
+      "modo": "despues",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T18:00:00Z",
+      "hora_santiago": "2026-10-07T15:00-03:00",
+      "lluvia_mm": 0.9,
+      "racha_kmh": 32.8,
+      "viento_kmh": 8.5,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 44.7,
+      "racha_max_6h_kmh": 36.0,
+      "lluvia_pronosticada_prox_24h_mm": 4.8,
+      "clima": 0.76,
+      "modo": "despues",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T19:00:00Z",
+      "hora_santiago": "2026-10-07T16:00-03:00",
+      "lluvia_mm": 0.1,
+      "racha_kmh": 27.4,
+      "viento_kmh": 4.7,
+      "lluvia_pronosticada_mm": 0.1,
+      "lluvia_acum_24h_mm": 43.3,
+      "racha_max_6h_kmh": 36.0,
+      "lluvia_pronosticada_prox_24h_mm": 6.0,
+      "clima": 0.76,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T20:00:00Z",
+      "hora_santiago": "2026-10-07T17:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 23.0,
+      "viento_kmh": 1.8,
+      "lluvia_pronosticada_mm": 0.1,
+      "lluvia_acum_24h_mm": 40.8,
+      "racha_max_6h_kmh": 36.0,
+      "lluvia_pronosticada_prox_24h_mm": 9.2,
+      "clima": 0.76,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-07T21:00:00Z",
+      "hora_santiago": "2026-10-07T18:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 22.7,
+      "viento_kmh": 3.3,
+      "lluvia_pronosticada_mm": 0.4,
+      "lluvia_acum_24h_mm": 38.2,
+      "racha_max_6h_kmh": 36.0,
+      "lluvia_pronosticada_prox_24h_mm": 10.9,
+      "clima": 0.76,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-07T22:00:00Z",
+      "hora_santiago": "2026-10-07T19:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 20.9,
+      "viento_kmh": 4.7,
+      "lluvia_pronosticada_mm": 0.2,
+      "lluvia_acum_24h_mm": 36.2,
+      "racha_max_6h_kmh": 36.0,
+      "lluvia_pronosticada_prox_24h_mm": 14.1,
+      "clima": 0.76,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-07T23:00:00Z",
+      "hora_santiago": "2026-10-07T20:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 22.3,
+      "viento_kmh": 8.3,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 34.4,
+      "racha_max_6h_kmh": 32.8,
+      "lluvia_pronosticada_prox_24h_mm": 19.1,
+      "clima": 0.728,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T00:00:00Z",
+      "hora_santiago": "2026-10-07T21:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 23.8,
+      "viento_kmh": 3.7,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 32.3,
+      "racha_max_6h_kmh": 27.4,
+      "lluvia_pronosticada_prox_24h_mm": 22.1,
+      "clima": 0.674,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T01:00:00Z",
+      "hora_santiago": "2026-10-07T22:00-03:00",
+      "lluvia_mm": 0.2,
+      "racha_kmh": 12.6,
+      "viento_kmh": 3.9,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 29.8,
+      "racha_max_6h_kmh": 23.8,
+      "lluvia_pronosticada_prox_24h_mm": 22.4,
+      "clima": 0.634,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T02:00:00Z",
+      "hora_santiago": "2026-10-07T23:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 12.2,
+      "viento_kmh": 4.3,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 25.8,
+      "racha_max_6h_kmh": 23.8,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.554,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T03:00:00Z",
+      "hora_santiago": "2026-10-08T00:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 11.2,
+      "viento_kmh": 2.8,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 22.1,
+      "racha_max_6h_kmh": 23.8,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.48,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T04:00:00Z",
+      "hora_santiago": "2026-10-08T01:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 6.5,
+      "viento_kmh": 0.6,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 19.2,
+      "racha_max_6h_kmh": 23.8,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.422,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T05:00:00Z",
+      "hora_santiago": "2026-10-08T02:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 2.5,
+      "viento_kmh": 0.0,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 12.9,
+      "racha_max_6h_kmh": 23.8,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.296,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T06:00:00Z",
+      "hora_santiago": "2026-10-08T03:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 6.5,
+      "viento_kmh": 7.3,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 9.2,
+      "racha_max_6h_kmh": 12.6,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.184,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T07:00:00Z",
+      "hora_santiago": "2026-10-08T04:00-03:00",
+      "lluvia_mm": 0.1,
+      "racha_kmh": 15.5,
+      "viento_kmh": 6.0,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 6.6,
+      "racha_max_6h_kmh": 15.5,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.132,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T08:00:00Z",
+      "hora_santiago": "2026-10-08T05:00-03:00",
+      "lluvia_mm": 0.1,
+      "racha_kmh": 14.8,
+      "viento_kmh": 3.6,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 4.6,
+      "racha_max_6h_kmh": 15.5,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.092,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T09:00:00Z",
+      "hora_santiago": "2026-10-08T06:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 11.9,
+      "viento_kmh": 4.9,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 3.6,
+      "racha_max_6h_kmh": 15.5,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.072,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T10:00:00Z",
+      "hora_santiago": "2026-10-08T07:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 11.2,
+      "viento_kmh": 2.7,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 3.0,
+      "racha_max_6h_kmh": 15.5,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.06,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T11:00:00Z",
+      "hora_santiago": "2026-10-08T08:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 10.1,
+      "viento_kmh": 3.8,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 2.5,
+      "racha_max_6h_kmh": 15.5,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.05,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T12:00:00Z",
+      "hora_santiago": "2026-10-08T09:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 10.8,
+      "viento_kmh": 3.6,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 1.8,
+      "racha_max_6h_kmh": 15.5,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.036,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T13:00:00Z",
+      "hora_santiago": "2026-10-08T10:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 19.1,
+      "viento_kmh": 5.5,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 1.4,
+      "racha_max_6h_kmh": 19.1,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.028,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T14:00:00Z",
+      "hora_santiago": "2026-10-08T11:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 21.2,
+      "viento_kmh": 4.8,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 1.4,
+      "racha_max_6h_kmh": 21.2,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.04,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T15:00:00Z",
+      "hora_santiago": "2026-10-08T12:00-03:00",
+      "lluvia_mm": 0.0,
+      "racha_kmh": 22.7,
+      "viento_kmh": 4.5,
+      "lluvia_pronosticada_mm": 0.0,
+      "lluvia_acum_24h_mm": 1.4,
+      "racha_max_6h_kmh": 22.7,
+      "lluvia_pronosticada_prox_24h_mm": 22.5,
+      "clima": 0.055,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T16:00:00Z",
+      "hora_santiago": "2026-10-08T13:00-03:00",
+      "lluvia_mm": 0.1,
+      "racha_kmh": 25.6,
+      "viento_kmh": 5.9,
+      "lluvia_pronosticada_mm": 0.1,
+      "lluvia_acum_24h_mm": 1.5,
+      "racha_max_6h_kmh": 25.6,
+      "lluvia_pronosticada_prox_24h_mm": 22.4,
+      "clima": 0.086,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T17:00:00Z",
+      "hora_santiago": "2026-10-08T14:00-03:00",
+      "lluvia_mm": 0.4,
+      "racha_kmh": 27.7,
+      "viento_kmh": 7.4,
+      "lluvia_pronosticada_mm": 0.2,
+      "lluvia_acum_24h_mm": 1.9,
+      "racha_max_6h_kmh": 27.7,
+      "lluvia_pronosticada_prox_24h_mm": 22.2,
+      "clima": 0.115,
+      "modo": "tormenta_inminente",
+      "inicio_lluvia_pronosticado_utc": "2026-10-08T18:00:00Z"
+    },
+    {
+      "hora_utc": "2026-10-08T18:00:00Z",
+      "hora_santiago": "2026-10-08T15:00-03:00",
+      "lluvia_mm": 5.0,
+      "racha_kmh": 28.4,
+      "viento_kmh": 5.1,
+      "lluvia_pronosticada_mm": 3.7,
+      "lluvia_acum_24h_mm": 6.0,
+      "racha_max_6h_kmh": 28.4,
+      "lluvia_pronosticada_prox_24h_mm": 18.5,
+      "clima": 0.204,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-08T19:00:00Z",
+      "hora_santiago": "2026-10-08T16:00-03:00",
+      "lluvia_mm": 1.8,
+      "racha_kmh": 20.5,
+      "viento_kmh": 5.0,
+      "lluvia_pronosticada_mm": 1.3,
+      "lluvia_acum_24h_mm": 7.7,
+      "racha_max_6h_kmh": 28.4,
+      "lluvia_pronosticada_prox_24h_mm": 17.2,
+      "clima": 0.238,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-08T20:00:00Z",
+      "hora_santiago": "2026-10-08T17:00-03:00",
+      "lluvia_mm": 6.4,
+      "racha_kmh": 20.9,
+      "viento_kmh": 7.2,
+      "lluvia_pronosticada_mm": 3.3,
+      "lluvia_acum_24h_mm": 14.1,
+      "racha_max_6h_kmh": 28.4,
+      "lluvia_pronosticada_prox_24h_mm": 13.9,
+      "clima": 0.366,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-08T21:00:00Z",
+      "hora_santiago": "2026-10-08T18:00-03:00",
+      "lluvia_mm": 8.0,
+      "racha_kmh": 27.4,
+      "viento_kmh": 8.2,
+      "lluvia_pronosticada_mm": 2.1,
+      "lluvia_acum_24h_mm": 22.1,
+      "racha_max_6h_kmh": 28.4,
+      "lluvia_pronosticada_prox_24h_mm": 11.8,
+      "clima": 0.526,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-08T22:00:00Z",
+      "hora_santiago": "2026-10-08T19:00-03:00",
+      "lluvia_mm": 4.8,
+      "racha_kmh": 22.3,
+      "viento_kmh": 8.8,
+      "lluvia_pronosticada_mm": 3.4,
+      "lluvia_acum_24h_mm": 26.9,
+      "racha_max_6h_kmh": 28.4,
+      "lluvia_pronosticada_prox_24h_mm": 8.4,
+      "clima": 0.622,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-08T23:00:00Z",
+      "hora_santiago": "2026-10-08T20:00-03:00",
+      "lluvia_mm": 2.4,
+      "racha_kmh": 20.9,
+      "viento_kmh": 3.6,
+      "lluvia_pronosticada_mm": 5.0,
+      "lluvia_acum_24h_mm": 29.3,
+      "racha_max_6h_kmh": 28.4,
+      "lluvia_pronosticada_prox_24h_mm": 3.4,
+      "clima": 0.67,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-09T00:00:00Z",
+      "hora_santiago": "2026-10-08T21:00-03:00",
+      "lluvia_mm": 4.8,
+      "racha_kmh": 9.0,
+      "viento_kmh": 4.9,
+      "lluvia_pronosticada_mm": 3.0,
+      "lluvia_acum_24h_mm": 34.1,
+      "racha_max_6h_kmh": 27.4,
+      "lluvia_pronosticada_prox_24h_mm": 0.4,
+      "clima": 0.674,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-09T01:00:00Z",
+      "hora_santiago": "2026-10-08T22:00-03:00",
+      "lluvia_mm": 2.0,
+      "racha_kmh": 11.2,
+      "viento_kmh": 5.4,
+      "lluvia_pronosticada_mm": 0.3,
+      "lluvia_acum_24h_mm": 35.9,
+      "racha_max_6h_kmh": 27.4,
+      "lluvia_pronosticada_prox_24h_mm": 0.1,
+      "clima": 0.674,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    },
+    {
+      "hora_utc": "2026-10-09T02:00:00Z",
+      "hora_santiago": "2026-10-08T23:00-03:00",
+      "lluvia_mm": 1.6,
+      "racha_kmh": 10.1,
+      "viento_kmh": 5.2,
+      "lluvia_pronosticada_mm": 0.1,
+      "lluvia_acum_24h_mm": 37.5,
+      "racha_max_6h_kmh": 27.4,
+      "lluvia_pronosticada_prox_24h_mm": 0.0,
+      "clima": 0.674,
+      "modo": "durante",
+      "inicio_lluvia_pronosticado_utc": null
+    }
+  ],
+  "antecedentes": [
+    {
+      "fecha": "2025-12",
+      "titulo": "Cuenca quemada",
+      "detalle": "Un incendio afectó la cuenca de Quebrada Honda en diciembre de 2025.",
+      "fuente_url": "https://es.wikipedia.org/wiki/Aluvi%C3%B3n_de_Las_Condes_de_2026"
+    },
+    {
+      "fecha": "2026-01-31",
+      "titulo": "Primera bajada de barro",
+      "detalle": "El agua sobrepasó el canal en Quebrada Honda con Francisco Bulnes Correa; 22 viviendas resultaron dañadas.",
+      "fuente_url": "https://es.wikipedia.org/wiki/Aluvi%C3%B3n_de_Las_Condes_de_2026"
+    },
+    {
+      "fecha": "2026-02-11",
+      "titulo": "Advertencia técnica",
+      "detalle": "El informe Sernageomin RM 02/2026 describió una «reactivación de procesos en un área altamente propensa» y recomendó planes de evacuación, monitoreo meteorológico y limpieza periódica de canales por el MOP.",
+      "fuente_url": "https://es.wikipedia.org/wiki/Aluvi%C3%B3n_de_Las_Condes_de_2026"
+    },
+    {
+      "fecha": "2026-03-26",
+      "titulo": "Coordinación de autoridades",
+      "detalle": "Reunión de la alcaldesa, el delegado Codina y Senapred para abordar intervenciones en las quebradas.",
+      "fuente_url": "https://es.wikipedia.org/wiki/Aluvi%C3%B3n_de_Las_Condes_de_2026"
+    },
+    {
+      "fecha": "2026-10-08T17:00:00-03:00",
+      "titulo": "El aluvión",
+      "detalle": "Cerca de las 17:00 bajó un flujo de detritos por Quebrada Honda, desbordó el colector abierto de Av. Francisco Bulnes Correa y avanzó al poniente por General Blanche, La Plaza y Camino El Alba. Se reportaron 6 heridos, cerca de 1.000 evacuados, un bus Red arrastrado y clínicas inundadas. No hubo alerta móvil de evacuación.",
+      "fuente_url": "https://es.wikipedia.org/wiki/Aluvi%C3%B3n_de_Las_Condes_de_2026"
+    },
+    {
+      "fecha": "2026-10-08",
+      "titulo": "Causa no confirmada",
+      "detalle": "Codina planteó como hipótesis preliminar dos ductos de drenaje obstruidos en General Blanche. No constituye una causa verificada ni demuestra que limpiar rejillas hubiera evitado el aluvión.",
+      "fuente_url": "https://www.cnnchile.com/pais/emergencia-en-las-condes-reportan-desborde-del-canal-san-carlos/"
+    },
+    {
+      "fecha": "2026-10-10",
+      "titulo": "Mitigación programada",
+      "detalle": "El inicio de instalación de mallas de mitigación estaba programado para el 10 de octubre, dos días después del aluvión.",
+      "fuente_url": "https://es.wikipedia.org/wiki/Aluvi%C3%B3n_de_Las_Condes_de_2026"
+    }
+  ],
+  "misiones": [
+    {
+      "rank": 1,
+      "ID_IDE": "AL13SU013122",
+      "calle": "Avenida Tomás Moro",
+      "lon": -70.553754,
+      "lat": -33.42352,
+      "prioridad": 1.141745,
+      "en_flujo": false
+    },
+    {
+      "rank": 2,
+      "ID_IDE": "AL13SU013082",
+      "calle": "Rotonda Atenas",
+      "lon": -70.552682,
+      "lat": -33.418083,
+      "prioridad": 1.080111,
+      "en_flujo": false
+    },
+    {
+      "rank": 3,
+      "ID_IDE": "AL13SU008125",
+      "calle": "Avenida Tomás Moro",
+      "lon": -70.553818,
+      "lat": -33.42341,
+      "prioridad": 1.061753,
+      "en_flujo": false
+    },
+    {
+      "rank": 4,
+      "ID_IDE": "AL13SU013123",
+      "calle": "Avenida Tomás Moro",
+      "lon": -70.55364,
+      "lat": -33.423399,
+      "prioridad": 1.033702,
+      "en_flujo": false
+    },
+    {
+      "rank": 5,
+      "ID_IDE": "AL13SU008210",
+      "calle": "Avenida Tomás Moro",
+      "lon": -70.553713,
+      "lat": -33.42341,
+      "prioridad": 1.014373,
+      "en_flujo": false
+    },
+    {
+      "rank": 6,
+      "ID_IDE": "AL13SU008126",
+      "calle": "Avenida Tomás Moro",
+      "lon": -70.553808,
+      "lat": -33.42338,
+      "prioridad": 1.00281,
+      "en_flujo": false
+    },
+    {
+      "rank": 7,
+      "ID_IDE": "AL13SU013121",
+      "calle": "Avenida Tomás Moro",
+      "lon": -70.553808,
+      "lat": -33.42338,
+      "prioridad": 1.00281,
+      "en_flujo": false
+    },
+    {
+      "rank": 8,
+      "ID_IDE": "AL13SU008129",
+      "calle": "Avenida Tomás Moro",
+      "lon": -70.55373,
+      "lat": -33.422796,
+      "prioridad": 0.971689,
+      "en_flujo": false
+    },
+    {
+      "rank": 9,
+      "ID_IDE": "AL13SU008124",
+      "calle": "Avenida Tomás Moro",
+      "lon": -70.553934,
+      "lat": -33.42397,
+      "prioridad": 0.909439,
+      "en_flujo": false
+    },
+    {
+      "rank": 10,
+      "ID_IDE": "AL13SU015051",
+      "calle": "Almirante Soublette",
+      "lon": -70.540032,
+      "lat": -33.410597,
+      "prioridad": 0.847961,
+      "en_flujo": false
+    }
+  ],
+  "cobertura_flujo": {
+    "total_sumideros": 562,
+    "total_flujo": 32,
+    "corte_top_20": 113,
+    "flujo_en_top_20": 10,
+    "esperado_azar": 6.43,
+    "metodo": "Nombre General Blanche / Camino El Alba o hasta 60 m de la geometría vial OSM de esas dos calles. Aproximación, no huella observada del aluvión."
+  },
+  "puntos_criticos": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.5146131200994,
+          -33.4140234898921
+        ]
+      },
+      "properties": {
+        "fid": 11851,
+        "lugar": "Quebra Honda Sur y sus afluentes.",
+        "comuna": "LAS CONDES",
+        "causa": "Activación de quebradas",
+        "nivel_riesgo": "Alto",
+        "temporada": "Precipitaciones Invierno",
+        "hora": null,
+        "precision": "punto_crítico",
+        "fuente_url": "https://services5.arcgis.com/i7S5PSnIJAUcWvSE/arcgis/rest/services/compilado_INV_2026/FeatureServer/0/11851"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.5256852799517,
+          -33.4140234898921
+        ]
+      },
+      "properties": {
+        "fid": 11854,
+        "lugar": "Quebrada Honda confluencia brazos Sur y Norte",
+        "comuna": "LAS CONDES",
+        "causa": "Activación de quebradas",
+        "nivel_riesgo": "Alto",
+        "temporada": "Precipitaciones Invierno",
+        "hora": null,
+        "precision": "punto_crítico",
+        "fuente_url": "https://services5.arcgis.com/i7S5PSnIJAUcWvSE/arcgis/rest/services/compilado_INV_2026/FeatureServer/0/11854"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.5174884496322,
+          -33.3968809700806
+        ]
+      },
+      "properties": {
+        "fid": 11855,
+        "lugar": "Canal Colector Descubierto Av.Fco. Bulnes Correa",
+        "comuna": "LAS CONDES",
+        "causa": "Inundación por desborde de cauce",
+        "nivel_riesgo": "Alto",
+        "temporada": "Precipitaciones Invierno",
+        "hora": null,
+        "precision": "punto_crítico",
+        "fuente_url": "https://services5.arcgis.com/i7S5PSnIJAUcWvSE/arcgis/rest/services/compilado_INV_2026/FeatureServer/0/11855"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.5203442998495,
+          -33.4074089195859
+        ]
+      },
+      "properties": {
+        "fid": 11857,
+        "lugar": "Quebrada Honda con Camino La Fuente",
+        "comuna": "LAS CONDES",
+        "causa": "Flujos de barro/detritos (Aluvión)",
+        "nivel_riesgo": "Alto",
+        "temporada": "Precipitaciones Invierno",
+        "hora": null,
+        "precision": "punto_crítico",
+        "fuente_url": "https://services5.arcgis.com/i7S5PSnIJAUcWvSE/arcgis/rest/services/compilado_INV_2026/FeatureServer/0/11857"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.5180107695813,
+          -33.4064685201061
+        ]
+      },
+      "properties": {
+        "fid": 11858,
+        "lugar": "Quebrada Honda con camino Otoñal",
+        "comuna": "LAS CONDES",
+        "causa": "Flujos de barro/detritos (Aluvión)",
+        "nivel_riesgo": "Alto",
+        "temporada": "Precipitaciones Invierno",
+        "hora": null,
+        "precision": "punto_crítico",
+        "fuente_url": "https://services5.arcgis.com/i7S5PSnIJAUcWvSE/arcgis/rest/services/compilado_INV_2026/FeatureServer/0/11858"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.5226060696144,
+          -33.4083118101419
+        ]
+      },
+      "properties": {
+        "fid": 11862,
+        "lugar": "Quebrada Honda con Camino Mirasol",
+        "comuna": "LAS CONDES",
+        "causa": "Flujos de barro/detritos (Aluvión)",
+        "nivel_riesgo": "Alto",
+        "temporada": "Precipitaciones Invierno",
+        "hora": null,
+        "precision": "punto_crítico",
+        "fuente_url": "https://services5.arcgis.com/i7S5PSnIJAUcWvSE/arcgis/rest/services/compilado_INV_2026/FeatureServer/0/11862"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.5293759996027,
+          -33.415456359923
+        ]
+      },
+      "properties": {
+        "fid": 11864,
+        "lugar": "Canalización Quebrada Honda Vital Apoquindo",
+        "comuna": "LAS CONDES",
+        "causa": "Inundación por desborde de cauce",
+        "nivel_riesgo": "Alto",
+        "temporada": "Precipitaciones Invierno",
+        "hora": null,
+        "precision": "punto_crítico",
+        "fuente_url": "https://services5.arcgis.com/i7S5PSnIJAUcWvSE/arcgis/rest/services/compilado_INV_2026/FeatureServer/0/11864"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.5190997496537,
+          -33.4070103697327
+        ]
+      },
+      "properties": {
+        "fid": 11867,
+        "lugar": "Quebrada Honda con Las Tórtolas",
+        "comuna": "LAS CONDES",
+        "causa": "Flujos de barro/detritos (Aluvión)",
+        "nivel_riesgo": "Alto",
+        "temporada": "Precipitaciones Invierno",
+        "hora": null,
+        "precision": "punto_crítico",
+        "fuente_url": "https://services5.arcgis.com/i7S5PSnIJAUcWvSE/arcgis/rest/services/compilado_INV_2026/FeatureServer/0/11867"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.5215801302188,
+          -33.4077990796637
+        ]
+      },
+      "properties": {
+        "fid": 11875,
+        "lugar": "Quebrada Honda con Las Condesas",
+        "comuna": "LAS CONDES",
+        "causa": "Flujos de barro/detritos (Aluvión)",
+        "nivel_riesgo": "Alto",
+        "temporada": "Precipitaciones Invierno",
+        "hora": null,
+        "precision": "punto_crítico",
+        "fuente_url": "https://services5.arcgis.com/i7S5PSnIJAUcWvSE/arcgis/rest/services/compilado_INV_2026/FeatureServer/0/11875"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.5162512495954,
+          -33.4058236702261
+        ]
+      },
+      "properties": {
+        "fid": 11878,
+        "lugar": "Quebrada Honda esquina Fco Bulnes Correa (cajón de canal interceptor)",
+        "comuna": "LAS CONDES",
+        "causa": "Flujos de barro/detritos (Aluvión)",
+        "nivel_riesgo": "Alto",
+        "temporada": "Precipitaciones Invierno",
+        "hora": null,
+        "precision": "punto_crítico",
+        "fuente_url": "https://services5.arcgis.com/i7S5PSnIJAUcWvSE/arcgis/rest/services/compilado_INV_2026/FeatureServer/0/11878"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.5228099504188,
+          -33.4094023298536
+        ]
+      },
+      "properties": {
+        "fid": 11883,
+        "lugar": "Quebrada Honda Norte",
+        "comuna": "LAS CONDES",
+        "causa": "Activación de quebradas",
+        "nivel_riesgo": "Alto",
+        "temporada": "Precipitaciones Invierno",
+        "hora": null,
+        "precision": "punto_crítico",
+        "fuente_url": "https://services5.arcgis.com/i7S5PSnIJAUcWvSE/arcgis/rest/services/compilado_INV_2026/FeatureServer/0/11883"
+      }
+    }
+  ],
+  "limites": [
+    "Drena no modela flujos de detritos ni aluviones. Priorizar limpieza no demuestra que se hubiera evitado esta emergencia.",
+    "El catastro SIALL disponible termina aproximadamente en longitud -70.530: no hay rejillas en Bulnes Correa ni en General Blanche alto. No se inventan misiones allí.",
+    "Es una ilustración / reconstrucción, no una validación. Las variables y los pesos se congelaron después del evento; no prueban una predicción operativa previa.",
+    "Las misiones son las 10 primeras prioridades del ranking B, no un despacho optimizado con disponibilidad de cuadrillas.",
+    "El modo usa pronóstico previous_day1 disponible previamente; el puntaje B reutiliza clima de lluvia y viento acumulados hasta cada hora, sin incorporar evidencia posterior.",
+    "El adelanto destacado se mide desde la primera tormenta inminente del 7–8 de octubre. La ventana completa del 6–8 también incluye alertas por lluvia anterior.",
+    "Los valores Open-Meteo son de grilla, no pluviómetro. La coordenada solicitada entrega cifras distintas de la referencia -33.40, -70.52; no se mezclan ambas series.",
+    "Los puntos Alto se seleccionan por nombre de Quebrada Honda / Bulnes Correa y calles del flujo; son antecedentes de riesgo, no incidentes observados.",
+    "La hipótesis de dos ductos obstruidos es preliminar y no confirmada. Las fuentes no permiten concluir que las autoridades no realizaron ninguna acción."
+  ]
+}
