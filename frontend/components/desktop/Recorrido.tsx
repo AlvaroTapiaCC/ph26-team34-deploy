@@ -27,7 +27,7 @@ function marcarVisto() {
   }
 }
 
-type Candidata = NonNullable<ReturnType<Flujo["candidataRecorrido"]>>;
+type Candidata = NonNullable<Awaited<ReturnType<Flujo["candidataRecorrido"]>>>;
 
 export default function Recorrido({ flujo, cerca, onTresD, onFin }: { flujo: Flujo; cerca: LngLat[]; onTresD: (v: boolean) => void; onFin: () => void }) {
   const { setRejillas } = useStore();
@@ -51,24 +51,34 @@ export default function Recorrido({ flujo, cerca, onTresD, onFin }: { flujo: Flu
       destino = { center: CENTRO_ZONA, zoom: 13.9, pitch: ter.pitch };
     } else if (paso === 1) {
       destino = { center: [-70.588, -33.421], zoom: 12.7, pitch: 62 };
-    } else if (paso === 2) {
-      const c = f.candidataRecorrido(cerca);
-      setCand(c);
-      if (!c) return;
-      setRejillas({ [c.id]: "tapada" });
-      f.seleccionar(c.id);
-      f.pulsar(c.id);
-      destino = { center: c.coord, zoom: 16.3, pitch: ter.pitch };
     } else if (paso === 3 && cand) {
       destino = { center: [(cand.coord[0] + 2 * cand.destino[0]) / 3, (cand.coord[1] + 2 * cand.destino[1]) / 3], zoom: 16, pitch: 58 };
     }
-    if (!destino) return;
-    // Relieve 3D solo en las vistas amplias (pasos 1 y 2, donde se ve la cordillera). En los primeros planos, MapLibre 4.7
-    // deja la cámara bajo el relieve si sus teselas no alcanzaron a cargar: ahí se sigue en perspectiva, sin terreno.
-    // La cámara se detiene antes de cambiar el terreno: cambiarlo en medio de una animación congela el render.
-    map.stop();
-    map.setTerrain(paso <= 1 ? { source: "dem-terreno", exaggeration: ter.exageracion } : null);
-    map.easeTo({ ...destino, bearing: ter.bearing, duration: 2400, essential: true });
+    const ir = (d: { center: LngLat; zoom: number; pitch: number }) => {
+      // Relieve 3D solo en las vistas amplias (pasos 1 y 2, donde se ve la cordillera). En los primeros planos, MapLibre 4.7
+      // deja la cámara bajo el relieve si sus teselas no alcanzaron a cargar: ahí se sigue en perspectiva, sin terreno.
+      // La cámara se detiene antes de cambiar el terreno: cambiarlo en medio de una animación congela el render.
+      map.stop();
+      map.setTerrain(paso <= 1 ? { source: "dem-terreno", exaggeration: ter.exageracion } : null);
+      map.easeTo({ ...d, bearing: ter.bearing, duration: 2400, essential: true });
+    };
+    if (paso === 2) {
+      // La rejilla la elige el motor (corre en un worker): llega un instante después
+      let vivo = true;
+      f.candidataRecorrido(cerca).then((c) => {
+        if (!vivo) return;
+        setCand(c);
+        if (!c) return;
+        setRejillas({ [c.id]: "tapada" });
+        f.seleccionar(c.id);
+        f.pulsar(c.id);
+        ir({ center: c.coord, zoom: 16.3, pitch: ter.pitch });
+      });
+      return () => {
+        vivo = false;
+      };
+    }
+    if (destino) ir(destino);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paso]);
 

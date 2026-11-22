@@ -297,7 +297,7 @@ const PUNTOS_FLUJO_MAX = 200; // intersecciones reales que se asocian con la red
 
 export default function Principal({ vacio }: { vacio: React.ReactNode }) {
   const { s, setRejillas, filtered, ranking, toggleLayer } = useStore();
-  // Simulación plegada por defecto: flujo.geojson se pide recién al abrirla o al encender la capa de agua
+  // Simulación plegada por defecto: la red del flujo (teselas de public/data/flujo/) se pide recién al abrirla o al encender la capa de agua
   const [simAbierta, setSimAbierta] = useState(false);
   const abrirSim = (v: boolean) => {
     setSimAbierta(v);
