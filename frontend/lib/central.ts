@@ -19,6 +19,15 @@ interface ClasificacionPublica {
   personas_en_riesgo?: boolean;
 }
 
+interface CambioDespacho {
+  crew_id: string;
+  cuadrilla: string;
+  is_simulated: boolean | null;
+  hora: string;
+  siguiente_antes: string | null;
+  siguiente_despues: string | null;
+}
+
 export interface ObservacionPublica {
   id: string;
   sumidero_id: string | null;
@@ -31,6 +40,7 @@ export interface ObservacionPublica {
   urgente: boolean | null;
   clasificacion: ClasificacionPublica | null;
   prioridad?: { antes: Puntaje | null; despues: Puntaje | null } | null;
+  despachos?: CambioDespacho[];
 }
 
 export const ESCENARIO_CENTRAL = "base";
