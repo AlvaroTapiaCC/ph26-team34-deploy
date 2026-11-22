@@ -759,6 +759,11 @@
 .antesDespues b {
   font-size: 1.15rem;
 }
+.antesDespues small {
+  margin-left: auto;
+  color: var(--text-3);
+  font-size: 0.75rem;
+}
 .espera {
   display: flex;
   gap: 0.9rem;

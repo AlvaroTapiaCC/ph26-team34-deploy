@@ -548,6 +548,8 @@ function QueCambio({ nuevo }: { nuevo: boolean }) {
   const punto = durante.filas.find((r) => r.sumidero_id === o.sumidero_id);
   const ant = o.prioridad?.antes?.prioridad;
   const des = o.prioridad?.despues?.prioridad;
+  // El reporte solo mueve su propia rejilla: su puesto previo es el que tendría hoy con el puntaje anterior
+  const puestoAntes = ant != null && punto ? 1 + durante.filas.filter((r) => r !== punto && (r.prioridad ?? 0) > ant).length : null;
   const despacho = o.despachos?.find((d) => d.crew_id === cuadrilla?.id);
   return (
     <section className={`${s.tarjeta} ${nuevo ? s.tarjetaNueva : ""}`} aria-live="polite">
@@ -566,9 +568,12 @@ function QueCambio({ nuevo }: { nuevo: boolean }) {
       </p>
       <div className={s.antesDespues}>
         <div>
-          <span>Puntaje</span>
+          <span>Puesto en la zona MUT</span>
           <p>
-            <s>{puntaje(ant)}</s> <i aria-hidden>→</i> <b>{puntaje(des)}</b>
+            <s>{puestoAntes ? `#${puestoAntes}` : "Fuera del plan"}</s> <i aria-hidden>→</i> <b>{punto ? `#${punto.puesto}` : "Sin dato"}</b>
+            <small>
+              puntaje {puntaje(ant)} → {puntaje(des)}
+            </small>
           </p>
         </div>
         {despacho && (
