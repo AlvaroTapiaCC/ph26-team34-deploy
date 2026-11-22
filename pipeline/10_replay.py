@@ -240,7 +240,7 @@ def guardar_tabla(ruta, horas, scores, entradas):
     )
     ranks = {s.id: rank for rank, s in enumerate(entradas, 1)}
     with ruta.open("w", newline="", encoding="utf-8") as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=campos)
+        writer = csv.DictWriter(csvfile, fieldnames=campos, lineterminator="\n")
         writer.writeheader()
         for hora, ranking in zip(horas, scores):
             base = {k: hora[k] for k in ("hora_utc", "modo", "clima")}
@@ -312,7 +312,8 @@ def reproducir(args):
     ruta_resultado = args.salida / "resultado.json"
     ruta_meta = args.salida / "resultado.meta.json"
     guardar_tabla(ruta_tabla, horas, scores, entradas)
-    ruta_resultado.write_text(json.dumps(resultado, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    ruta_resultado.write_text(json.dumps(resultado, ensure_ascii=False, indent=2) + "\n",
+                              encoding="utf-8", newline="\n")
     metadata = {
         "evento": evento, "motivo_evento_y_sector": args.motivo, "sector": zona,
         "tipo_evidencia": args.tipo_evidencia, "insumos": insumos,
@@ -326,7 +327,8 @@ def reproducir(args):
         "scripts": [archivo(Path(__file__)), archivo(Path(__file__).with_name("validacion_ranking.py"))],
         "salidas": [archivo(ruta_resultado), archivo(ruta_tabla)],
     }
-    ruta_meta.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    ruta_meta.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n",
+                         encoding="utf-8", newline="\n")
     print(f"{evento['nombre']}: {len(puntos)} lugares, {len(entradas)} rejillas, {len(horas)} horas -> {ruta_resultado}")
 
 

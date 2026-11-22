@@ -1,0 +1,94 @@
+{
+  "evento": {
+    "nombre": "2026-07-16_17",
+    "desde_santiago": "2026-07-16",
+    "hasta_santiago": "2026-07-17",
+    "nota": "Plan B en Las Condes con los puntos críticos de invierno 2026 (#74)."
+  },
+  "motivo_evento_y_sector": "Octubre reunió cuatro registros en el mejor radio de 1,5 km, bajo el umbral de ocho. El plan B del 16–17 de julio usa el sector de Las Condes con ocho puntos de riesgo de SENAPRED dentro del radio y cobertura de SIALL.",
+  "sector": {
+    "sufijo": "replay_julio",
+    "centro_lonlat": [
+      -70.541,
+      -33.418
+    ],
+    "radio_m": 1500,
+    "centro_confirmado": false,
+    "nota": "Concentración de puntos críticos públicos del invierno de 2026, al oriente de Rotonda Atenas",
+    "columna": "en_zona_replay_julio",
+    "rejillas_en_zona": 568,
+    "rejillas_rankeadas": 562,
+    "fuera_de_red_excluidas": [
+      "AL13SU013154",
+      "AL13SU013268",
+      "AL13SU013269",
+      "AL13SU013270",
+      "AL13SU013296",
+      "AL13SU014926"
+    ]
+  },
+  "tipo_evidencia": "puntos-criticos",
+  "insumos": {
+    "prediccion": {
+      "ruta": "data/validacion/prediccion_replay_julio.csv",
+      "sha256": "7f29c8e13fb57a50d748b7a23241c709cc5f058bc24d4d3fcdc6cd7acab674f1"
+    },
+    "meta_prediccion": {
+      "ruta": "data/validacion/prediccion_replay_julio.meta.json",
+      "sha256": "f2ee9c907ea52387ab3c6eda2b52242aad28a5f67af50e0796b3072625a22cce"
+    },
+    "cadenas": {
+      "ruta": "data/street_chains_replay_julio.json",
+      "sha256": "afd38d52f522e6548096bdbbb09263567d4f52b9392bc6ce61185a52dbc857a2"
+    },
+    "lugares": {
+      "ruta": "data/las_condes/puntos_criticos_invierno_2026.geojson",
+      "sha256": "21aa3c73de1c418ecddeb978d2b8c2a20c5b25f5822e540beda29cef047edd0b"
+    },
+    "clima": {
+      "ruta": "data/validacion/replay/clima/2026-07-16_17.json",
+      "sha256": "83b7fd0f79c811c37b1a834bdcabb2f4a62c93a52aedccfc917f0028f527a478"
+    },
+    "meta_clima": {
+      "ruta": "data/validacion/replay/clima/2026-07-16_17.meta.json",
+      "sha256": "b9701982ae03c82989cda3052c78a59bb6a443b99bd4fbcf4dc031f74a3956a3"
+    }
+  },
+  "formula": {
+    "config": {
+      "ruta": "backend/config/formula_validacion.yaml",
+      "sha256": "fde77019056cd4a9fcb88d5ad58dabd85f5c25462cd8faf95d648322a6f3e848"
+    },
+    "codigo": {
+      "ruta": "backend/app/services/formula.py",
+      "sha256": "8d1bc4c63e41ac3b112e439b2c3778a17060a67f5fd2d2157e5fcad56ab13e1d"
+    },
+    "sha256_codigo_al_congelar": "dc281a84bf171535f03a0aa264240f9e10947a02178cc9bc8505a34452db34de",
+    "git_head_al_congelar": "48d9904901ceec572acf26762e193664ea3f6d9d"
+  },
+  "metodo": {
+    "semilla": 86,
+    "permutaciones_azar": 1000,
+    "distancia": "Haversine"
+  },
+  "scripts": [
+    {
+      "ruta": "pipeline/10_replay.py",
+      "sha256": "30b733aaa99a4c61a00da3fb0d4b30fba02825345384c8894ae97d78cf4095af"
+    },
+    {
+      "ruta": "pipeline/validacion_ranking.py",
+      "sha256": "4dbe0828e5e87b8dc845e35ad7558b64c8cfcf3c5bc17021b86b14cae1c6af4f"
+    }
+  ],
+  "salidas": [
+    {
+      "ruta": "data/validacion/replay/resultado.json",
+      "sha256": "17c9eaa5270eef276b6231350c40076d76a125825a42d52288672406d72a705b"
+    },
+    {
+      "ruta": "data/validacion/replay/ranking_horario.csv",
+      "sha256": "48ad44a90695022315082733452399ecb2962a52e70f1d2c8400c6b4baef8a23"
+    }
+  ]
+}

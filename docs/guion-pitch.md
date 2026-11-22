@@ -26,9 +26,11 @@ Dos personas: una narra y la otra opera los celulares. Los intervalos incluyen l
 
 ### 2:00–2:35 · Qué se puede comprobar
 
-«La predicción de las 46 rejillas quedó guardada con fecha y huella digital. Para evaluarla comparamos el ranking con anegamientos documentados de una lluvia pasada. Para evaluar la lectura de fotos, dos personas las etiquetan por separado. Y para medir la respuesta, contamos desde el envío de la foto hasta la nueva misión.»
+«La predicción de las 46 rejillas quedó guardada con fecha y huella digital. Para evaluar la fórmula comparamos su cobertura espacial con dos referencias. Para evaluar la lectura de fotos, dos personas las etiquetan por separado. Y para medir la respuesta, contamos desde el envío de la foto hasta la nueva misión.»
 
-*Si hay resultados verificados, sustituir la última parte por los tres resultados del ensayo: «En el replay, [aciertos/total con el corte de #86]. Claude coincidió con las personas en [X/Y], con [Z] imágenes no evaluables. Desde la foto hasta la misión pasaron [segundos del registro de #50]». Si falta alguna medición, decir cuál sigue pendiente.*
+Para la comparación espacial de julio: «Las rejillas que quedaron en el 20 % superior del ranking cubrieron tres de ocho puntos críticos conocidos a menos de 100 metros. El área de aporte cubrió dos y el azar, 1,8 en promedio». [Resultado del replay](../data/validacion/replay/README.md)
+
+*Cuando estén disponibles las otras mediciones, añadir: «Claude coincidió con las personas en [X/Y], con [Z] imágenes no evaluables. Desde la foto hasta la misión pasaron [segundos del registro de #50]». Si falta alguna medición, decir cuál sigue pendiente.*
 
 ### 2:35–3:00 · Qué aporta Drena y qué viene
 
