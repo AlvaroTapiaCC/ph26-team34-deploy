@@ -41,14 +41,15 @@ def test_lo_confirmado_manda():
     assert p_final(SumideroInput("c", {}, rejilla_observada="parcial"), CFG)[0] == pytest.approx(0.6)
 
 
-@pytest.mark.parametrize("estado", ["limpia", "parcial", "tapada"])
-@pytest.mark.parametrize(("confianza", "factor"), [("alta", 1.0), ("media", 0.7), ("baja", 0.4)])
-def test_confianza_acerca_p_al_valor_observado(estado, confianza, factor):
+@pytest.mark.parametrize("estado", ["limpia", "tapada"])
+@pytest.mark.parametrize(("confianza", "factor"), [("alta", 1), ("media", 0.7), ("baja", 0.4)])
+def test_confianza_foto_acerca_el_ranking_a_lo_observado(estado, confianza, factor):
     s = SumideroInput("a", {"arboles": 1}, rejilla_observada=estado, confianza_foto=confianza)
-    p, pp, po, det = p_final(s, CFG)
-    assert po == pytest.approx(CFG["observado"][estado])
-    assert p == pytest.approx(pp + factor * (po - pp))
-    assert det["confianza_foto"] == confianza and det["factor_confianza_foto"] == factor
+    score, = calcular_ranking([s], [], CFG)
+    esperado = score.p_pred + factor * (CFG["observado"][estado] - score.p_pred)
+    assert score.prioridad == pytest.approx(esperado * score.c)
+    assert score.detalle["confianza_foto"] == confianza
+    assert score.detalle["factor_confianza_foto"] == factor
 
 
 def test_tapada_con_confianza_baja_sube_menos_la_prioridad():

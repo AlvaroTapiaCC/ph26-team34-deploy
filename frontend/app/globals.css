@@ -682,6 +682,42 @@ p {
 .topbar__spacer {
   flex: 1;
 }
+.banda-clima {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 24px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--text-2);
+}
+.banda-clima strong {
+  color: var(--text);
+}
+.banda-clima--alerta {
+  background: var(--lime-dim);
+}
+.banda-clima__esc {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: var(--r-10);
+  background: var(--text);
+  color: var(--surface);
+}
+.banda-clima__dato {
+  color: var(--text-3);
+}
+.banda-clima__fuente {
+  margin-left: auto;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
 .bento {
   flex: 1;
   min-height: 0;
@@ -2491,4 +2527,192 @@ p {
   display: block;
   height: 100%;
   background: var(--lime);
+}
+
+/* ==========================================================
+   TRANSPORTE · paraderos expuestos (#92)
+   Azul de transporte fuera de la paleta de prioridad: un paradero no es una rejilla.
+   ========================================================== */
+:root {
+  --bus: #1f5fbf;
+  --bus-dim: #dce7f7;
+}
+.tp {
+  flex: 0 1 auto;
+  min-height: 120px;
+  max-height: 42%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+/* Con el panel de transporte la cadena comparte la columna: no se aplasta por debajo de su estado vacío */
+.col--l:has(.tp) .chain {
+  min-height: 150px;
+}
+.tp.is-active {
+  box-shadow: inset 0 0 0 1.5px var(--bus);
+}
+.tp__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tp__ts {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.tp__aviso {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--text-2);
+}
+.tp__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tp__item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+.tp__item.is-active {
+  box-shadow: inset 0 0 0 2px var(--bus);
+}
+.tp__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+.tp__name {
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 20px;
+}
+.tp__code {
+  margin-left: 8px;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.tp__badge {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tp__badge--expuesto {
+  background: var(--bus);
+  color: #fff;
+}
+.tp__badge--riesgo {
+  background: transparent;
+  color: var(--bus);
+  box-shadow: inset 0 0 0 1.5px var(--bus);
+}
+.tp__alt .tp__badge {
+  margin-left: 6px;
+}
+.tp__causa {
+  margin: 0;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--text-2);
+}
+.tp__sim {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+}
+.tp__servicios {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tp__servicios li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 13px;
+  line-height: 18px;
+}
+.tp__svc {
+  min-width: 44px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--bus);
+}
+.tp__dir {
+  color: var(--text-2);
+}
+.tp__alt {
+  flex-basis: 100%;
+  padding-left: 54px;
+}
+.tp__alt--none {
+  color: var(--text-3);
+}
+.tp__note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--text-3);
+}
+
+/* Marcador de paradero en el mapa: rectángulo, para no confundirse con los pines de prioridad */
+.paradero {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--bus);
+  box-shadow: inset 0 0 0 2px var(--bus), var(--sh-soft);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 10px;
+  line-height: 1;
+}
+.paradero__signo {
+  font-size: 12px;
+}
+.paradero--expuesto {
+  background: var(--bus);
+  color: #fff;
+}
+.paradero--alternativo {
+  background: var(--bus-dim);
+  box-shadow: inset 0 0 0 1.5px var(--bus), var(--sh-soft);
+}
+.paradero.is-active {
+  outline: 3px solid var(--bus);
+  outline-offset: 2px;
 }

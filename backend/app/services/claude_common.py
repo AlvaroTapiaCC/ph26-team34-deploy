@@ -78,6 +78,7 @@ def llamar_estructurado(
     prompt_version: str,
     no_evaluable: T,
     max_tokens: int = 2048,
+    timeout_s: float | None = None,
 ) -> ResultadoClaude[T]:
     """Llama a Claude (o usa la caché) y devuelve un resultado siempre válido.
 
@@ -106,6 +107,8 @@ def llamar_estructurado(
     modelo = settings.claude_model
     try:
         client = get_client()
+        if timeout_s is not None:
+            client = client.with_options(timeout=timeout_s, max_retries=0)
     except ClaudeNoConfigurado:
         log.error("ANTHROPIC_API_KEY no configurada: se responde no_evaluable sin llamar a Claude")
         return ResultadoClaude(no_evaluable, modelo, prompt_version, key, fallo=True,

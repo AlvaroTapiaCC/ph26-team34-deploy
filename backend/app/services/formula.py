@@ -43,14 +43,13 @@ class SumideroInput:
     features: Mapping[str, float] = field(default_factory=dict)
     # Última foto evaluable y vigente de la rejilla: 'limpia' | 'parcial' | 'tapada' | None
     rejilla_observada: str | None = None
-    # Confianza que Claude dio a esa foto: 'alta' | 'media' | 'baja' | None (clasificación antigua)
-    confianza_foto: str | None = None
     # Reportes de texto (sin foto) vigentes que apuntan a una rejilla tapada o basura
     reportes_texto: int = 0
     # Fase Durante: peor nivel de agua observado reciente
     nivel_agua: str | None = None
     # Fase Durante: hay un caso urgente (personas en riesgo) asociado
     urgente: bool = False
+    confianza_foto: str | None = None
 
 
 @dataclass
@@ -105,21 +104,11 @@ def p_pred(features: Mapping[str, float], cfg: Mapping[str, Any]) -> tuple[float
     return clamp(sum(aportes.values())), aportes
 
 
-def factor_confianza(confianza: str | None, cfg: Mapping[str, Any]) -> float:
-    """Factor 0-1 de la confianza de Claude. Desconocida o sin tabla en la config: 1."""
-    tabla = cfg.get("confianza") or {}
-    if confianza not in tabla:
-        return 1.0
-    return clamp(float(tabla[confianza]))
-
-
 def p_final(s: SumideroInput, cfg: Mapping[str, Any]) -> tuple[float, float, float | None, dict[str, Any]]:
     """P que usa la fórmula. Devuelve (P, P_pred, P_obs, detalle).
 
-    Lo confirmado manda: si hay una foto evaluable vigente, P se acerca al valor observado
-    según la confianza de Claude: P = P_pred + factor·(P_obs − P_pred). Con confianza alta
-    (factor 1), P = P_obs. Sin confianza registrada o sin `confianza` en la config, factor 1.
-    Si no hay foto, P_pred más el aporte de los reportes de texto (pesan menos que una foto).
+    Lo confirmado manda: si hay una foto evaluable vigente, P = valor observado.
+    Si no, P_pred más el aporte de los reportes de texto (pesan menos que una foto).
     """
     pp, aportes = p_pred(s.features, cfg)
     detalle: dict[str, Any] = {"aportes": aportes}
@@ -127,11 +116,12 @@ def p_final(s: SumideroInput, cfg: Mapping[str, Any]) -> tuple[float, float, flo
     obs_map = cfg["observado"]
     if s.rejilla_observada in ("limpia", "parcial", "tapada"):
         p_obs = float(obs_map[s.rejilla_observada])
-        factor = factor_confianza(s.confianza_foto, cfg)
         detalle["fuente_p"] = "foto"
+        # Las clasificaciones históricas sin confianza conservan el peso original.
+        factor = cfg.get("confianza", {}).get(s.confianza_foto, 1.0)
         detalle["confianza_foto"] = s.confianza_foto
         detalle["factor_confianza_foto"] = factor
-        p = p_obs if factor == 1 else clamp(pp + factor * (p_obs - pp))
+        p = p_obs if factor == 1 else pp + factor * (p_obs - pp)
         return p, pp, p_obs, detalle
 
     rt = cfg["reportes_texto"]

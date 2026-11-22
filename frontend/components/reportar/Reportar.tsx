@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Kicker, Logo } from "@/components/ui";
 import {
@@ -17,17 +18,10 @@ import {
   type Observacion,
   type TipoReporte,
 } from "@/lib/observations";
-import { clasificarAgua, clasificarRejilla, clasificarTexto, comprimirFoto, distM, pedirGps, type Gps } from "@/lib/reportar";
+import { clasificarAgua, clasificarRejilla, clasificarTexto, comprimirFoto, distM, NIVEL_AGUA_TXT, pedirGps, type Gps } from "@/lib/reportar";
 import "./reportar.css";
 
 const REJILLA_TXT = { limpia: "Limpia", parcial: "Parcialmente tapada", tapada: "Tapada", no_evaluable: "No se puede evaluar" } as const;
-const NIVEL_TXT = {
-  sin_agua: "Sin agua",
-  cuneta: "Agua en la cuneta",
-  hasta_vereda: "Agua hasta la vereda",
-  sobre_vereda: "Agua sobre la vereda",
-  no_evaluable: "No se puede evaluar",
-} as const;
 const MATERIAL_TXT: Record<string, string> = { hojas: "hojas", basura: "basura", sedimento: "tierra o barro" };
 const CONF_TXT = { alta: "alta", media: "media", baja: "baja" } as const;
 const TIPO_TXT: Record<string, string> = {
@@ -256,6 +250,11 @@ export default function Reportar() {
           <Button variant="secondary" className="rp-big" onClick={() => elegir("texto")}>
             Solo texto
           </Button>
+          {!campo && (
+            <Link href="/reportar/camara" className="btn btn--secondary btn--md rp-big">
+              Cámara fija
+            </Link>
+          )}
           {gpsBar}
         </section>
       )}
@@ -448,7 +447,7 @@ function Resultado({
             </>
           )}
           <dt>Nivel de agua</dt>
-          <dd>{NIVEL_TXT[r.nivel_agua]}</dd>
+          <dd>{NIVEL_AGUA_TXT[r.nivel_agua]}</dd>
           <dt>Confianza</dt>
           <dd>{CONF_TXT[r.confianza]}</dd>
           {r.nota && <dd className="rp-nota">{r.nota}</dd>}
@@ -461,7 +460,7 @@ function Resultado({
           <dt>Gravedad</dt>
           <dd>{t.gravedad}</dd>
           <dt>Nivel de agua</dt>
-          <dd>{NIVEL_TXT[t.nivel_agua]}</dd>
+          <dd>{NIVEL_AGUA_TXT[t.nivel_agua]}</dd>
           {t.ubicacion_texto && (
             <>
               <dt>Lugar</dt>
