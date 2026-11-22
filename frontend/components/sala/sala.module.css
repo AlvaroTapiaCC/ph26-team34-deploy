@@ -1401,7 +1401,8 @@
 .capaOn .capaMuestra {
   opacity: 1;
 }
-.capaMuestra[data-m="cadena"] {
+.capaMuestra[data-m="cadena"],
+.capaMuestra[data-m="ruta"] {
   background: repeating-linear-gradient(90deg, var(--principal) 0 6px, transparent 6px 9px);
   height: 3px;
 }

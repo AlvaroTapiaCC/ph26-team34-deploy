@@ -641,14 +641,14 @@ const Mapa = memo(function Mapa({
   );
   const labels = useMemo(() => {
     const out: MapLabel[] = [];
-    if (simulacion) return out;
+    if (simulacion || !capas.catastro) return out;
     if (durante) for (const p of filas) if (p.detalle?.urgente) out.push({ coord: [p.lon, p.lat], text: "Urgente", tone: "danger", offset: [0, -16], anchor: "bottom" });
     const e = filas.find((p) => p.sumidero_id === sel);
     if (e) out.push({ coord: [e.lon, e.lat], text: `${e.puesto} · ${nombreFila(e)}`, tone: "card", offset: [14, 0] });
     return out;
-  }, [filas, durante, simulacion, sel]);
+  }, [filas, durante, simulacion, sel, capas.catastro]);
 
-  const lineas = useMemo(() => (!simulacion && ruta?.geojson?.type === "LineString" ? [ruta.geojson.coordinates as LngLat[]] : []), [ruta, simulacion]);
+  const lineas = useMemo(() => (!simulacion && capas.ruta && ruta?.geojson?.type === "LineString" ? [ruta.geojson.coordinates as LngLat[]] : []), [ruta, simulacion, capas.ruta]);
   const clave = filas.map((p) => p.sumidero_id).sort().join("|");
   const bounds = useMemo(() => boundsDe(filas.map((p) => ({ coord: [p.lon, p.lat] as LngLat }))), [clave]); // eslint-disable-line react-hooks/exhaustive-deps
   const onMapReady = useCallback(
@@ -676,6 +676,7 @@ const Mapa = memo(function Mapa({
         padding={{ top: 80, bottom: 70, left: 60, right: typeof window !== "undefined" && window.innerWidth > 1088 ? 470 : 40 }}
         className={s.mapaCanvas}
         puntos={puntos}
+        puntosVisibles={capas.catastro}
         onClickPunto={onSel}
         capasSobrePuntos={capas.reportes && durante ? [incidentes.capa] : undefined}
         seleccionado={sel}
@@ -755,10 +756,11 @@ function FiltrosMapa({ capas, alternar, durante, aguaRealSinLluvia }: { capas: C
       <CapaCheck {...controles("cadenas")} titulo="Flujo entre rejillas" sub="Muestra hacia qué rejilla escurre el agua calle abajo, según la pendiente estimada. Si una se tapa, revisa las que reciben su agua" muestra="cadena" />
       <CapaCheck {...controles("criticos")} titulo="Inundaciones registradas (Las Condes)" sub="Lugares que la Municipalidad de Las Condes registró como inundados o en riesgo de inundación durante la temporada de lluvias de 2026. Contexto histórico, no inundaciones activas." muestra="critico" />
       <p className={s.capasGrupo}>Ciudad</p>
+      <CapaCheck {...controles("ruta")} titulo="Ruta de la cuadrilla" sub="Recorrido propuesto para la cuadrilla seleccionada. La línea calipso une sus paradas; no es agua, un recorrido de bus ni una ubicación GPS en vivo." muestra="ruta" />
       <CapaCheck {...controles("infra")} titulo="Infraestructura crítica" sub="Metro, pasos bajo nivel, hospital y colegios (OSM): suben la consecuencia" muestra="infra" />
       <CapaCheck {...controles("transporte")} titulo="Transporte público" sub="Recorridos de la zona (tenues), los afectados resaltados, paraderos expuestos y caminata al alternativo (GTFS DTPM)" muestra="bus" />
       <CapaCheck {...controles("limites")} titulo="Límites comunales" sub="Providencia, Ñuñoa y Las Condes" muestra="limite" />
-      <CapaCheck {...controles("catastro")} titulo="Rejillas del catastro parcial" sub="3.002 rejillas SIALL / DOH en tres comunas, visibles de cerca. Gris significa contexto sin prioridad mostrada; no riesgo bajo. El ranking se calcula en zona MUT." muestra="catastro" />
+      <CapaCheck {...controles("catastro")} titulo="Rejillas y prioridad" sub="Muestra los puntos pequeños del catastro parcial SIALL / DOH y los puntos coloreados del ranking; los mayores son las primeras cinco prioridades. Gris significa contexto sin prioridad mostrada, no riesgo bajo. Cobertura parcial de 3.002 rejillas en tres comunas; ranking en zona MUT." muestra="catastro" />
       <CapaCheck {...controles("colectores")} titulo="Colectores de aguas lluvia" sub="Red SIALL / DOH cercana al MUT. Trazado catalogado, no estado ni capacidad actual del colector." muestra="colector" />
     </div>
   );
@@ -988,8 +990,8 @@ function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, servicio
 
 /* ───────────────────────── Sala ───────────────────────── */
 
-const CAPAS_ANTES: Capas = { agua: false, calor: false, cadenas: false, transporte: false, limites: true, catastro: true, infra: false, colectores: false, criticos: false, reportes: false };
-const CAPAS_DURANTE: Capas = { agua: false, calor: false, cadenas: false, transporte: true, limites: true, catastro: true, infra: false, colectores: false, criticos: false, reportes: true };
+const CAPAS_ANTES: Capas = { agua: false, calor: false, cadenas: false, transporte: false, limites: true, catastro: true, infra: false, colectores: false, criticos: false, reportes: false, ruta: true };
+const CAPAS_DURANTE: Capas = { agua: false, calor: false, cadenas: false, transporte: true, limites: true, catastro: true, infra: false, colectores: false, criticos: false, reportes: true, ruta: true };
 
 function SalaInterior({ children }: { children: ReactNode }) {
   const router = useRouter();
