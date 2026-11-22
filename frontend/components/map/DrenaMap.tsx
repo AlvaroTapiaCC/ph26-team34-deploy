@@ -70,6 +70,8 @@ export interface DrenaMapProps {
   ruta?: LngLat[][] | null; // ruta propuesta de una cuadrilla (color de acción, no de agua)
   puntos?: MapPunto[] | null; // rejillas como puntos GL, coloreados por prioridad
   onClickPunto?: (id: string) => void;
+  /** Capas interactivas que toman el clic y el hover antes que las rejillas subyacentes. */
+  capasSobrePuntos?: readonly string[];
   paraderos?: MapParadero[] | null; // transporte: expuestos, en riesgo y alternativos (#92)
   recorridos?: LngLat[][] | null; // trazado de los servicios afectados
   recorridosFondo?: LngLat[][] | null; // todos los recorridos de la zona, tenues
@@ -537,6 +539,8 @@ export default function DrenaMap(props: DrenaMapProps) {
 
   const onClickPuntoRef = useRef(props.onClickPunto);
   onClickPuntoRef.current = props.onClickPunto;
+  const capasSobrePuntosRef = useRef(props.capasSobrePuntos);
+  capasSobrePuntosRef.current = props.capasSobrePuntos;
   // Globo (nombre y puntaje) y resaltado al pasar el mouse por un pin o un punto
   const onHoverRef = useRef(props.onHover);
   onHoverRef.current = props.onHover;
@@ -567,11 +571,21 @@ export default function DrenaMap(props: DrenaMapProps) {
       }
       globo.current.setLngLat(d.coord).setDOMContent(el).addTo(map);
     };
+    const hayCapaEncima = (point: { x: number; y: number }) => {
+      const layers = (capasSobrePuntosRef.current ?? []).filter((id) => map.getLayer(id));
+      return layers.length > 0 && map.queryRenderedFeatures(point, { layers }).length > 0;
+    };
     const clic = (e: MapLibre) => {
+      if (hayCapaEncima(e.point)) return;
       const id = e.features?.[0]?.properties?.id;
       if (id) onClickPuntoRef.current?.(String(id));
     };
     const mueve = (e: MapLibre) => {
+      if (hayCapaEncima(e.point)) {
+        hoverRef.current?.(null);
+        map.getCanvas().style.cursor = "pointer";
+        return;
+      }
       // Con puntos solapados se toma el más cercano al cursor (estable), no el primero que devuelve la capa
       const fs: MapLibre[] = e.features ?? [];
       if (!fs.length) return;
