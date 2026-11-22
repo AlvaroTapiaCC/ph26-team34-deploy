@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { AVISO_MODELO, AVISO_NO_HACE, FLUJO_CONFIG, type EstadoRejilla } from "@/lib/flujo/config";
 import type { Flujo, UiFlujo, Velocidad } from "@/lib/flujo/useFlujo";
 import { useStore } from "@/lib/store";
@@ -46,19 +45,19 @@ function AccionesRejillas({ flujo }: { flujo: Flujo }) {
   );
 }
 
-/** Panel del flujo estimado: 320 px, plegable, siempre dentro del mapa. */
-export default function SimPanel({ flujo }: { flujo: Flujo }) {
+/** Simulación del flujo: plegada por defecto (una píldora). Al abrirla se pide la red de calles y se enciende la capa de agua. */
+export default function SimPanel({ flujo, abierto, onAbierto }: { flujo: Flujo; abierto: boolean; onAbierto: (v: boolean) => void }) {
   const ui: UiFlujo = flujo.ui;
   const l = ui.lecturas;
-  const [abierto, setAbierto] = useState(true);
   return (
-    <section className={`sim ${abierto ? "" : "is-closed"}`} aria-label="Flujo estimado">
-      <button className="sim__head" onClick={() => setAbierto(!abierto)} aria-expanded={abierto}>
-        <span className="sim__titulo">Flujo estimado</span>
+    <section className={`sim ${abierto ? "" : "is-closed"}`} aria-label="Simulación de flujo (estimado)">
+      <button className="sim__head" onClick={() => onAbierto(!abierto)} aria-expanded={abierto}>
+        <span className="sim__titulo">Simulación de flujo <span className="sim__est">(estimado)</span></span>
         <Chevron open={abierto} />
       </button>
-      {abierto && (
-        <>
+      {abierto && !ui.cargado && !ui.error && <p className="sim__hint sim__cuerpo">Cargando la red de calles…</p>}
+      {abierto && ui.cargado && (
+        <div className="sim__cuerpo">
           <div className="sim__ctrls">
             <button className="sim__play" onClick={flujo.alternar} disabled={!ui.cargado} aria-label={ui.corriendo ? "Pausar" : "Reproducir"}>
               {ui.corriendo ? (
@@ -106,9 +105,9 @@ export default function SimPanel({ flujo }: { flujo: Flujo }) {
           ) : (
             <p className="sim__hint">Haz clic en una rejilla del mapa para taparla o limpiarla.</p>
           )}
-          {ui.error && <p className="sim__error">No se pudo leer flujo.geojson</p>}
-        </>
+        </div>
       )}
+      {abierto && ui.error && <p className="sim__error">No se pudo cargar la red de calles. Recarga la página para reintentar.</p>}
     </section>
   );
 }

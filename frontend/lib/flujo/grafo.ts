@@ -1,22 +1,23 @@
-// Red de escurrimiento leída de public/data/flujo.geojson (pipeline/04_flujo.py).
+// Red de escurrimiento de Providencia, Ñuñoa y Las Condes, leída por teselas de public/data/flujo/ (pipeline/04_flujo.py).
 // Solo hay tramos con dirección: los nodos sin vecino más bajo (salidas de la red) no se exportan ni se animan.
+// La red crece a medida que se cargan teselas: lo visible y lo que está aguas arriba de lo visible (indice.json, "arriba").
+//
+// Módulo puro (solo importa tipos): lo usan el hilo principal, el worker del motor y las pruebas de `npm test`.
 import type { LngLat } from "../data";
-import { FLUJO_CONFIG } from "./config";
+import type { FlujoConfig } from "./config";
 
 export interface Tramo {
-  id: number;
-  a: number; // nodo OSM de origen
-  b: number; // nodo OSM de destino
+  id: number; // número global del tramo
   L: number; // m
-  s: number; // pendiente del DEM (m/m)
-  sp: number; // pendiente que usa la simulación: s suavizada donde el DEM no sirve (pipeline/flujo/pendientes.py)
-  relleno: boolean; // la dirección sale del relleno de una depresión (el DEM no baja aquí)
-  ap: number; // área propia que aporta el nodo de origen (m²)
-  acc: number; // área acumulada que pasa por el tramo (m²)
+  sp: number; // pendiente que usa la simulación: la del DEM, suavizada donde no sirve (pipeline/flujo/pendientes.py)
+  ap: number; // área propia que aporta el nodo de origen (m²), con lo que entra desde el margen de la red
+  acc: number; // área acumulada que pasa por el tramo (m²): el mapa dibuja los troncales con zoom bajo
   sig: number | null; // tramo siguiente aguas abajo
   coords: LngLat[]; // de aguas arriba a aguas abajo
   cum: number[]; // metros acumulados en cada vértice
   mid: LngLat;
+  caja: [number, number, number, number]; // oeste, sur, este, norte
+  tesela: string;
   v: number; // velocidad del agua (m/s), Manning simplificado
   capCuneta: number; // caudal (L/s) que cabe en la cuneta sin salirse
   capCalzada: number; // caudal (L/s) que cabe en la calzada hasta la solera
@@ -26,22 +27,51 @@ export interface Tramo {
 }
 
 export interface Sumidero {
+  n: number; // número global del sumidero (pipeline)
   id: string; // ID_IDE de la DOH
   coord: LngLat;
   tramo: number | null; // null: el flujo no pasa por su tramo, solo recibe su área local
   pos: number; // 0 aguas arriba .. 1 aguas abajo
   ap: number; // m²
   s: number;
-  drena: string | null; // siguiente sumidero aguas abajo
   comuna: string | null;
 }
 
 export interface Grafo {
+  /** Tramos por id global; quedan huecos donde la tesela no está cargada. Para recorrerlos, `lista`. */
   tramos: Tramo[];
+  lista: Tramo[];
+  /** Sumideros cargados, en el orden de carga (su índice es el de los arreglos del motor). */
   sumideros: Sumidero[];
-  orden: number[]; // tramos de aguas arriba a aguas abajo
+  orden: number[]; // tramos cargados de aguas arriba a aguas abajo
   sumPorTramo: Map<number, number[]>; // índices de sumideros ordenados por pos
+  teselas: Set<string>;
+  totalTramos: number;
+  totalSumideros: number;
 }
+
+/** indice.json de pipeline/04_flujo.py. */
+export interface IndiceFlujo {
+  version: number;
+  aviso: string;
+  tesela_grados: number;
+  tramos: number;
+  sumideros: number;
+  caja: [LngLat, LngLat];
+  caja_inicial: [LngLat, LngLat];
+  acc_percentiles: Record<string, number>;
+  teselas: Record<string, { archivo: string; caja: [LngLat, LngLat]; tramos: number; sumideros: number; bytes: number; arriba: string[] }>;
+}
+
+/** Tesela tal como la escribe el pipeline (ver el docstring de pipeline/04_flujo.py). */
+export interface TeselaCruda {
+  t: [number, number, number, number, number, number | null, number | null, number[]][];
+  s: [number, string, number, number, number | null, number, number, number, number | null][];
+  calles: string[];
+  comunas: string[];
+}
+
+type CfgVel = Pick<FlujoConfig, "manningN" | "radioHidraulicoM" | "velocidadMin" | "velocidadMax" | "areaCunetaM2" | "areaCalzadaM2" | "trazoLimitesV">;
 
 const M_LAT = 110_540;
 const mLon = (lat: number) => 111_320 * Math.cos((lat * Math.PI) / 180);
@@ -53,71 +83,121 @@ export function distM(a: LngLat, b: LngLat): number {
 }
 
 /** Manning simplificado: v = (1/n) · R^(2/3) · S^(1/2), entre velocidadMin y velocidadMax (m/s). */
-export function velocidad(pendiente: number, cfg = FLUJO_CONFIG): number {
+export function velocidad(pendiente: number, cfg: CfgVel): number {
   const v = (1 / cfg.manningN) * Math.pow(cfg.radioHidraulicoM, 2 / 3) * Math.sqrt(Math.max(0, pendiente));
   return Math.min(cfg.velocidadMax, Math.max(cfg.velocidadMin, v));
 }
 
 /** Caudal (L/s) que cabe en la cuneta: área de la cuneta × velocidad. */
-export function capacidadCuneta(pendiente: number, cfg = FLUJO_CONFIG): number {
+export function capacidadCuneta(pendiente: number, cfg: CfgVel): number {
   return cfg.areaCunetaM2 * velocidad(pendiente, cfg) * 1000;
 }
 
 /** Caudal (L/s) que cabe en la calzada hasta la solera: área × velocidad. */
-export function capacidadCalzada(pendiente: number, cfg = FLUJO_CONFIG): number {
+export function capacidadCalzada(pendiente: number, cfg: CfgVel): number {
   return cfg.areaCalzadaM2 * velocidad(pendiente, cfg) * 1000;
 }
 
-interface FeatureTramo {
-  properties: { kind: "tramo"; id: number; a: number; b: number; L: number; s: number; sp?: number; n?: string; r: number; ap: number; acc: number; sig: number | null };
-  geometry: { coordinates: LngLat[] };
-}
-interface FeatureSumidero {
-  properties: { kind: "sumidero"; id: string; tramo: number | null; pos: number; ap: number; s: number; drena: string | null; comuna: string | null };
-  geometry: { coordinates: LngLat };
+export function grafoVacio(totalTramos: number, totalSumideros: number): Grafo {
+  return { tramos: [], lista: [], sumideros: [], orden: [], sumPorTramo: new Map(), teselas: new Set(), totalTramos, totalSumideros };
 }
 
-export function construirGrafo(geojson: { features: (FeatureTramo | FeatureSumidero)[] }): Grafo {
-  const tramos: Tramo[] = [];
-  const sumideros: Sumidero[] = [];
-  for (const f of geojson.features) {
-    if (f.properties.kind === "tramo") {
-      const p = (f as FeatureTramo).properties;
-      const coords = (f as FeatureTramo).geometry.coordinates;
-      const cum = [0];
-      for (let i = 1; i < coords.length; i++) cum.push(cum[i - 1] + distM(coords[i - 1], coords[i]));
-      const m = coords[Math.floor(coords.length / 2)];
-      const sp = p.sp ?? p.s;
-      const v = velocidad(sp);
-      const [l1, l2] = FLUJO_CONFIG.trazoLimitesV;
-      tramos[p.id] = { id: p.id, a: p.a, b: p.b, L: p.L, s: p.s, sp, relleno: p.r === 1, ap: p.ap, acc: p.acc, sig: p.sig, coords, cum, mid: m, v, capCuneta: capacidadCuneta(sp), capCalzada: capacidadCalzada(sp), vc: v < l1 ? 0 : v < l2 ? 1 : 2, nombre: p.n ?? null, entrantes: [] };
-    } else {
-      const p = (f as FeatureSumidero).properties;
-      sumideros.push({ id: p.id, coord: (f as FeatureSumidero).geometry.coordinates, tramo: p.tramo, pos: p.pos, ap: p.ap, s: p.s, drena: p.drena, comuna: p.comuna });
+/** Lee una tesela: coordenadas en enteros de 1e-5 grados, cada vértice como diferencia con el anterior. */
+export function leerTesela(clave: string, cruda: TeselaCruda, cfg: CfgVel): { tramos: Tramo[]; sumideros: Sumidero[] } {
+  const [l1, l2] = cfg.trazoLimitesV;
+  const tramos = cruda.t.map(([id, L, sp, ap, acc, sig, calle, plano]): Tramo => {
+    const coords: LngLat[] = [];
+    let x = 0;
+    let y = 0;
+    for (let k = 0; k < plano.length; k += 2) {
+      x += plano[k];
+      y += plano[k + 1];
+      coords.push([x / 1e5, y / 1e5]);
     }
+    const cum = [0];
+    let o = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+    for (let i = 0; i < coords.length; i++) {
+      if (i > 0) cum.push(cum[i - 1] + distM(coords[i - 1], coords[i]));
+      o = Math.min(o, coords[i][0]);
+      e = Math.max(e, coords[i][0]);
+      s = Math.min(s, coords[i][1]);
+      n = Math.max(n, coords[i][1]);
+    }
+    const v = velocidad(sp, cfg);
+    return {
+      id, L, sp, ap, acc, sig, coords, cum, mid: coords[Math.floor(coords.length / 2)], caja: [o, s, e, n], tesela: clave,
+      v, capCuneta: capacidadCuneta(sp, cfg), capCalzada: capacidadCalzada(sp, cfg), vc: v < l1 ? 0 : v < l2 ? 1 : 2,
+      nombre: calle === null ? null : (cruda.calles[calle] ?? null), entrantes: [],
+    };
+  });
+  const sumideros = cruda.s.map(([n, id, x, y, tramo, pos, ap, s, comuna]): Sumidero => ({
+    n, id, coord: [x / 1e5, y / 1e5], tramo, pos, ap, s, comuna: comuna === null ? null : (cruda.comunas[comuna] ?? null),
+  }));
+  return { tramos, sumideros };
+}
+
+/**
+ * Suma una tesela a la red. Rehace los entrantes, el orden topológico y las rejillas por tramo de todo lo cargado
+ * (unos pocos ms con miles de tramos: solo ocurre al cargar teselas). Devuelve los índices de los sumideros nuevos.
+ */
+export function agregarAlGrafo(g: Grafo, clave: string, parte: { tramos: Tramo[]; sumideros: Sumidero[] }): number[] {
+  if (g.teselas.has(clave)) return [];
+  g.teselas.add(clave);
+  for (const t of parte.tramos) {
+    if (g.tramos[t.id]) continue;
+    g.tramos[t.id] = t;
+    g.lista.push(t);
   }
-  for (const t of tramos) if (t.sig !== null && tramos[t.sig]) tramos[t.sig].entrantes.push(t.id);
+  const nuevos: number[] = [];
+  for (const s of parte.sumideros) {
+    nuevos.push(g.sumideros.length);
+    g.sumideros.push(s);
+  }
+  for (const t of g.lista) t.entrantes = [];
+  for (const t of g.lista) if (t.sig !== null && g.tramos[t.sig]) g.tramos[t.sig].entrantes.push(t.id);
 
   // Orden topológico: un tramo va después de todos los que le entregan agua
-  const faltan = tramos.map((t) => t.entrantes.length);
-  const cola = tramos.filter((t) => faltan[t.id] === 0).map((t) => t.id);
+  const faltan = new Map<number, number>();
+  const cola: number[] = [];
+  for (const t of g.lista) {
+    faltan.set(t.id, t.entrantes.length);
+    if (t.entrantes.length === 0) cola.push(t.id);
+  }
   const orden: number[] = [];
   while (cola.length) {
     const i = cola.pop()!;
     orden.push(i);
-    const sig = tramos[i].sig;
-    if (sig !== null && --faltan[sig] === 0) cola.push(sig);
+    const sig = g.tramos[i].sig;
+    if (sig !== null && g.tramos[sig]) {
+      const f = faltan.get(sig)! - 1;
+      faltan.set(sig, f);
+      if (f === 0) cola.push(sig);
+    }
   }
+  g.orden = orden;
 
-  const sumPorTramo = new Map<number, number[]>();
-  sumideros.forEach((s, i) => {
-    if (s.tramo === null) return;
-    const l = sumPorTramo.get(s.tramo) ?? [];
+  g.sumPorTramo = new Map();
+  g.sumideros.forEach((s, i) => {
+    if (s.tramo === null || !g.tramos[s.tramo]) return;
+    const l = g.sumPorTramo.get(s.tramo) ?? [];
     l.push(i);
-    sumPorTramo.set(s.tramo, l);
+    g.sumPorTramo.set(s.tramo, l);
   });
-  sumPorTramo.forEach((l) => l.sort((x, y) => sumideros[x].pos - sumideros[y].pos));
-  return { tramos, sumideros, orden, sumPorTramo };
+  g.sumPorTramo.forEach((l) => l.sort((x, y) => g.sumideros[x].pos - g.sumideros[y].pos));
+  return nuevos;
+}
+
+/** Teselas que hay que cargar para ver la caja: las que la tocan y todas las que están aguas arriba de esas. */
+export function teselasNecesarias(indice: IndiceFlujo, caja: [LngLat, LngLat]): string[] {
+  const [[o, s], [e, n]] = caja;
+  const out = new Set<string>();
+  for (const [clave, t] of Object.entries(indice.teselas)) {
+    const [[to, ts], [te, tn]] = t.caja;
+    if (te < o || to > e || tn < s || ts > n) continue;
+    out.add(clave);
+    for (const a of t.arriba) out.add(a);
+  }
+  return [...out].filter((k) => indice.teselas[k]);
 }
 
 /** Punto a `m` metros del inicio del tramo, y el rumbo local (grados desde el norte). */

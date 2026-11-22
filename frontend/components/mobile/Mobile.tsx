@@ -8,10 +8,11 @@ import { CUADRILLAS_MAX, useStore, type MobileTab } from "@/lib/store";
 import AvisoDatos from "../AvisoDatos";
 import { copy } from "../desktop/Modals";
 import { CriticidadPill, VariablesReales } from "../desktop/Ficha";
-import DrenaMap, { type MapPin } from "../map/DrenaMap";
+import DrenaMap, { type MapPin, type MapPunto } from "../map/DrenaMap";
 import { Button, Kicker, Logo, PrioChip, Segmented, Stat, Toast } from "../ui";
 
-const PINS_MAX = 100; // con datos reales hay ~2.000 intersecciones: se dibujan las más prioritarias
+const PINS_NUMERADOS = 10; // en 390 px solo caben legibles los primeros: el resto va como puntos chicos (capa GL)
+const PUNTOS_MAX = 300;
 const TOP_ENCUADRE = 30;
 
 function Nav() {
@@ -36,21 +37,24 @@ function Nav() {
   );
 }
 
-function useMobilePins(onPin: (id: string) => void, focus?: string) {
+/** Top 10 de la comuna como pines numerados; el resto, puntos livianos que no tapan el mapa. */
+function useMobilePins(onPin: (id: string) => void, foco?: string) {
   const { ranking, s } = useStore();
-  return useMemo<MapPin[]>(() => {
+  return useMemo<{ pins: MapPin[]; puntos: MapPunto[] }>(() => {
     const visible = ranking.filter((p) => s.comuna === "Todas" || p.comuna === s.comuna);
-    const enMapa = ranking.length > PINS_MAX ? [...visible.slice(0, PINS_MAX), ...ranking.filter((p) => !visible.includes(p)).slice(0, 30)] : ranking;
-    return enMapa.map((p) => ({
-      id: p.id,
-      coord: p.coord,
-      rank: p.rank,
-      prio: p.prio,
-      faded: !visible.includes(p),
-      onClick: () => onPin(p.id),
-    }));
+    const numerados = visible.slice(0, PINS_NUMERADOS);
+    // El elegido siempre lleva pin, aunque esté más abajo en la lista
+    const elegido = foco ? visible.find((p) => p.id === foco) : undefined;
+    if (elegido && !numerados.includes(elegido)) numerados.push(elegido);
+    const ids = new Set(numerados.map((p) => p.id));
+    const pins = numerados.map((p) => ({ id: p.id, coord: p.coord, rank: p.rank, prio: p.prio, onClick: () => onPin(p.id) }));
+    const puntos = visible
+      .filter((p) => !ids.has(p.id))
+      .slice(0, PUNTOS_MAX)
+      .map((p) => ({ id: p.id, coord: p.coord, prio: p.prio, nombre: p.nombre }));
+    return { pins, puntos };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ranking, s.comuna, focus]);
+  }, [ranking, s.comuna, foco]);
 }
 
 function Estado({ kind }: { kind: "cargando" | "vacio" | "error" | "caido" }) {
@@ -76,7 +80,7 @@ function Estado({ kind }: { kind: "cargando" | "vacio" | "error" | "caido" }) {
     return (
       <div className="mstate mstate--ink">
         <h3>Sin conexión</h3>
-        <p>Muestra la última lista guardada (13:40). La ruta sigue en Google Maps.</p>
+        <p>No se pudo leer la lista de prioridades. Si ya abriste la ruta en Google Maps, sigue disponible ahí.</p>
         <Button size="lg" className="btn--block" onClick={reload}>
           Reintentar
         </Button>
@@ -92,7 +96,7 @@ function Estado({ kind }: { kind: "cargando" | "vacio" | "error" | "caido" }) {
 
 function Prioridades() {
   const { s, set, filtered, scenarioLabel, ruta, escenarios } = useStore();
-  const pins = useMobilePins((id) => set({ selected: id, mobileView: "mapa" }));
+  const { pins, puntos } = useMobilePins((id) => set({ selected: id, mobileView: "mapa" }));
   const real = !!filtered[0]?.real;
   // Con datos reales siempre hay lista, aunque aún no haya prioridades altas
   const hasAlta = filtered.length > 0 && (real || filtered.some((p) => p.prio === "alta"));
@@ -129,11 +133,11 @@ function Prioridades() {
         ) : (
           <>
             <div className="mob__pad" onClick={() => set({ mobileView: "mapa", selected: filtered[0].id })}>
-              <DrenaMap className="mmap" bounds={bounds} padding={10} pinSize={34} pins={pins} lines={real ? [] : ESCURRIMIENTO} />
+              <DrenaMap className="mmap" bounds={bounds} padding={10} pinSize={34} pins={pins} puntos={puntos} lines={real ? [] : ESCURRIMIENTO} />
             </div>
             <div className="mlist">
               <Kicker>
-                {s.comuna === "Todas" ? "Top 30" : `Top ${s.comuna}`} · {scenarioLabel}
+                Los primeros {Math.min(8, filtered.length)} {s.comuna === "Todas" ? "" : `en ${s.comuna} `}· {scenarioLabel}
               </Kicker>
               {filtered.slice(0, 8).map((p, i) => (
                 <button key={p.id} className={`mrow ${i === 0 ? "is-first" : ""}`} onClick={() => set({ ficha: p.id, mobileView: "ficha" })}>
@@ -163,14 +167,14 @@ function Prioridades() {
 function MapaFull() {
   const { s, set, ranking, addRuta } = useStore();
   const sel = ranking.find((p) => p.id === s.selected) ?? ranking[0];
-  const pins = useMobilePins((id) => set({ selected: id }), sel.id);
+  const { pins, puntos } = useMobilePins((id) => set({ selected: id }), sel.id);
   const b: [LngLat, LngLat] = [
     [sel.coord[0] - 0.012, sel.coord[1] - 0.012],
     [sel.coord[0] + 0.012, sel.coord[1] + 0.02],
   ];
   return (
     <div className="mfull">
-      <DrenaMap bounds={b} padding={20} pins={pins} lines={sel.real ? [] : ESCURRIMIENTO} attribution="© Esri, OSM">
+      <DrenaMap bounds={b} padding={20} pins={pins} puntos={puntos} onClickPunto={(id) => set({ selected: id })} lines={sel.real ? [] : ESCURRIMIENTO} attribution="© Esri, OSM">
         <div className="mfull__top">
           <button className="mfull__logo" onClick={() => set({ mobileView: "lista" })}>
             <Logo size={20} />
@@ -251,7 +255,7 @@ function FichaM() {
           <p>
             {p.real
               ? (fichaReal?.explicacion ?? p.real.explicacion ?? `Revisar ${p.cerca} de la esquina y despejar las rejillas antes de la lluvia.`)
-              : `Limpiar los sumideros de la esquina antes de las 14:00. Recibe agua de ${fmt(p.area)} km², el ${p.pctExterno} % desde ${p.origen ?? p.comuna}.`}
+              : `Limpiar los sumideros de la esquina antes de que empiece la lluvia. Recibe agua de ${fmt(p.area)} km², el ${p.pctExterno} % desde ${p.origen ?? p.comuna}.`}
           </p>
         </div>
         <div className="grow" />

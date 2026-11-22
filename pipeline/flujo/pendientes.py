@@ -1,5 +1,10 @@
 """
-Pendiente por tramo para la simulación hidráulica del front (frontend/public/data/flujo.geojson).
+Pendiente por tramo para el flujo estimado del front.
+
+Desde pipeline/04_flujo.py 0.2.0 (red de las 3 comunas en teselas, frontend/public/data/flujo/), 04_flujo.py importa
+suavizar() y necesita_suavizado() de este módulo y escribe "sp" y el nombre de la calle en cada tesela: ya no hace
+falta correr este script. Su main() sigue sirviendo para el formato 0.1.0 (un solo flujo.geojson) y como respaldo de
+Open Topo Data si algún tramo llegara sin pendiente.
 
 Parte de la red dirigida que ya escribe pipeline/04_flujo.py (PR #75: red de calles "drive" de OSM, elevación
 por nodo del DEM Copernicus GLO-30, relleno de depresiones y D8 sobre el grafo). Por tramo deja:

@@ -30,6 +30,14 @@ const ESTADO_TXT: Record<string, string> = { pendiente: "Pendiente", en_camino: 
 
 type Aviso = { texto: string; motivo: string; hora: string | null };
 type Cierre = { resp: RespCierre; nombre: string };
+type Accion = "en_camino" | "en_sitio" | "cerrar";
+type Fallo = { texto: string; reintentar: (() => void) | null };
+
+// Confirmación breve: usa el mismo verbo que el botón.
+const LISTO_TXT: Record<"en_camino" | "en_sitio", string> = {
+  en_camino: "Listo: la central sabe que vas en camino.",
+  en_sitio: "Listo: la central sabe que llegaste.",
+};
 
 function leerCuadrilla(): string | null {
   const q = new URLSearchParams(window.location.search).get("id");
@@ -121,13 +129,23 @@ export default function Cuadrilla() {
   const [ruta, setRuta] = useState<RutaCuadrilla | null>(null);
   const [sinConexion, setSinConexion] = useState(false);
   const [aviso, setAviso] = useState<Aviso | null>(null);
-  const [ocupado, setOcupado] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState<Accion | null>(null);
   const [error, setError] = useState("");
+  const [fallo, setFallo] = useState<Fallo | null>(null);
+  const [listoTxt, setListoTxt] = useState<string | null>(null);
   const [cierre, setCierre] = useState<Cierre | null>(null);
   const siguienteRef = useRef<string | null | undefined>(undefined); // undefined = aún no se carga
   const propioRef = useRef<string | null>(null); // misión que cerró esta app: no es un cambio "de la central"
   const enCursoRef = useRef(false);
   const fotoRef = useRef<HTMLInputElement>(null);
+  const listoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const confirmar = (t: string) => {
+    clearTimeout(listoTimer.current);
+    setListoTxt(t);
+    listoTimer.current = setTimeout(() => setListoTxt(null), 3500);
+  };
+  useEffect(() => () => clearTimeout(listoTimer.current), []);
 
   useEffect(() => {
     setCrewId(leerCuadrilla());
@@ -198,13 +216,15 @@ export default function Cuadrilla() {
   };
 
   async function avanzar(m: Mision, destino: "en_camino" | "en_sitio") {
-    setError("");
-    setOcupado(m.mission_id);
+    setFallo(null);
+    setOcupado(destino);
     try {
       if (destino === "en_sitio" && m.estado === "pendiente") await cambiarEstado(m.mission_id, "en_camino");
       await cambiarEstado(m.mission_id, destino);
+      confirmar(LISTO_TXT[destino]);
     } catch (e) {
-      setError(e instanceof ApiError && e.estado === 409 ? "La misión cambió de estado en otro dispositivo. Actualicé la lista." : (e as Error).message);
+      if (e instanceof ApiError && e.estado === 409) setFallo({ texto: "La misión cambió de estado en otro dispositivo. Actualicé la parada.", reintentar: null });
+      else setFallo({ texto: `No se pudo avisar a la central: ${(e as Error).message}.`, reintentar: () => avanzar(m, destino) });
     } finally {
       setOcupado(null);
       await actualizar();
@@ -212,8 +232,8 @@ export default function Cuadrilla() {
   }
 
   async function cerrar(m: Mision, file: File) {
-    setError("");
-    setOcupado(m.mission_id);
+    setFallo(null);
+    setOcupado("cerrar");
     try {
       const foto = await comprimirFoto(file);
       propioRef.current = m.mission_id;
@@ -222,7 +242,8 @@ export default function Cuadrilla() {
       setAviso(null);
     } catch (e) {
       propioRef.current = null;
-      setError(e instanceof ApiError && e.estado === 409 ? "La misión ya no se puede cerrar (cambió de estado). Actualicé la lista." : `No se pudo cerrar: ${(e as Error).message}`);
+      if (e instanceof ApiError && e.estado === 409) setFallo({ texto: "La misión ya no se puede cerrar (cambió de estado). Actualicé la parada.", reintentar: null });
+      else setFallo({ texto: `No se pudo cerrar la misión: ${(e as Error).message}. La foto quedó lista para reintentar.`, reintentar: () => cerrar(m, file) });
     } finally {
       setOcupado(null);
       if (fotoRef.current) fotoRef.current.value = "";
@@ -242,7 +263,7 @@ export default function Cuadrilla() {
       <header className="rp-head">
         <Logo size={24} />
         {crewId && (
-          <button className="rp-link cq-cambiar" onClick={() => (guardarCuadrilla(null), setCrewId(null), setCrew(null))}>
+          <button className="btn btn--secondary btn--md cq-cambiar" onClick={() => (guardarCuadrilla(null), setCrewId(null), setCrew(null), setFallo(null))}>
             Cambiar cuadrilla
           </button>
         )}
@@ -260,7 +281,7 @@ export default function Cuadrilla() {
           <div className="cq-crewbar">
             <b>{crew?.nombre ?? crewId}</b>
             {crew?.is_simulated && <span className="cq-tag">Cuadrilla simulada · demo</span>}
-            <span className={`cq-live ${sinConexion ? "is-off" : ""}`}>{sinConexion ? "Sin conexión · reintentando" : "En vivo"}</span>
+            <span className={`cq-live ${sinConexion ? "is-off" : ""}`} role="status">{sinConexion ? "Sin conexión · reintentando" : "En vivo"}</span>
           </div>
 
           {aviso && (
@@ -278,7 +299,21 @@ export default function Cuadrilla() {
             </div>
           )}
 
-          {error && <p className="rp-p rp-warn">{error}</p>}
+          {fallo && (
+            <div className="cq-fallo" role="alert">
+              <p>{fallo.texto}</p>
+              {fallo.reintentar && (
+                <Button size="lg" className="rp-big" disabled={!!ocupado} onClick={fallo.reintentar}>
+                  Reintentar
+                </Button>
+              )}
+            </div>
+          )}
+          {listoTxt && (
+            <p className="cq-listo" role="status">
+              {listoTxt}
+            </p>
+          )}
 
           {!ruta ? (
             <p className="rp-p">Cargando la ruta…</p>
@@ -289,26 +324,32 @@ export default function Cuadrilla() {
             </section>
           ) : (
             <>
-              <section className="cq-next">
+              <section className="cq-next" key={sig.mission_id}>
                 <Kicker tone="accent">Siguiente parada · {ESTADO_TXT[sig.estado] ?? sig.estado}</Kicker>
                 <h1 className="cq-next__name">{sig.nombre}</h1>
                 {sig.sumidero_id && <p className="rp-small">Rejilla {sig.sumidero_id}</p>}
                 <div className="rp-two">
-                  {sig.estado === "pendiente" && (
-                    <Button size="lg" className="rp-big" disabled={!!ocupado} onClick={() => avanzar(sig, "en_camino")}>
-                      Voy en camino
+                  {sig.estado === "pendiente" ? (
+                    <Button variant="primary" size="lg" className="rp-big cq-main" disabled={!!ocupado} aria-busy={ocupado === "en_camino"} onClick={() => avanzar(sig, "en_camino")}>
+                      {ocupado === "en_camino" ? "Enviando…" : "Voy en camino"}
+                    </Button>
+                  ) : sig.estado === "en_camino" ? (
+                    <Button variant="primary" size="lg" className="rp-big cq-main" disabled={!!ocupado} aria-busy={ocupado === "en_sitio"} onClick={() => avanzar(sig, "en_sitio")}>
+                      {ocupado === "en_sitio" ? "Enviando…" : "Llegué"}
+                    </Button>
+                  ) : null}
+                  {sig.estado === "en_camino" && (
+                    // Como antes: se puede cerrar con foto sin marcar «Llegué» (acción secundaria)
+                    <Button size="lg" className="rp-big" disabled={!!ocupado} aria-busy={ocupado === "cerrar"} onClick={() => fotoRef.current?.click()}>
+                      {ocupado === "cerrar" ? "Enviando foto…" : "Ya la limpié: cerrar con foto"}
                     </Button>
                   )}
-                  {sig.estado !== "en_sitio" && (
-                    <Button variant="primary" size="lg" className="rp-big" disabled={!!ocupado} onClick={() => avanzar(sig, "en_sitio")}>
-                      Llegué
+                  {sig.estado !== "pendiente" && sig.estado !== "en_camino" && (
+                    <Button variant="primary" size="lg" className="rp-big cq-main" disabled={!!ocupado} aria-busy={ocupado === "cerrar"} onClick={() => fotoRef.current?.click()}>
+                      {ocupado === "cerrar" ? "Enviando foto…" : "Cerrar con foto"}
                     </Button>
                   )}
-                  {sig.estado !== "pendiente" && (
-                    <Button variant={sig.estado === "en_sitio" ? "primary" : "secondary"} size="lg" className="rp-big" disabled={!!ocupado} onClick={() => fotoRef.current?.click()}>
-                      {ocupado === sig.mission_id ? "Enviando foto…" : "Terminé · foto de cierre"}
-                    </Button>
-                  )}
+                  {ocupado === "cerrar" && <p className="rp-small" role="status">Claude revisa la foto. Puede tardar hasta un minuto; no cierres la página.</p>}
                   <input
                     ref={fotoRef}
                     type="file"
@@ -321,9 +362,9 @@ export default function Cuadrilla() {
                     }}
                   />
                   {conCoord.length > 0 && (
-                    <Button size="lg" className="rp-big" onClick={() => window.open(urlGoogleMaps(conCoord), "_blank", "noopener")}>
-                      Abrir en Google Maps
-                    </Button>
+                    <a className="btn btn--secondary btn--md cq-maps" href={urlGoogleMaps(conCoord)} target="_blank" rel="noopener noreferrer">
+                      Abrir en Google Maps ↗
+                    </a>
                   )}
                 </div>
               </section>

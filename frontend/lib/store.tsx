@@ -78,7 +78,7 @@ export const initialState: State = {
   modal: null,
   toast: null,
   status: "loading",
-  layers: { prioridad: true, escurrimiento: true, limites: true, gore: false, rejillas: false, cadena: false, rayos: false, feed: true, reales: true, transporte: true },
+  layers: { prioridad: true, escurrimiento: false, limites: true, gore: false, rejillas: false, cadena: false, rayos: false, feed: true, reales: true, transporte: true },
   sensor: "escuchando",
   anegado: null,
   fuenteAnegamiento: null,

@@ -1,36 +1,221 @@
 {
   "editables": [
-    { "id": "principal", "nombre": "Principal", "uso": "Botón principal, selección, cifras destacadas, prioridad alta, agua que no cabe y cadena aguas abajo en el mapa", "defecto": "#368786" },
-    { "id": "secundario", "nombre": "Texto", "uso": "Texto y prioridad media; de él salen los textos tenues y, mezclado con el fondo, tarjetas y bordes", "defecto": "#ece9f4" },
-    { "id": "fondo", "nombre": "Fondo", "uso": "Fondo de la página, barra superior y franja del clima; de él salen las tarjetas, bordes y el fondo del mapa", "defecto": "#2a2930" }
+    {
+      "id": "principal",
+      "nombre": "Principal",
+      "uso": "Calipso de Drena: botones, selección y prioridad alta",
+      "defecto": "#2cc5c0"
+    },
+    {
+      "id": "secundario",
+      "nombre": "Texto",
+      "uso": "Texto y prioridad media; de él salen los textos tenues y, mezclado con el fondo, tarjetas y bordes",
+      "defecto": "#f2f5f7"
+    },
+    {
+      "id": "fondo",
+      "nombre": "Fondo",
+      "uso": "Fondo de la página, barra superior y franja del clima; de él salen las tarjetas, bordes y el fondo del mapa",
+      "defecto": "#0c0e11"
+    }
   ],
   "derivados": [
-    { "id": "surface", "nombre": "Tarjeta", "mezcla": ["fondo", 92, "secundario"] },
-    { "id": "surface-2", "nombre": "Tarjeta secundaria", "mezcla": ["fondo", 86, "secundario"] },
-    { "id": "surface-3", "nombre": "Relieve", "mezcla": ["fondo", 76, "secundario"] },
-    { "id": "line", "nombre": "Línea", "mezcla": ["fondo", 82, "secundario"] },
-    { "id": "map-bg", "nombre": "Fondo del mapa", "mezcla": ["fondo", 95, "secundario"] },
-    { "id": "text-2", "nombre": "Texto secundario", "mezcla": ["secundario", 70, "fondo"] },
-    { "id": "text-3", "nombre": "Texto tenue", "mezcla": ["secundario", 54, "fondo"] },
-    { "id": "contexto", "nombre": "Capas de contexto del mapa", "mezcla": ["secundario", 45, "fondo"] },
-    { "id": "texto-inv", "nombre": "Texto sobre el color de texto", "mezcla": ["fondo", 100, "fondo"] },
-    { "id": "sobre-principal", "nombre": "Texto sobre el principal", "mezcla": ["sobre-color", 100, "sobre-color"] },
-    { "id": "principal-suave", "nombre": "Principal suave", "mezcla": ["principal", 21, "surface"] },
-    { "id": "prio-alta", "nombre": "Prioridad alta", "mezcla": ["principal", 100, "principal"] },
-    { "id": "prio-media", "nombre": "Prioridad media", "mezcla": ["secundario", 100, "secundario"] },
-    { "id": "prio-baja", "nombre": "Prioridad baja", "mezcla": ["secundario", 57, "fondo"] },
-    { "id": "agua-suave", "nombre": "Agua suave", "mezcla": ["agua", 12, "surface"] }
+    {
+      "id": "surface",
+      "nombre": "Tarjeta",
+      "mezcla": [
+        "fondo",
+        92,
+        "secundario"
+      ]
+    },
+    {
+      "id": "surface-2",
+      "nombre": "Tarjeta secundaria",
+      "mezcla": [
+        "fondo",
+        86,
+        "secundario"
+      ]
+    },
+    {
+      "id": "surface-3",
+      "nombre": "Relieve",
+      "mezcla": [
+        "fondo",
+        76,
+        "secundario"
+      ]
+    },
+    {
+      "id": "line",
+      "nombre": "Línea",
+      "mezcla": [
+        "fondo",
+        82,
+        "secundario"
+      ]
+    },
+    {
+      "id": "map-bg",
+      "nombre": "Fondo del mapa",
+      "mezcla": [
+        "fondo",
+        95,
+        "secundario"
+      ]
+    },
+    {
+      "id": "text-2",
+      "nombre": "Texto secundario",
+      "mezcla": [
+        "secundario",
+        70,
+        "fondo"
+      ]
+    },
+    {
+      "id": "text-3",
+      "nombre": "Texto tenue",
+      "mezcla": [
+        "secundario",
+        54,
+        "fondo"
+      ]
+    },
+    {
+      "id": "contexto",
+      "nombre": "Capas de contexto del mapa",
+      "mezcla": [
+        "secundario",
+        45,
+        "fondo"
+      ]
+    },
+    {
+      "id": "texto-inv",
+      "nombre": "Texto sobre el color de texto",
+      "mezcla": [
+        "fondo",
+        100,
+        "fondo"
+      ]
+    },
+    {
+      "id": "sobre-principal",
+      "nombre": "Texto sobre el principal",
+      "mezcla": [
+        "fondo",
+        100,
+        "fondo"
+      ]
+    },
+    {
+      "id": "principal-suave",
+      "nombre": "Principal suave",
+      "mezcla": [
+        "principal",
+        21,
+        "surface"
+      ]
+    },
+    {
+      "id": "prio-alta",
+      "nombre": "Prioridad alta",
+      "mezcla": [
+        "senal-alta",
+        100,
+        "senal-alta"
+      ]
+    },
+    {
+      "id": "prio-media",
+      "nombre": "Prioridad media",
+      "mezcla": [
+        "senal-media",
+        100,
+        "senal-media"
+      ]
+    },
+    {
+      "id": "prio-baja",
+      "nombre": "Prioridad baja",
+      "mezcla": [
+        "secundario",
+        57,
+        "fondo"
+      ]
+    },
+    {
+      "id": "agua-suave",
+      "nombre": "Agua suave",
+      "mezcla": [
+        "agua",
+        12,
+        "surface"
+      ]
+    }
   ],
   "fijos": [
-    { "id": "sobre-color", "nombre": "Texto sobre color fuerte", "valor": "#ffffff" },
-    { "id": "danger", "nombre": "Peligro", "valor": "#b3261e" },
-    { "id": "ok", "nombre": "Correcto", "valor": "#2e7d32" },
-    { "id": "aviso", "nombre": "Advertencia", "valor": "#b26a00" },
-    { "id": "agua", "nombre": "Agua (poco caudal)", "valor": "#2f6fde" },
-    { "id": "agua-hondo", "nombre": "Agua (mucho caudal)", "valor": "#0b3d91" },
-    { "id": "agua-brillo", "nombre": "Brillo del agua", "valor": "#8fb4f5" },
-    { "id": "bus", "nombre": "Transporte", "valor": "#1f5fbf" },
-    { "id": "bus-dim", "nombre": "Transporte suave", "valor": "#dce7f7" },
-    { "id": "metro", "nombre": "Metro", "valor": "#1e5fd8" }
+    {
+      "id": "sobre-color",
+      "nombre": "Texto sobre color fuerte",
+      "valor": "#15171b"
+    },
+    {
+      "id": "senal-alta",
+      "nombre": "Prioridad alta (calipso)",
+      "valor": "#2cc5c0"
+    },
+    {
+      "id": "senal-media",
+      "nombre": "Prioridad media (calipso apagado)",
+      "valor": "#7fa9ae"
+    },
+    {
+      "id": "danger",
+      "nombre": "Peligro",
+      "valor": "#ff5d52"
+    },
+    {
+      "id": "ok",
+      "nombre": "Correcto",
+      "valor": "#3ccf7a"
+    },
+    {
+      "id": "aviso",
+      "nombre": "Advertencia",
+      "valor": "#e8c37a"
+    },
+    {
+      "id": "agua",
+      "nombre": "Agua (poco caudal)",
+      "valor": "#5b9bff"
+    },
+    {
+      "id": "agua-hondo",
+      "nombre": "Agua (mucho caudal)",
+      "valor": "#2e64c9"
+    },
+    {
+      "id": "agua-brillo",
+      "nombre": "Brillo del agua",
+      "valor": "#a8c8ff"
+    },
+    {
+      "id": "bus",
+      "nombre": "Transporte",
+      "valor": "#b49cff"
+    },
+    {
+      "id": "bus-dim",
+      "nombre": "Transporte suave",
+      "valor": "#2d2840"
+    },
+    {
+      "id": "metro",
+      "nombre": "Metro",
+      "valor": "#6f9dff"
+    }
   ]
 }

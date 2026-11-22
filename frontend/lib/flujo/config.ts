@@ -58,6 +58,28 @@ export const FLUJO_CONFIG = {
   caudalMinimoLs: 30,
   /** Caudal (L/s) con el que el trazo llega a su grosor y azul máximos (escala logarítmica). */
   caudalGrosorMaxLs: 2000,
+  /** Niveles de caudal del dibujo: el grosor y el azul cambian por saltos, así cambian menos tramos por ciclo. */
+  nivelesCaudal: 8,
+
+  // --- Red de las 3 comunas: qué se dibuja y cuánto se actualiza ---
+  /**
+   * Tramos que se dibujan según el zoom: con zoom bajo, solo los troncales (área acumulada `acc` ≥ m²); desde
+   * `zoomDetalle`, todos. El motor calcula toda la red cargada; esto solo cambia el dibujo.
+   */
+  // Con 30 L/s de mínimo y 24-36 mm/h, el agua se pinta desde ~4.000-5.000 m² de área acumulada (p50 de la red: ~7.000)
+  troncales: [
+    { hastaZoom: 12, accMinM2: 150_000 },
+    { hastaZoom: 13, accMinM2: 40_000 },
+    { hastaZoom: 15, accMinM2: 8_000 },
+  ],
+  zoomDetalle: 15,
+  /** Tope de cambios de estado (setFeatureState) por ciclo; lo que queda se aplica en el ciclo siguiente. */
+  estadosPorCiclo: 1200,
+  /** Margen (fracción del ancho y alto) alrededor de lo visible que también se actualiza, para que al mover no haya saltos. */
+  margenVisible: 0.25,
+  /** Cada cuánto el worker del motor manda el estado al mapa (ms) y cada cuánto avanza el cálculo (ms). */
+  fotoMs: 250,
+  pasoRelojMs: 40,
   /** Colores desde la paleta (lib/paleta.json): getters, así siguen lo editado con ?paleta=1. */
   colores: {
     get agua() { return colorDe("agua"); }, // agua circulando, poco caudal
@@ -95,6 +117,8 @@ export const FLUJO_CONFIG = {
 
   intervaloFuenteMs: 10_000,
 };
+
+export type FlujoConfig = typeof FLUJO_CONFIG;
 
 // Lluvia supuesta por escenario (mm/h por hora). No son registros de la DMC.
 export const LLUVIA_ESCENARIO: Record<ScenarioId, LluviaEscenario> = {

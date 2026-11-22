@@ -14,6 +14,8 @@ export interface MapPin {
   faded?: boolean;
   ring?: "flood"; // Durante: ondas del punto anegado
   onClick?: () => void;
+  nombre?: string; // globo al pasar el mouse
+  sub?: string;
 }
 
 export interface MapLabel {
@@ -23,6 +25,17 @@ export interface MapLabel {
   tone: "card" | "pill" | "danger" | "dark" | "area";
   offset?: [number, number];
   anchor?: "left" | "right" | "top" | "bottom" | "center" | "top-left" | "bottom-left";
+}
+
+/** Punto liviano (capa GL, no HTML): para mostrar muchas rejillas sin tapar el mapa. */
+export interface MapPunto {
+  id: string;
+  coord: LngLat;
+  prio: Prioridad;
+  top?: boolean; // de las primeras: más grande y con brillo
+  peso?: number; // 0 a 1: aporte al mapa de calor de riesgo
+  nombre?: string;
+  sub?: string;
 }
 
 export interface MapParadero {
@@ -48,8 +61,19 @@ export interface DrenaMapProps {
   tresD?: boolean;
   chain?: LngLat[] | null; // Durante: cadena aguas abajo del punto anegado
   celda?: { poly: LngLat[]; rayos: LngLat[]; link: [LngLat, LngLat] } | null; // Durante: celda convectiva ilustrativa
+  camara3D?: { pitch: number; bearing: number }; // inclinación y rumbo de la vista 3D (por defecto, los del flujo)
+  seleccionado?: string | null; // id del punto elegido (anillo fijo)
+  resaltado?: string | null; // id de pin o punto a resaltar (p. ej. la fila bajo el mouse en la lista)
+  onHover?: (id: string | null) => void; // mouse sobre un pin o punto del mapa
+  focoSiempre?: boolean; // con foco: centrar aunque ya esté a la vista (llegada de un reporte)
+  foco?: LngLat | null; // centra el mapa en este punto (sin cambiar el zoom) al elegirlo en una lista
+  ruta?: LngLat[][] | null; // ruta propuesta de una cuadrilla (color de acción, no de agua)
+  puntos?: MapPunto[] | null; // rejillas como puntos GL, coloreados por prioridad
+  onClickPunto?: (id: string) => void;
   paraderos?: MapParadero[] | null; // transporte: expuestos, en riesgo y alternativos (#92)
   recorridos?: LngLat[][] | null; // trazado de los servicios afectados
+  recorridosFondo?: LngLat[][] | null; // todos los recorridos de la zona, tenues
+  calor?: boolean; // mapa de calor de riesgo a partir de `puntos` (peso)
   caminatas?: [LngLat, LngLat][] | null; // paradero expuesto → paradero alternativo
   bounds: [LngLat, LngLat];
   padding?: number | { top: number; bottom: number; left: number; right: number };
@@ -70,8 +94,9 @@ const COLORS: Record<string, string> = {
   anegado: "var(--danger)",
 };
 
-function pinEl(p: MapPin, size: number): HTMLElement {
+function pinEl(p: MapPin, size: number, alClic: () => void, alHover: (dentro: boolean) => void): HTMLElement {
   const el = document.createElement("div");
+  el.dataset.id = p.id;
   el.className = "pin" + (p.faded ? " pin--faded" : "") + (p.onClick ? " pin--click" : "") + (p.prio === "alta" ? " pin--tri" : "") + ` pin--${p.prio}`;
   el.style.width = el.style.height = `${size}px`;
   const fill = COLORS[p.prio];
@@ -88,15 +113,17 @@ function pinEl(p: MapPin, size: number): HTMLElement {
   if (p.onClick) {
     el.addEventListener("click", (e) => {
       e.stopPropagation();
-      p.onClick!();
+      alClic();
     });
   }
+  el.addEventListener("mouseenter", () => alHover(true));
+  el.addEventListener("mouseleave", () => alHover(false));
   return el;
 }
 
 const PARADERO_SIGNO = { expuesto: "≋", en_riesgo: "!", alternativo: "↪" } as const;
 
-function paraderoEl(p: MapParadero): HTMLElement {
+function paraderoEl(p: MapParadero, alClic: () => void): HTMLElement {
   const el = document.createElement("div");
   el.className = `paradero paradero--${p.nivel}` + (p.activo ? " is-active" : "") + (p.onClick ? " pin--click" : "");
   el.title = p.titulo;
@@ -105,7 +132,7 @@ function paraderoEl(p: MapParadero): HTMLElement {
   if (p.onClick) {
     el.addEventListener("click", (e) => {
       e.stopPropagation();
-      p.onClick!();
+      alClic();
     });
   }
   return el;
@@ -142,7 +169,7 @@ const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
   ["lim", "line-color", "text-2"],
   ["rm-fill", "fill-color", "text-3"],
   ["rm-line", "line-color", "text-3"],
-  ["rm-line-proy", "line-color", "text-3"],
+  ["rm-line-proy", "line-color", "secundario"],
   ["rej-cluster", "circle-color", "contexto"],
   ["rej-cluster", "circle-stroke-color", "contexto"],
   ["rej-point", "circle-color", "contexto"],
@@ -154,11 +181,44 @@ const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
   ["rec-line", "line-color", "bus"],
   ["caminata", "line-color", "bus"],
   ["chain-halo", "line-color", "principal"],
+  ["ruta-halo", "line-color", "principal"],
+  ["ruta-line", "line-color", "principal"],
+  ["puntos-hover", "circle-stroke-color", "secundario"],
+  ["puntos-sel", "circle-stroke-color", "principal"],
+  ["puntos", "circle-stroke-color", "secundario"],
+  ["rec-fondo", "line-color", "bus"],
   ["chain-line", "line-color", "principal"],
 ];
 
+/** Chevrón para el sentido de los recorridos de bus, con el color de transporte de la paleta. */
+function flechaBus(): ImageData {
+  const c = document.createElement("canvas");
+  c.width = c.height = 24;
+  const ctx = c.getContext("2d")!;
+  ctx.beginPath();
+  ctx.moveTo(8, 6);
+  ctx.lineTo(16, 12);
+  ctx.lineTo(8, 18);
+  ctx.strokeStyle = colorDe("bus");
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.stroke();
+  return ctx.getImageData(0, 0, 24, 24);
+}
+
 function pintarMapa(map: MapLibre) {
+  if (map.hasImage?.("bus-sentido")) map.updateImage("bus-sentido", flechaBus());
   for (const [capa, prop, color] of COLORES_CAPAS) if (map.getLayer(capa)) map.setPaintProperty(capa, prop, colorDe(color));
+  if (map.getLayer("riesgo-calor")) {
+    // Riesgo bajo = transparente (el mapa queda gris); medio = calipso tenue; alto = calipso a blanco
+    const t = (c: string, a: number) => colorDe(c).replace(/^#(..)(..)(..)$/, (_m, r, g, b) => `rgba(${parseInt(r, 16)},${parseInt(g, 16)},${parseInt(b, 16)},${a})`); // paleta-ok: transparencia sobre colores de la paleta
+    map.setPaintProperty("riesgo-calor", "heatmap-color", ["interpolate", ["linear"], ["heatmap-density"], 0, "rgba(0,0,0,0)", 0.12, "rgba(0,0,0,0)", 0.3, t("principal", 0.15), 0.6, t("principal", 0.35), 0.85, t("principal", 0.55), 1, t("principal", 0.7)]); // paleta-ok: transparente
+  }
+  if (map.getLayer("puntos")) {
+    map.setPaintProperty("puntos", "circle-color", ["match", ["get", "prio"], "alta", colorDe("prio-alta"), "media", colorDe("prio-media"), colorDe("prio-baja")]);
+    map.setPaintProperty("puntos-brillo", "circle-color", ["match", ["get", "prio"], "alta", colorDe("prio-alta"), "media", colorDe("prio-media"), colorDe("prio-baja")]);
+  }
 }
 
 interface ComunaRm {
@@ -191,7 +251,12 @@ export default function DrenaMap(props: DrenaMapProps) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibre>(null);
   const libRef = useRef<MapLibre>(null);
-  const markers = useRef<MapLibre[]>([]);
+  const markerKeys = useRef<Map<string, MapLibre>>(new Map());
+  const clicks = useRef<Map<string, () => void>>(new Map());
+  const rejillasCargadas = useRef(false);
+  const pinesInfo = useRef(new Map<string, { coord: LngLat; nombre?: string; sub?: string }>());
+  const globo = useRef<MapLibre>(null);
+  const hoverRef = useRef<((id: string | null, info?: { coord: LngLat; nombre?: string; sub?: string }) => void) | null>(null);
   const comunaMarkers = useRef<{ el: HTMLElement; marker: MapLibre }[]>([]);
   const unsubTema = useRef<() => void>(() => {});
   const [ready, setReady] = useState(false);
@@ -222,6 +287,11 @@ export default function DrenaMap(props: DrenaMapProps) {
           dragRotate: !!props.relieve, // en 3D se puede girar e inclinar con el botón derecho
           pitchWithRotate: !!props.relieve,
           maxPitch: 70,
+          // Fluidez: en pantallas de alta densidad el lienzo se dibuja a 1,5× como máximo (la diferencia no se nota y
+          // el costo por cuadro baja a la mitad o menos); sin copias del mundo ni fundido de teselas.
+          pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+          renderWorldCopies: false,
+          fadeDuration: 0,
         });
         if (!props.relieve) map.touchZoomRotate.disableRotation();
         mapRef.current = map;
@@ -229,7 +299,8 @@ export default function DrenaMap(props: DrenaMapProps) {
           const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]) });
           ["esc", "chain", "lim", "area", "celda", "celda-link", "gore", "rec", "caminata"].forEach(add);
           map.addSource("comunas-rm", { type: "geojson", data: "/data/comunas_rm.geojson" });
-          map.addSource("rejillas", { type: "geojson", data: "/data/rejillas.geojson", cluster: true, clusterMaxZoom: 16, clusterRadius: 30 });
+          // El catastro completo (420 KB) se pide la primera vez que se enciende su capa
+          map.addSource("rejillas", { type: "geojson", data: fc([]), cluster: true, clusterMaxZoom: 16, clusterRadius: 30 });
           if (props.relieve) {
             const ter = FLUJO_CONFIG.terreno;
             // Dos fuentes del mismo DEM: una para el terreno 3D y otra para el sombreado (MapLibre recomienda separarlas)
@@ -271,13 +342,13 @@ export default function DrenaMap(props: DrenaMapProps) {
           const hidden = { visibility: "none" };
           // Límites de todas las comunas: línea fina punteada en --text-3, relleno casi invisible; las 3 del proyecto, algo más marcadas.
           map.addLayer({ id: "rm-fill", type: "fill", source: "comunas-rm", paint: { "fill-opacity": 0.035 } });
-          map.addLayer({ id: "rm-line", type: "line", source: "comunas-rm", paint: { "line-width": 0.9, "line-opacity": 0.85, "line-dasharray": [2, 2] } });
+          map.addLayer({ id: "rm-line", type: "line", source: "comunas-rm", paint: { "line-width": 1.2, "line-opacity": 0.9, "line-dasharray": [2, 2] } });
           map.addLayer({
             id: "rm-line-proy",
             type: "line",
             source: "comunas-rm",
             filter: ["==", ["get", "en_proyecto"], true],
-            paint: { "line-width": 1.8, "line-opacity": 1, "line-dasharray": [3, 2] },
+            paint: { "line-width": 2.4, "line-opacity": 0.85 },
           });
           // Capas de contexto (catastro completo y GORE): pequeñas, en gris y solo de cerca, para no competir con el agua
           const zc = FLUJO_CONFIG.zoomContexto;
@@ -306,9 +377,69 @@ export default function DrenaMap(props: DrenaMapProps) {
           // Durante: cadena aguas abajo del punto anegado en accent (alerta).
           // Transporte: azul fuera de la paleta de prioridad para no confundir un recorrido con escurrimiento.
           map.addLayer({ id: "rec-line", type: "line", source: "rec", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 3, "line-opacity": 0.55 } });
+          map.addImage("bus-sentido", flechaBus(), { pixelRatio: 2 });
+          map.addLayer({
+            id: "rec-flecha",
+            type: "symbol",
+            source: "rec",
+            layout: { "symbol-placement": "line", "symbol-spacing": 60, "icon-image": "bus-sentido", "icon-size": 0.8, "icon-rotation-alignment": "map", "icon-allow-overlap": false },
+            paint: { "icon-opacity": 0.9 },
+          });
           map.addLayer({ id: "caminata", type: "line", source: "caminata", layout: { "line-cap": "round" }, paint: { "line-width": 2.5, "line-dasharray": [0.5, 2] } });
           map.addLayer({ id: "chain-halo", type: "line", source: "chain", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 14, "line-opacity": 0.2 } });
           map.addLayer({ id: "chain-line", type: "line", source: "chain", paint: { "line-width": 3, "line-dasharray": [1.5, 1.5] } });
+          map.addSource("ruta", { type: "geojson", data: fc([]) });
+          map.addLayer({ id: "ruta-halo", type: "line", source: "ruta", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 9, "line-opacity": 0.22 } });
+          map.addLayer({ id: "ruta-line", type: "line", source: "ruta", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 3, "line-dasharray": [2, 1.5] } });
+          map.addSource("puntos", { type: "geojson", data: fc([]) });
+          map.addLayer({
+            id: "puntos-sel",
+            type: "circle",
+            source: "puntos",
+            filter: ["==", ["get", "id"], ""],
+            paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 7, 16, 11], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2.5 }, // paleta-ok: relleno transparente
+          });
+          map.addLayer({
+            id: "puntos-hover",
+            type: "circle",
+            source: "puntos",
+            filter: ["==", ["get", "id"], ""],
+            paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 6, 16, 10], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2 }, // paleta-ok: relleno transparente
+          });
+          map.addSource("rec-fondo", { type: "geojson", data: fc([]) });
+          map.addLayer({ id: "rec-fondo", type: "line", source: "rec-fondo", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 1.5, "line-opacity": 0.22 } });
+          map.addLayer({
+            id: "riesgo-calor",
+            type: "heatmap",
+            source: "puntos",
+            layout: { visibility: "none" },
+            paint: {
+              "heatmap-weight": ["get", "w"],
+              "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 13, 1.6, 16, 2.6],
+              "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 13, 30, 16, 90],
+              "heatmap-opacity": 0.5,
+            },
+          });
+          map.addLayer({
+            id: "puntos-brillo",
+            type: "circle",
+            source: "puntos",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["get", "top"], 8, 5], 16, ["case", ["get", "top"], 16, 9]],
+              "circle-blur": 1,
+              "circle-opacity": ["case", ["get", "top"], 0.75, ["match", ["get", "prio"], "alta", 0.5, "media", 0.3, 0.15]],
+            },
+          });
+          map.addLayer({
+            id: "puntos",
+            type: "circle",
+            source: "puntos",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["get", "top"], 3.5, 2], 16, ["case", ["get", "top"], 6.5, 4]],
+              "circle-stroke-width": ["case", ["get", "top"], 1.5, 0],
+              "circle-opacity": ["match", ["get", "prio"], "baja", 0.7, 1],
+            },
+          });
           pintarMapa(map);
           // Si cambia el esquema de color del sistema, se vuelven a leer los colores
           const repintar = () => pintarMapa(map);
@@ -324,7 +455,8 @@ export default function DrenaMap(props: DrenaMapProps) {
       unsubTema.current();
       comunaMarkers.current.forEach((c) => c.marker.remove());
       comunaMarkers.current = [];
-      markers.current.forEach((m) => m.remove());
+      markerKeys.current.forEach((m) => m.remove());
+      markerKeys.current = new Map();
       mapRef.current?.remove();
       mapRef.current = null;
     };
@@ -353,12 +485,30 @@ export default function DrenaMap(props: DrenaMapProps) {
   useEffect(() => {
     if (!ready) return;
     const map = mapRef.current;
-    const ter = FLUJO_CONFIG.terreno;
+    const ter = props.camara3D ?? FLUJO_CONFIG.terreno;
     const bearing = props.tresD ? ter.bearing : 0;
+    // El padding de la cámara queda guardado en el mapa: se limpia antes de calcular para que no se acumule
+    if (props.camara3D) map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
     const cam = map.cameraForBounds(props.bounds, { padding: props.padding ?? 40, bearing });
-    if (cam) map.easeTo({ ...cam, bearing, pitch: props.tresD ? ter.pitch : 0, duration: 900 });
+    if (cam && props.camara3D) {
+      // Vista de la sala: centro de la zona con margen para el panel (padding de easeTo), sin que la inclinación la corra
+      const [[x0, y0], [x1, y1]] = props.bounds;
+      const pad = props.padding ?? 40;
+      map.easeTo({ center: [(x0 + x1) / 2, (y0 + y1) / 2], zoom: cam.zoom - (props.tresD ? 0.15 : 0), bearing, pitch: props.tresD ? ter.pitch : 0, padding: pad, duration: 900 });
+    } else if (cam) map.easeTo({ ...cam, bearing, pitch: props.tresD ? ter.pitch : 0, duration: 900 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, JSON.stringify(props.bounds), props.tresD]);
+
+  // Foco: llevar a la vista la rejilla elegida en la lista, solo si quedó fuera del encuadre visible
+  useEffect(() => {
+    if (!ready || !props.foco) return;
+    const map = mapRef.current;
+    const b = map.getBounds();
+    if (!props.focoSiempre && b.contains(props.foco)) return;
+    const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    map.easeTo({ center: props.foco, zoom: props.focoSiempre ? Math.max(map.getZoom(), 15.5) : map.getZoom(), duration: reducido ? 0 : 700 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, props.foco?.[0], props.foco?.[1]]);
 
   // Capas vectoriales
   useEffect(() => {
@@ -373,8 +523,100 @@ export default function DrenaMap(props: DrenaMapProps) {
     set("celda-link", fc(props.celda ? [line(props.celda.link)] : []));
     set("rec", fc((props.recorridos ?? []).map(line)));
     set("caminata", fc((props.caminatas ?? []).map(line)));
+    set("ruta", fc((props.ruta ?? []).map(line)));
+    set("rec-fondo", fc((props.recorridosFondo ?? []).map(line)));
+    set("puntos", fc((props.puntos ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, prio: p.prio, top: !!p.top, w: p.peso ?? 0, nombre: p.nombre ?? "", sub: p.sub ?? "" }, geometry: { type: "Point", coordinates: p.coord } }))));
     set("gore", fc((props.gore ?? []).map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }))));
-  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.caminatas]);
+  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.caminatas, props.puntos, props.ruta, props.recorridosFondo]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const map = mapRef.current;
+    if (map.getLayer("riesgo-calor")) map.setLayoutProperty("riesgo-calor", "visibility", props.calor ? "visible" : "none");
+  }, [ready, props.calor]);
+
+  const onClickPuntoRef = useRef(props.onClickPunto);
+  onClickPuntoRef.current = props.onClickPunto;
+  // Globo (nombre y puntaje) y resaltado al pasar el mouse por un pin o un punto
+  const onHoverRef = useRef(props.onHover);
+  onHoverRef.current = props.onHover;
+  useEffect(() => {
+    if (!ready) return;
+    const ml = libRef.current;
+    const map = mapRef.current;
+    globo.current = new ml.Popup({ closeButton: false, closeOnClick: false, offset: 16, className: "globo", maxWidth: "280px" });
+    let actual: string | null = null;
+    hoverRef.current = (id, info) => {
+      // Solo cuando cambia el punto: el globo no se rehace en cada movimiento del mouse
+      if (id === actual) return;
+      actual = id;
+      onHoverRef.current?.(id);
+      const d = id ? (info ?? pinesInfo.current.get(id)) : null;
+      if (!id || !d?.nombre) {
+        globo.current?.remove();
+        return;
+      }
+      const el = document.createElement("div");
+      const t = document.createElement("b");
+      t.textContent = d.nombre;
+      el.appendChild(t);
+      if (d.sub) {
+        const sub = document.createElement("span");
+        sub.textContent = d.sub;
+        el.appendChild(sub);
+      }
+      globo.current.setLngLat(d.coord).setDOMContent(el).addTo(map);
+    };
+    const clic = (e: MapLibre) => {
+      const id = e.features?.[0]?.properties?.id;
+      if (id) onClickPuntoRef.current?.(String(id));
+    };
+    const mueve = (e: MapLibre) => {
+      // Con puntos solapados se toma el más cercano al cursor (estable), no el primero que devuelve la capa
+      const fs: MapLibre[] = e.features ?? [];
+      if (!fs.length) return;
+      const px = e.point;
+      const f = fs.reduce((a: MapLibre, b: MapLibre) => {
+        const pa = map.project(a.geometry.coordinates);
+        const pb = map.project(b.geometry.coordinates);
+        return (pa.x - px.x) ** 2 + (pa.y - px.y) ** 2 <= (pb.x - px.x) ** 2 + (pb.y - px.y) ** 2 ? a : b;
+      });
+      map.getCanvas().style.cursor = onClickPuntoRef.current ? "pointer" : "";
+      const pr = f.properties ?? {};
+      hoverRef.current?.(String(pr.id), { coord: f.geometry.coordinates as LngLat, nombre: pr.nombre || undefined, sub: pr.sub || undefined });
+    };
+    const sale = () => {
+      map.getCanvas().style.cursor = "";
+      hoverRef.current?.(null);
+    };
+    map.on("click", "puntos", clic);
+    map.on("mousemove", "puntos", mueve);
+    map.on("mouseleave", "puntos", sale);
+    return () => {
+      map.off("click", "puntos", clic);
+      map.off("mousemove", "puntos", mueve);
+      map.off("mouseleave", "puntos", sale);
+      globo.current?.remove();
+    };
+  }, [ready]);
+
+  // Punto elegido: anillo fijo
+  useEffect(() => {
+    if (!ready) return;
+    const map = mapRef.current;
+    if (map.getLayer("puntos-sel")) map.setFilter("puntos-sel", ["==", ["get", "id"], props.seleccionado ?? ""]);
+  }, [ready, props.seleccionado]);
+
+  // Resaltado que viene de afuera (fila de la lista bajo el mouse)
+  useEffect(() => {
+    if (!ready) return;
+    const map = mapRef.current;
+    const id = props.resaltado ?? "";
+    if (map.getLayer("puntos-hover")) map.setFilter("puntos-hover", ["==", ["get", "id"], id]);
+    const raiz = ref.current?.parentElement;
+    raiz?.querySelectorAll(".pin.is-resaltado").forEach((e) => e.classList.remove("is-resaltado"));
+    if (id) raiz?.querySelector(`.pin[data-id="${CSS.escape(id)}"]`)?.classList.add("is-resaltado");
+  }, [ready, props.resaltado, props.pins]);
 
   // Visibilidad de las capas de datos reales
   useEffect(() => {
@@ -383,6 +625,10 @@ export default function DrenaMap(props: DrenaMapProps) {
     const vis = (ids: string[], on?: boolean) => ids.forEach((id) => map.setLayoutProperty(id, "visibility", on ? "visible" : "none"));
     vis(["rm-fill", "rm-line", "rm-line-proy"], props.comunas ?? true);
     vis(["rej-cluster", "rej-point"], props.rejillas);
+    if (props.rejillas && !rejillasCargadas.current) {
+      rejillasCargadas.current = true;
+      map.getSource("rejillas")?.setData("/data/rejillas.geojson");
+    }
   }, [ready, props.comunas, props.rejillas]);
 
   // Nombres de comuna: HTML en Geist Mono (el estilo base no tiene glifos para una capa de texto). Visibles desde el zoom 11.
@@ -418,27 +664,63 @@ export default function DrenaMap(props: DrenaMapProps) {
     };
   }, [ready, props.comunas]);
 
-  // Marcadores HTML
+  // Marcadores HTML. Se reconcilian por clave: un marcador igual al anterior se conserva (sin parpadeo cada 3 s)
+  // y uno nuevo o cambiado (p. ej. una rejilla que sube de puesto) entra con una animación corta.
   useEffect(() => {
     if (!ready) return;
     const ml = libRef.current;
     const map = mapRef.current;
-    markers.current.forEach((m) => m.remove());
-    markers.current = [];
-    const add = (el: HTMLElement, coord: LngLat, anchor = "center", offset: [number, number] = [0, 0]) => {
-      markers.current.push(new ml.Marker({ element: el, anchor, offset }).setLngLat(coord).addTo(map));
+    const primeraVez = markerKeys.current.size === 0;
+    const siguientes = new Map<string, MapLibre>();
+    const reusar = (key: string, crear: () => { el: HTMLElement; coord: LngLat; anchor?: string; offset?: [number, number] }) => {
+      const previo = markerKeys.current.get(key);
+      if (previo) {
+        markerKeys.current.delete(key);
+        siguientes.set(key, previo);
+        return;
+      }
+      const { el, coord, anchor = "center", offset = [0, 0] } = crear();
+      if (!primeraVez) el.classList.add("is-nuevo");
+      siguientes.set(key, new ml.Marker({ element: el, anchor, offset }).setLngLat(coord).addTo(map));
     };
-    (props.celda?.rayos ?? []).forEach((c) => {
-      const el = document.createElement("div");
-      el.className = "rayo";
-      el.textContent = "ϟ";
-      add(el, c);
-    });
+    (props.celda?.rayos ?? []).forEach((c) =>
+      reusar(`rayo|${c}`, () => {
+        const el = document.createElement("div");
+        el.className = "rayo";
+        el.textContent = "ϟ";
+        return { el, coord: c };
+      }),
+    );
+    clicks.current.clear();
+    pinesInfo.current.clear();
     // Paraderos bajo los pines de prioridad; el activo al final para que quede encima
-    [...(props.paraderos ?? [])].sort((a, b) => Number(!!a.activo) - Number(!!b.activo)).forEach((p) => add(paraderoEl(p), p.coord));
+    [...(props.paraderos ?? [])]
+      .sort((a, b) => Number(!!a.activo) - Number(!!b.activo))
+      .forEach((p) => {
+        if (p.onClick) clicks.current.set(`par|${p.id}`, p.onClick);
+        reusar(`par|${p.id}|${p.nivel}|${!!p.activo}|${p.titulo}|${p.coord}`, () => ({ el: paraderoEl(p, () => clicks.current.get(`par|${p.id}`)?.()), coord: p.coord }));
+      });
     // pins: los atenuados primero para que queden debajo
-    [...(props.pins ?? [])].sort((a, b) => Number(!!b.faded) - Number(!!a.faded)).forEach((p) => add(pinEl(p, size), p.coord));
-    (props.labels ?? []).forEach((l) => add(labelEl(l), l.coord, l.anchor ?? "left", l.offset ?? [size / 2 + 6, 0]));
+    [...(props.pins ?? [])]
+      .sort((a, b) => Number(!!b.faded) - Number(!!a.faded))
+      .forEach((p) => {
+        if (p.onClick) clicks.current.set(`pin|${p.id}`, p.onClick);
+        pinesInfo.current.set(p.id, { coord: p.coord, nombre: p.nombre, sub: p.sub });
+        reusar(`pin|${p.id}|${p.rank}|${p.prio}|${!!p.faded}|${p.ring ?? ""}|${!!p.onClick}|${p.coord}|${size}`, () => ({
+          el: pinEl(p, size, () => clicks.current.get(`pin|${p.id}`)?.(), (dentro) => hoverRef.current?.(dentro ? p.id : null)),
+          coord: p.coord,
+        }));
+      });
+    (props.labels ?? []).forEach((l) =>
+      reusar(`lbl|${l.text}|${l.sub ?? ""}|${l.tone}|${l.coord}|${l.anchor ?? ""}|${l.offset ?? ""}|${size}`, () => ({
+        el: labelEl(l),
+        coord: l.coord,
+        anchor: l.anchor ?? "left",
+        offset: l.offset ?? [size / 2 + 6, 0],
+      })),
+    );
+    markerKeys.current.forEach((m) => m.remove());
+    markerKeys.current = siguientes;
   }, [ready, props.pins, props.labels, props.celda, props.paraderos, size]);
 
   return (
