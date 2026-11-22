@@ -10,7 +10,7 @@ export default function LeyendaMapa({ capas, durante, nReportes, modoAgua }: { c
   return (
     <section className={s.lecturaMapa} aria-label="Cómo leer el mapa">
       <h2>Prioridad de limpieza</h2>
-      <p>{ranking.filas.filter((p) => p.prioridad != null).length} rejillas priorizadas · zona MUT</p>
+      <p>{ranking.estado === "cargando" ? "Consultando prioridades…" : `${ranking.filas.filter((p) => p.prioridad != null).length} rejillas priorizadas · ${ranking.estado === "error" ? "sin actualizar" : "zona MUT"}`}</p>
       <ul className={s.clavesMapa}>
         <li><i className={s.lgAlta} />Alta</li>
         <li><i className={s.lgMedia} />Media</li>
