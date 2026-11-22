@@ -1,0 +1,200 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "apoquindo-el-alba",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.545107,
+          -33.407853
+        ]
+      },
+      "properties": {
+        "lugar": "Av. Apoquindo con Camino El Alba, acceso a Metro Los Dominicos",
+        "comuna": "Las Condes",
+        "hora": "2026-10-13T18:56:12Z",
+        "tipo_hora": "publicacion",
+        "fuente_url": "https://www.latercera.com/nacional/noticia/lluvia-granizos-y-tormenta-electrica-en-santiago-se-registran-afectaciones-en-el-sector-oriente-a-dias-del-aluvion/",
+        "precision": "tramo",
+        "tipo_lugar": "calle",
+        "georreferencia_url": "https://www.openstreetmap.org/node/2781524363",
+        "fuente_original_url": "https://x.com/TTISantiago/status/2110082190268641675"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "las-condes-padre-hurtado",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.54549,
+          -33.394183
+        ]
+      },
+      "properties": {
+        "lugar": "Av. Las Condes con Av. Padre Hurtado",
+        "comuna": "Las Condes",
+        "hora": "2026-10-13T18:59:00Z",
+        "tipo_hora": "aviso",
+        "fuente_url": "https://www.latercera.com/nacional/noticia/lluvia-granizos-y-tormenta-electrica-en-santiago-se-registran-afectaciones-en-el-sector-oriente-a-dias-del-aluvion/",
+        "precision": "cruce exacto",
+        "tipo_lugar": "calle",
+        "georreferencia_url": "https://www.openstreetmap.org/node/240449301",
+        "fuente_original_url": "https://x.com/TTISantiago/status/2110083098448941119"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "lyon-eliodoro-yanez",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.60645,
+          -33.430805
+        ]
+      },
+      "properties": {
+        "lugar": "Av. Ricardo Lyon con Eliodoro Yáñez",
+        "comuna": "Providencia",
+        "hora": "2026-10-13T19:26:00Z",
+        "tipo_hora": "aviso",
+        "fuente_url": "https://www.cnnchile.com/pais/lluvia-granizos-y-tormentas-electricas-en-la-rm-revisa-los-registros-del-sistema-frontal/",
+        "precision": "cruce exacto",
+        "tipo_lugar": "calle",
+        "georreferencia_url": "https://www.openstreetmap.org/node/13882183",
+        "fuente_original_url": "https://x.com/TTISantiago/status/2110090552322781648"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "bilbao-pedro-valdivia",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.607408,
+          -33.438405
+        ]
+      },
+      "properties": {
+        "lugar": "Av. Francisco Bilbao con Av. Pedro de Valdivia",
+        "comuna": "Providencia",
+        "hora": "2026-10-13T19:57:10Z",
+        "tipo_hora": "publicacion",
+        "fuente_url": "https://www.theclinic.cl/2026/10/13/francisco-bilbao-vicuna-mackenna-irarrazaval-y-pedro-de-valdivia-las-imagenes-de-las-principales-arterias-de-santiago-colapsadas-tras-fuertes-lluvias/",
+        "precision": "cruce exacto",
+        "tipo_lugar": "calle",
+        "georreferencia_url": "https://www.openstreetmap.org/node/13876998"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "irarrazaval-pedro-valdivia",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.604929,
+          -33.454155
+        ]
+      },
+      "properties": {
+        "lugar": "Av. Irarrázaval con Av. Pedro de Valdivia",
+        "comuna": "Ñuñoa",
+        "hora": "2026-10-13T20:19:51Z",
+        "tipo_hora": "publicacion",
+        "fuente_url": "https://www.biobiochile.cl/noticias/nacional/region-metropolitana/2026/10/13/tormenta-que-azoto-santiago-provoca-caos-en-la-ciudad-hay-congestion-en-diversos-puntos-de-la-rm.shtml",
+        "precision": "cruce exacto",
+        "tipo_lugar": "calle",
+        "georreferencia_url": "https://www.openstreetmap.org/node/18321717"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "carlos-dittborn",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.623551,
+          -33.46684
+        ]
+      },
+      "properties": {
+        "lugar": "Paso bajo nivel de Av. Carlos Dittborn entre Vicuña Mackenna y San Eugenio",
+        "comuna": "Ñuñoa",
+        "hora": "2026-10-13T20:30:00Z",
+        "tipo_hora": "aviso",
+        "fuente_url": "https://www.biobiochile.cl/noticias/nacional/region-metropolitana/2026/10/13/tormenta-que-azoto-santiago-provoca-caos-en-la-ciudad-hay-congestion-en-diversos-puntos-de-la-rm.shtml",
+        "precision": "tramo",
+        "tipo_lugar": "paso_bajo_nivel",
+        "georreferencia_url": "https://www.openstreetmap.org/way/187881951",
+        "fuente_original_url": "https://x.com/TTISantiago/status/2110106627735158987"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "castillo-velasco",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.582787,
+          -33.460334
+        ]
+      },
+      "properties": {
+        "lugar": "Paso bajo nivel de Alcalde Eduardo Castillo Velasco en Villa Frei",
+        "comuna": "Ñuñoa",
+        "hora": "2026-10-13T20:42:00Z",
+        "tipo_hora": "aviso",
+        "fuente_url": "https://www.biobiochile.cl/noticias/nacional/region-metropolitana/2026/10/13/tormenta-que-azoto-santiago-provoca-caos-en-la-ciudad-hay-congestion-en-diversos-puntos-de-la-rm.shtml",
+        "precision": "tramo",
+        "tipo_lugar": "paso_bajo_nivel",
+        "georreferencia_url": "https://www.openstreetmap.org/way/187581026",
+        "fuente_original_url": "https://x.com/TTISantiago/status/2110109597180613106"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "duble-almeyda",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.581988,
+          -33.458677
+        ]
+      },
+      "properties": {
+        "lugar": "Paso bajo nivel de Dublé Almeyda en Villa Frei",
+        "comuna": "Ñuñoa",
+        "hora": "2026-10-13T21:10:00Z",
+        "tipo_hora": "aviso",
+        "fuente_url": "https://www.biobiochile.cl/noticias/nacional/region-metropolitana/2026/10/13/tormenta-que-azoto-santiago-provoca-caos-en-la-ciudad-hay-congestion-en-diversos-puntos-de-la-rm.shtml",
+        "precision": "tramo",
+        "tipo_lugar": "paso_bajo_nivel",
+        "georreferencia_url": "https://www.openstreetmap.org/way/187581223",
+        "fuente_original_url": "https://x.com/TTISantiago/status/2110116188881572228"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "irarrazaval-italia",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.623055,
+          -33.453335
+        ]
+      },
+      "properties": {
+        "lugar": "Av. Irarrázaval con Av. Italia",
+        "comuna": "Ñuñoa",
+        "hora": "2026-10-13T21:10:18Z",
+        "tipo_hora": "publicacion",
+        "fuente_url": "https://www.biobiochile.cl/noticias/nacional/region-metropolitana/2026/10/13/tormenta-que-azoto-santiago-provoca-caos-en-la-ciudad-hay-congestion-en-diversos-puntos-de-la-rm.shtml",
+        "precision": "cruce exacto",
+        "tipo_lugar": "calle",
+        "georreferencia_url": "https://www.openstreetmap.org/node/251257261"
+      }
+    }
+  ]
+}

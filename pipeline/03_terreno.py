@@ -54,7 +54,7 @@ from pathlib import Path
 
 import requests
 
-SCRIPT_VERSION = "0.4.0"
+SCRIPT_VERSION = "0.5.0"
 
 # MUT, Av. Apoquindo 2730, Las Condes (lon, lat). Confirmado con el pin el 21-11-2026.
 CENTRO = (-70.601433, -33.417741)
@@ -138,6 +138,55 @@ def parse_centro(texto):
     return (lon, lat)
 
 
+def red_desde_xml(ox, ruta, centro, radio):
+    """Carga las mismas vías drive desde un extracto OSM con sus nodos completos."""
+    import bz2
+    import re
+    from tempfile import TemporaryDirectory
+    from xml.etree import ElementTree
+
+    vias_excluidas = re.compile(
+        "abandoned|bridleway|bus_guideway|construction|corridor|cycleway|elevator|"
+        "escalator|footway|no|path|pedestrian|planned|platform|proposed|raceway|"
+        "razed|rest_area|service|services|steps|track"
+    )
+    servicios_excluidos = re.compile("alley|driveway|emergency_access|parking|parking_aisle|private")
+    abrir = bz2.open if Path(ruta).suffix == ".bz2" else open
+    with abrir(ruta, "rb") as archivo:
+        xml = ElementTree.parse(archivo)
+    raiz = xml.getroot()
+    for elemento in list(raiz):
+        if elemento.tag == "node":
+            continue
+        if elemento.tag == "way":
+            tags = {etiqueta.get("k"): etiqueta.get("v", "") for etiqueta in elemento.findall("tag")}
+            if (
+                "highway" in tags
+                and "yes" not in tags.get("area", "")
+                and "private" not in tags.get("access", "")
+                and not vias_excluidas.search(tags["highway"])
+                and "no" not in tags.get("motor_vehicle", "")
+                and "no" not in tags.get("motorcar", "")
+                and not servicios_excluidos.search(tags.get("service", ""))
+            ):
+                continue
+        raiz.remove(elemento)
+
+    with TemporaryDirectory() as carpeta:
+        filtrado = Path(carpeta) / "drive.osm"
+        xml.write(filtrado, encoding="utf-8", xml_declaration=True)
+        grafo = ox.graph_from_xml(filtrado, simplify=False, retain_all=True)
+
+    posicion = (centro[1], centro[0])
+    borde = ox.utils_geo.bbox_from_point(posicion, dist=radio)
+    borde_ampliado = ox.utils_geo.bbox_from_point(posicion, dist=radio + 500)
+    grafo = ox.truncate.truncate_graph_bbox(grafo, borde_ampliado)
+    grafo = ox.truncate.largest_component(grafo, strongly=False)
+    grafo = ox.simplification.simplify_graph(grafo)
+    grafo = ox.truncate.truncate_graph_bbox(grafo, borde)
+    return ox.truncate.largest_component(grafo, strongly=False)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rejillas", default="data/rejillas.geojson")
@@ -152,6 +201,7 @@ def main():
     ap.add_argument("--refrescar-red", action="store_true", help="vuelve a bajar la red de OSM")
     ap.add_argument("--overpass", default="https://maps.mail.ru/osm/tools/overpass/api",
                     help="servidor Overpass (overpass-api.de a veces rechaza conexiones)")
+    ap.add_argument("--osm-xml", help="extracto OSM XML local (.osm o .osm.bz2) con cobertura de --buffer + 500 m")
     a = ap.parse_args()
     if not a.sufijo.isidentifier():
         ap.error("--sufijo debe ser letras, números o _ (se usa en nombres de archivo y de columna)")
@@ -181,13 +231,21 @@ def main():
     # La red se guarda en cache/ la primera vez y después se reutiliza: OSM cambia con el tiempo,
     # así que la metadata registra el sha256 y la fecha de descarga de la red usada.
     ruta_red = Path(f"cache/osm/red_drive_{CENTRO_Z[1]:.6f}_{CENTRO_Z[0]:.6f}_{a.buffer:.0f}m.graphml")
+    fuente_xml = None
+    if a.osm_xml:
+        fuente_xml = {"ruta": a.osm_xml, "sha256": sha256(a.osm_xml)}
+        ruta_red = ruta_red.with_name(f"{ruta_red.stem}_{fuente_xml['sha256'][:12]}.graphml")
     if ruta_red.exists() and not a.refrescar_red:
         print(f"Usando la red guardada {ruta_red}")
         G = ox.load_graphml(ruta_red)
     else:
-        ox.settings.overpass_url = a.overpass
-        print(f"Bajando red de calles 'drive' a {a.buffer:.0f} m del centro desde {a.overpass}...")
-        G = ox.graph_from_point((CENTRO_Z[1], CENTRO_Z[0]), dist=a.buffer, network_type="drive", simplify=True)
+        if fuente_xml:
+            print(f"Leyendo red de calles 'drive' de {a.osm_xml}...")
+            G = red_desde_xml(ox, a.osm_xml, CENTRO_Z, a.buffer)
+        else:
+            ox.settings.overpass_url = a.overpass
+            print(f"Bajando red de calles 'drive' a {a.buffer:.0f} m del centro desde {a.overpass}...")
+            G = ox.graph_from_point((CENTRO_Z[1], CENTRO_Z[0]), dist=a.buffer, network_type="drive", simplify=True)
         ruta_red.parent.mkdir(parents=True, exist_ok=True)
         ox.save_graphml(G, ruta_red)
     red_descargada = datetime.fromtimestamp(ruta_red.stat().st_mtime, timezone.utc).isoformat(timespec="seconds")
@@ -431,6 +489,11 @@ def main():
         "conteos": conteos,
         "script": {"ruta": "pipeline/03_terreno.py", "version": SCRIPT_VERSION, "sha256": sha256(__file__)},
     }
+    if fuente_xml:
+        meta["red_calles"].pop("overpass")
+        meta["red_calles"].pop("descargada_utc")
+        meta["red_calles"]["fuente"] = "OpenStreetMap XML vía OSMnx"
+        meta["red_calles"]["extracto_xml"] = fuente_xml
     ruta_meta = salida.with_name(f"terreno_{a.sufijo}.meta.json")
     ruta_meta.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"\nGuardado {salida}, {ruta_cad} y {ruta_meta}")
