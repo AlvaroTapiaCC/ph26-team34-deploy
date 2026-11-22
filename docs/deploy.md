@@ -67,6 +67,8 @@ Para cambiar variables: *Environment* → editar → *Save, rebuild and deploy*.
 - **Root directory:** `frontend`
 - **Framework:** Next.js (detección automática)
 
+`/central/validacion` se genera al compilar. Lee los resultados publicados en `data/validacion/` del mismo checkout. Conserva activa la opción de Vercel [Include source files outside of the Root Directory in the Build Step](https://vercel.com/docs/monorepos/monorepo-faq#can-i-share-source-files-between-projects-are-shared-packages-supported) para incluirlos con `frontend`. Publica nuevamente al actualizar los resultados.
+
 Variables (Project Settings → Environment Variables):
 
 | Variable | Valor |
