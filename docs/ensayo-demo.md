@@ -28,6 +28,6 @@ Cronometrar desde el envío de la foto hasta que se vea la nueva parada en la ce
 | --- | --- |
 | Render sigue despertando o se corta internet | Pasar al video local. Mostrar la secuencia completa desde el ranking inicial. |
 | Claude demora o falla con la foto | Reutilizar la imagen exacta preparada durante el ensayo. Si no aparece la clasificación, pasar al video local. |
-| Falla el despacho, la exposición del paradero o el cierre | Mostrar el tramo correspondiente del video. Si aún no hay grabación, explicar el paso con el guion y las vistas que estén disponibles. |
+| Falla el despacho, la exposición del paradero o el cierre | Mostrar el tramo correspondiente del video. Si el video no abre, explicar el paso con el guion y las vistas que estén disponibles. |
 
-Antes de presentar cualquier respaldo, anunciar «secuencia reproducida». Verificar que el video abre sin conexión y que el enlace abre desde otro dispositivo. [Grabación de respaldo, issue #48](https://github.com/platanus-hack/platanus-hack-26-cl-team-34/issues/48)
+Antes de presentar cualquier respaldo, anunciar «secuencia reproducida». Verificar que el video abre sin conexión y que el enlace abre desde otro dispositivo. [Descargar el video de respaldo](demo/drena-demo-reproducida.webm) · [Notas del video](demo/README.md) · [Issue #48](https://github.com/platanus-hack/platanus-hack-26-cl-team-34/issues/48)
