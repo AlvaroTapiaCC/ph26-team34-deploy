@@ -241,6 +241,20 @@ Con los registros de limpieza de un municipio, la fórmula podría **aprender su
    - recomendaciones de limpieza preventiva. Las cifras las calcula el código; Claude solo las redacta.
 3. *(Opcional)* Recalibrar los pesos de la fórmula con los resultados del evento.
 
+El informe se consulta en `GET /events/report` con `X-Admin-Token`. Acepta `desde` y
+`hasta` en ISO 8601 con zona horaria y consulta las últimas 24 horas por omisión.
+Cuenta casos por comuna del catastro desde los registros de recepción. Mide la
+primera llegada registrada de una misión vinculada al caso y reporta aparte el
+tiempo hasta una propuesta de ruta. Las observaciones y cuadrillas marcadas
+como simuladas se incluyen solo con `incluir_simulados=true`.
+
+La reincidencia requiere una nueva foto de rejilla tapada después de una foto
+limpia o un cierre verificado. Para contrastar el ranking Antes, el informe
+necesita una predicción guardada antes de `desde` y una primera foto comparable
+antes de cualquier cierre verificado de esa rejilla en la ventana. Usa el
+20 % superior y compara estados de rejilla limpia o tapada. Los casos sin
+evidencia quedan sin medición. Claude recibe agregados para la redacción.
+
 ---
 
 ## 8. Validación para el pitch
