@@ -118,7 +118,15 @@ export interface ApiFicha {
   lon: number;
   cadena: { street_id: string; nombre: string | null; posicion: number; aguas_arriba: string[]; aguas_abajo: string[] } | null;
   scores: Partial<Record<"antes" | "durante", ApiScore>>;
-  observaciones: { id: string; fuente: string; tipo: string; texto: string | null; ts: string; clasificacion: unknown }[];
+  observaciones: {
+    id: string;
+    fuente: string;
+    tipo: string;
+    tiene_foto: boolean;
+    tiene_texto: boolean;
+    ts: string;
+    clasificacion: unknown;
+  }[];
   ultima_limpieza: { fecha: string; is_simulated: boolean } | null;
 }
 

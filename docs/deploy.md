@@ -74,6 +74,7 @@ Variables (Project Settings → Environment Variables):
 | `NEXT_PUBLIC_API_URL` | `https://ph26-team34-api.onrender.com` |
 | `NEXT_PUBLIC_SUPABASE_URL` | igual que `SUPABASE_URL` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | la **publishable** key, nunca la secret |
+| `NEXT_PUBLIC_CREW_TOKEN` | igual que `CREW_TOKEN` de Render (app `/cuadrilla`); nunca el `ADMIN_TOKEN` |
 
 Las variables `NEXT_PUBLIC_*` se fijan al momento del build: después de cambiarlas hay que redeployar (*Deployments* → … → *Redeploy*).
 
