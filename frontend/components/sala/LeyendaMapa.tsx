@@ -18,7 +18,7 @@ export default function LeyendaMapa({ capas, durante, nReportes, modoAgua }: { c
       </ul>
       <p className={s.claveNota}>El color ordena la limpieza; no mide agua ni obstrucción.</p>
       <ul className={s.clavesDetalle}>
-        {capas.reportes && <li><i className={s.lgReporte} /><span>{observaciones.estado === "cargando" ? "Consultando reportes…" : `${nReportes} lugares con reportes${observaciones.estado === "error" ? " · sin actualizar" : " recientes"}`} <small>≋ Agua · ⊠ Obstrucción · ✓ Despejada<br />! Por verificar · S Simulado<br />Toca un símbolo para ver fuente y hora.</small></span></li>}
+        {capas.reportes && <li><i className={s.lgReporte} /><span>{observaciones.estado === "cargando" ? "Consultando reportes…" : `${nReportes} ${nReportes === 1 ? "lugar con reporte" : "lugares con reportes"}${observaciones.estado === "error" ? " · sin actualizar" : nReportes === 1 ? " reciente" : " recientes"}`} <small>≋ Agua · ⊠ Obstrucción · ✓ Despejada<br />! Por verificar · S Simulado<br />Toca un símbolo para ver fuente y hora.</small></span></li>}
         {!!ruta?.geojson && <li><i className={s.lgRuta} /><span>Ruta de la cuadrilla{cuadrilla?.is_simulated ? " simulada" : ""}</span></li>}
         {capas.transporte && <>
           <li><b className={s.lgBus}>BUS ≋</b><span>Agua observada cerca</span></li>
