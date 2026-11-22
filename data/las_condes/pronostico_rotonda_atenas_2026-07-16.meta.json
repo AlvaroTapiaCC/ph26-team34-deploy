@@ -1,0 +1,31 @@
+{
+  "fuente": "Open-Meteo Single Runs API, ECMWF IFS",
+  "fuente_url": "https://single-runs-api.open-meteo.com/v1/forecast?latitude=-33.41797&longitude=-70.55209&hourly=precipitation%2Crain%2Cwind_speed_10m%2Cwind_gusts_10m&timezone=GMT&forecast_hours=48&run=2026-07-16T06%3A00&models=ecmwf_ifs025",
+  "descargado_utc": "2026-11-22T01:12:26+00:00",
+  "cobertura": "Las Condes, Región Metropolitana, Chile",
+  "salida": {
+    "archivo": "pronostico_rotonda_atenas_2026-07-16.csv",
+    "sha256": "09691c4a9b0c586c8630659caf0fb4f152d71caa760afd7925ba3c94571c6f70"
+  },
+  "registros": 48,
+  "unidades": {
+    "precipitacion_mm": "mm",
+    "lluvia_mm": "mm",
+    "viento_10m_kmh": "km/h",
+    "racha_10m_kmh": "km/h"
+  },
+  "corrida_utc": "2026-07-16T06:00:00+00:00",
+  "modelo": "ecmwf_ifs025",
+  "punto": "Rotonda Atenas",
+  "punto_url": "https://www.openstreetmap.org/node/1175343322",
+  "latlon_solicitado": [
+    -33.41797,
+    -70.55209
+  ],
+  "latlon_celda": [
+    -33.5,
+    -70.5
+  ],
+  "licencia": "CC BY 4.0, https://open-meteo.com/en/license",
+  "nota": "Pronóstico original de una sola corrida. Su disponibilidad es posterior a la inicialización."
+}

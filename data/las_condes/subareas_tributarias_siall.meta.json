@@ -1,0 +1,19 @@
+{
+  "fuente": "DOH/MOP, SIALL capa 12",
+  "fuente_url": "https://rest-sit.mop.gob.cl/arcgis/rest/services/DOH/SIALL/MapServer/12/query?where=1%3D1&outFields=OBJECTID%2CID_IDE%2CCOMUNA2%2CPENDIENTE%2CN_IMPERME%2CN_PERMEA%2CSUPER_KM2%2CCO_AREA_TRI&outSR=4326&f=json&orderByFields=OBJECTID&returnGeometry=true&inSR=4326&geometryType=esriGeometryEnvelope&geometry=-70.6077874%2C-33.485818%2C-70.4277223%2C-33.3640549&spatialRel=esriSpatialRelIntersects",
+  "descargado_utc": "2026-11-22T01:12:25+00:00",
+  "cobertura": "Las Condes, Región Metropolitana, Chile",
+  "salida": {
+    "archivo": "subareas_tributarias_siall.geojson",
+    "sha256": "95ba5742330a68b48928f78af20a3cbba03f617c5f79c10d02abdf78552b22eb"
+  },
+  "registros": 64,
+  "seleccion": "intersecta el límite Las Condes de data/comunas.geojson; conserva el polígono completo",
+  "unidades": {
+    "coordenadas": "grados WGS84",
+    "PENDIENTE": "grados",
+    "N_IMPERME": "%",
+    "N_PERMEA": "%",
+    "SUPER_KM2": "km²"
+  }
+}
