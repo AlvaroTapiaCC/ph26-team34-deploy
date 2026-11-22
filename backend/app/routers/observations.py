@@ -23,8 +23,8 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from app.db import get_conn
 from app.routers.clasificar import _leer, clasificar_bytes
+from app.services import dispatch, storage
 from app.services import observations as svc
-from app.services import storage
 from app.services.claude_text import NUMEROS_EMERGENCIA, leer_texto
 from app.services.claude_vision import clasificar_camara, clasificar_rejilla
 from app.services.scoring import recalcular_todo
@@ -134,15 +134,18 @@ def _candidatos(filas: list[dict[str, Any]]) -> list[dict[str, Any]]:
              "lat": c["lat"], "lon": c["lon"]} for c in filas]
 
 
-def solicitar_despacho(caso_id: str | None, sumidero_id: str | None, urgente: bool) -> dict[str, Any]:
-    """Punto de enganche del despacho (§7.2 paso 4, issue #32).
+def solicitar_despacho(obs_id: str, caso_id: str | None, sumidero_id: str | None) -> dict[str, Any]:
+    """Re-planifica las cuadrillas con la prioridad recién recalculada (§7.2 paso 4, issue #32).
 
-    TODO(#32, PR #80): `services/dispatch.py` sigue vacío y el PR #80 (endpoints de cuadrillas,
-    misiones y rutas) aún no está en main. Cuando exista, llamar aquí a la asignación de la
-    misión del caso/sumidero y a la re-planificación de rutas (nueva versión por Realtime).
-    No debe lanzar: un fallo del despacho no puede perder el reporte.
+    Devuelve `{despachado, crew_id, en_plan, siguiente_antes, siguiente_despues, ruta_version}`.
+    No lanza: si el despacho falla, el reporte ya quedó guardado y se responde `despachado: false`.
+    Un reporte sin rejilla ni caso (texto sin GPS) no cambia ninguna prioridad: no se re-planifica.
     """
-    return {"despachado": False, "motivo": "pendiente_dispatch_32"}
+    if sumidero_id is None and caso_id is None:
+        return {"despachado": False, "motivo": "sin_ubicacion", "crew_id": None, "en_plan": False,
+                "siguiente_antes": None, "siguiente_despues": None, "ruta_version": None}
+    return dispatch.replanificar_seguro("observacion", observation_id=obs_id, sumidero_id=sumidero_id,
+                                        caso_id=caso_id)
 
 
 def _respuesta_existente(fila: dict[str, Any]) -> dict[str, Any]:
@@ -281,7 +284,7 @@ def create_observation(
         recalculado = True
     except Exception:
         log.exception("No se pudo recalcular la prioridad tras la observación %s", obs)
-    despacho = solicitar_despacho(caso_id, sumidero_id_final, urgente or caso_es_urgente)
+    despacho = solicitar_despacho(obs, caso_id, sumidero_id_final)
 
     meta = principal.meta() if principal else {}
     respuesta = {
