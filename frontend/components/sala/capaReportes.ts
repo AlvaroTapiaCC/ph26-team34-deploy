@@ -53,10 +53,14 @@ export function useCapaReportes(reportes: ReporteMapa[], visible: boolean, onSel
   const refs = useRef({ reportes, visible, onSelect });
   refs.current = { reportes, visible, onSelect };
   const popup = useRef<MapLibre>(null);
+  const ultimaFirma = useRef<string | null>(null);
   const actualizar = useCallback(() => {
     const map = mapa.current;
     if (!map?.getSource(SOURCE)) return;
     const { reportes, visible } = refs.current;
+    const firma = JSON.stringify({ reportes, visible });
+    if (firma === ultimaFirma.current) return;
+    ultimaFirma.current = firma;
     map.getSource(SOURCE).setData(visible ? {
       type: "FeatureCollection",
       features: reportes.map((r) => ({ type: "Feature", geometry: { type: "Point", coordinates: r.coord }, properties: { id: r.id, tipo: r.tipo, icono: `reporte-${r.tipo}-${r.simulado}` } })),
@@ -68,6 +72,7 @@ export function useCapaReportes(reportes: ReporteMapa[], visible: boolean, onSel
 
   const onMapReady = useCallback((map: MapLibre, ml: MapLibre) => {
     mapa.current = map;
+    ultimaFirma.current = null;
     map.addSource(SOURCE, { type: "geojson", data: VACIA });
     map.addLayer({
       id: SOURCE, type: "circle", source: SOURCE,
