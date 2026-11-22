@@ -41,6 +41,18 @@ def test_reconstruccion_reutiliza_ranking_b():
     esperado = next(caso.replay.ranking_por_hora(args[2], caso.replay.cadenas_del_sector(args[4], set(args[3])), args[5], [h]))
     assert [m["ID_IDE"] for m in resultado["misiones"]] == [s.sumidero_id for s in esperado[:10]]
     assert resultado["misiones"][0]["prioridad"] == round(esperado[0].prioridad, 6)
+    flujo = caso.ids_flujo(args[1], args[8], args[3])
+    eje_esperado = [s for s in esperado if s.sumidero_id in flujo][:8]
+    assert len(resultado["rejillas_eje"]) == 8
+    assert [m["ID_IDE"] for m in resultado["rejillas_eje"]] == [s.sumidero_id for s in eje_esperado]
+    for rejilla, score in zip(resultado["rejillas_eje"], eje_esperado):
+        assert rejilla["rank"] == score.rank
+        assert rejilla["total_rankeado"] == len(esperado)
+        assert rejilla["top_porcentaje"] == caso.math.ceil(100 * score.rank / len(esperado))
+        assert rejilla["prioridad"] == round(score.prioridad, 6)
+    assert resultado["cobertura_flujo"]["flujo_en_top_20"] == 10
+    assert resultado["cobertura_flujo"]["total_flujo"] == 32
+    assert resultado["cobertura_flujo"]["esperado_azar"] == 6.43
     assert len(resultado["horas"]) == 72
     assert resultado["adelanto_horas"] == 23
     assert resultado["lluvia_8_oct"] == {"pronostico_mm": 22.5, "observado_mm": 37.5, "centro_latlon": [-33.418, -70.541]}

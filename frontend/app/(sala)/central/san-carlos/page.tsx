@@ -82,13 +82,23 @@ export default async function SanCarlosPage() {
     </section>
 
     <section className={s.card} aria-labelledby="misiones">
-      <p className={s.etiqueta}>{caso.etiqueta}</p><h2 id="misiones">Lo que Drena habría despachado</h2>
-      <p>Propuesta ilustrativa: 10 primeras prioridades del ranking B a las {fecha(caso.primera_tormenta_7_8_utc)}. No son órdenes emitidas ni una ruta optimizada.</p>
+      <p className={s.etiqueta}>{caso.etiqueta}</p><h2 id="misiones">Misiones preventivas de todo el sector antes de la tormenta</h2>
+      <p>Propuesta ilustrativa: 10 primeras prioridades del ranking B del sector completo a las {fecha(caso.primera_tormenta_7_8_utc)}. No son órdenes emitidas ni una ruta optimizada. No se restringen al eje del aluvión.</p>
       <div className={s.tabla} role="region" aria-label="Diez prioridades reconstruidas" tabIndex={0}><table>
         <thead><tr><th scope="col">Orden</th><th scope="col">ID SIALL</th><th scope="col">Calle</th><th scope="col">Prioridad</th><th scope="col">Relación con el flujo</th></tr></thead>
         <tbody>{caso.misiones.map((m) => <tr key={m.ID_IDE}><td>{m.rank}</td><th scope="row">{m.ID_IDE}</th><td>{m.calle}<small>{m.lat}, {m.lon}</small></td><td>{num(m.prioridad)}</td><td>{m.en_flujo ? <span className={c.tag}>En eje del flujo</span> : "Fuera del eje seleccionado"}</td></tr>)}</tbody>
       </table></div>
-      <p><strong>{flujo.flujo_en_top_20} de {flujo.total_flujo}</strong> rejillas del eje están en el 20 % superior ({flujo.corte_top_20} de {flujo.total_sumideros}). Al azar se esperarían <strong>{num(flujo.esperado_azar)}</strong>.</p>
+    </section>
+
+    <section className={s.card} aria-labelledby="rejillas-eje">
+      <p className={s.etiqueta}>{caso.etiqueta}</p><h2 id="rejillas-eje">Rejillas del eje del aluvión (General Blanche / Camino El Alba)</h2>
+      <p>Las 8 rejillas mejor posicionadas del eje, filtradas del mismo ranking B a las {fecha(caso.primera_tormenta_7_8_utc)}. Conservan su posición en el sector completo: no se recalcula ni se altera el orden.</p>
+      <div className={s.tabla} role="region" aria-label="Prioridades del eje del aluvión" tabIndex={0}><table>
+        <thead><tr><th scope="col">Posición en el sector</th><th scope="col">ID SIALL</th><th scope="col">Calle</th><th scope="col">Prioridad</th><th scope="col">Percentil superior</th></tr></thead>
+        <tbody>{caso.rejillas_eje.map((m) => <tr key={m.ID_IDE}><td>{m.rank} de {m.total_rankeado}</td><th scope="row">{m.ID_IDE}</th><td>{m.calle}<small>{m.lat}, {m.lon}</small></td><td>{num(m.prioridad)}</td><td><span className={c.tag}>top {m.top_porcentaje} %</span></td></tr>)}</tbody>
+      </table></div>
+      <p><strong>{flujo.flujo_en_top_20} de {flujo.total_flujo}</strong> rejillas del eje están en el 20 % superior ({flujo.corte_top_20} de {flujo.total_sumideros}). Al azar se esperarían <strong>{flujo.esperado_azar.toLocaleString("es-CL", { maximumFractionDigits: 1 })}</strong>.</p>
+      <p className={s.muted}>Las etiquetas «top X %» redondean hacia arriba la posición dividida por el total del sector.</p>
       <p className={s.muted}>{flujo.metodo} No mide aciertos de predicción de aluviones.</p>
     </section>
 
