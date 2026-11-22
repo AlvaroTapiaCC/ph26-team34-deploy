@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from psycopg.types.json import Jsonb
 
 from app.main import app
-from app.services import dispatch, routing
+from app.services import cuadrillas, dispatch, report, routing
 from app.services.dispatch import Cuadrilla, Parada
 
 client = TestClient(app)
@@ -122,6 +122,20 @@ def test_plan_exige_token_de_admin(monkeypatch):
     assert client.post("/dispatch/plan", headers={"X-Admin-Token": "mal"}).status_code == 401
 
 
+def test_vincular_el_caso_explicito_sincroniza_la_parada_del_plan(monkeypatch):
+    fila = {"id": "m-1", "crew_id": "c1", "case_id": "caso-1", "sumidero_id": "AL01", "estado": "en_camino"}
+    llamadas = []
+    conn = SimpleNamespace(execute=lambda sql, prm: llamadas.append(prm) or SimpleNamespace(fetchall=lambda: [fila]))
+    sincronizadas = []
+    monkeypatch.setattr(cuadrillas, "_sincronizar", lambda c, m: sincronizadas.append(m))
+    parada = _p("s:AL01", sumidero_id="AL01", mission_id="m-1")
+    previa = _p("s:AL02", sumidero_id="AL02", mission_id="m-2", case_id="caso-2")
+    dispatch._vincular_caso_del_reporte(conn, "obs-1", "caso-1", [parada, previa])
+    assert llamadas == [{"observation_id": "obs-1", "caso_id": "caso-1", "misiones": ["m-1"]}]
+    assert parada.case_id == "caso-1" and previa.case_id == "caso-2"
+    assert sincronizadas == [fila]
+
+
 # --- Integración contra Supabase --------------------------------------------------------
 @pytest.fixture
 def escena(monkeypatch):
@@ -154,17 +168,21 @@ def escena(monkeypatch):
                          (sid, pr))
     yield e
     with get_conn() as conn:
-        conn.execute("delete from events where tipo = 'replan' and payload->>'crew_id' = any(%s)", ([e.c1, e.c2],))
+        conn.execute("delete from events where payload->>'crew_id' = any(%s)", ([e.c1, e.c2],))
+        conn.execute("delete from events where tipo = 'observacion' and payload->>'observation_id' in"
+                     " (select id::text from observations where sumidero_id = any(%s))", (e.s,))
         conn.execute("delete from missions where crew_id = any(%s) or sumidero_id = any(%s)", ([e.c1, e.c2], e.s))
+        conn.execute("delete from cases where sumidero_id = any(%s)", (e.s,))
+        conn.execute("delete from observations where sumidero_id = any(%s)", (e.s,))
         conn.execute("delete from crews where id = any(%s)", ([e.c1, e.c2],))
         conn.execute("delete from sumideros where id = any(%s)", (e.s,))
 
 
-def _plan(e, motivo="test"):
+def _plan(e, motivo="test", observation_id=None, caso_id=None):
     from app.db import get_conn
 
     with get_conn() as conn:
-        return dispatch.planificar(conn, motivo, params=e.params)
+        return dispatch.planificar(conn, motivo, observation_id, params=e.params, caso_id=caso_id)
 
 
 def _contar(e):
@@ -288,3 +306,110 @@ def test_con_osrm_caido_no_hay_error(escena):
     # La escena ya tiene OSRM caído: el plan sale con tiempos y geometría en línea recta
     p = _plan(escena)
     assert p["despachado"] and any(r["cambio"] for r in p["cuadrillas"].values())
+
+
+def _reportar(sid):
+    """Reporte vecinal con caso abierto en la rejilla, como lo registra POST /observations."""
+    from psycopg.types.json import Jsonb
+
+    from app.db import get_conn
+    from app.services import observations as svc
+
+    with get_conn() as conn:
+        o = conn.execute(
+            "insert into observations (sumidero_id, geom, fuente, tipo, texto)"
+            " select id, geom, 'vecino', 'texto', 'Rejilla tapada (test)' from sumideros where id = %s"
+            " returning id, st_y(geom) as lat, st_x(geom) as lon, ts", (sid,)).fetchone()
+        caso = svc.crear_caso(conn, o["lat"], o["lon"], sid, False, o["ts"])
+        svc.vincular_caso(conn, caso, str(o["id"]))
+        conn.execute("insert into events (tipo, payload) values ('observacion', %s)",
+                     (Jsonb({"observation_id": str(o["id"]), "tipo": "texto", "fuente": "vecino", "caso_id": caso}),))
+    return str(o["id"]), caso
+
+
+def _mision(sid):
+    from app.db import get_conn
+
+    with get_conn() as conn:
+        return conn.execute(
+            "select m.id, m.case_id, ca.estado as caso_estado from missions m left join cases ca on ca.id = m.case_id"
+            " where m.sumidero_id = %s and m.estado <> 'cancelada'", (sid,)).fetchall()
+
+
+@INTEGRACION
+def test_reporte_despacho_por_rejilla_y_llegada_cuentan_una_vez_en_el_informe(escena, monkeypatch):
+    """Revisión de #133: la misión creada por `sumidero_id` lleva el caso y su llegada entra al informe."""
+    from app.db import get_conn
+    from app.routers.observations import solicitar_despacho
+
+    comuna = f"test-comuna-{escena.run}"
+    with get_conn() as conn:
+        desde = conn.execute("select now() - interval '1 second' as t").fetchone()["t"]
+        conn.execute("update sumideros set comuna = %s where id = %s", (comuna, escena.s[0]))
+    obs, caso = _reportar(escena.s[0])
+    _, caso_mas_reciente = _reportar(escena.s[0])
+    assert caso_mas_reciente != caso
+    monkeypatch.setattr(dispatch, "PARAMS", {**dispatch.PARAMS, **escena.params})
+
+    assert solicitar_despacho(obs, caso, escena.s[0])["en_plan"]
+    mision, = _mision(escena.s[0])
+    assert str(mision["case_id"]) == caso and mision["caso_estado"] == "asignado"
+
+    with get_conn() as conn:
+        cuadrillas.cambiar_estado(conn, mision["id"], "en_camino")
+        cuadrillas.cambiar_estado(conn, mision["id"], "en_sitio")
+    _plan(escena)  # re-planificar no duplica la misión ni cambia su caso
+    assert [(m["id"], str(m["case_id"]), m["caso_estado"]) for m in _mision(escena.s[0])] == [
+        (mision["id"], caso, "en_curso")]
+
+    with get_conn() as conn:
+        hasta = conn.execute("select now() + interval '1 second' as t").fetchone()["t"]
+        ev = conn.execute("select payload from events where tipo = 'mision_estado' and payload->>'mission_id' = %s"
+                          " and payload->>'estado' = 'en_sitio'", (str(mision["id"]),)).fetchone()["payload"]
+    with get_conn() as conn:  # `medir` fija el aislamiento antes de su primera consulta
+        datos = report.medir(conn, desde, hasta, True)
+    assert ev["caso_id"] == caso
+    sector, = [x for x in datos["casos_por_sector"] if x["sector"] == comuna]
+    assert sector["casos"] == 2
+    assert sector["llegada_en_sitio"]["medidos"] == 1 and sector["llegada_en_sitio"]["sin_medicion"] == 1
+
+
+@INTEGRACION
+def test_mision_existente_recibe_el_caso_que_llega_despues(escena):
+    _plan(escena)
+    antes, = _mision(escena.s[0])
+    assert antes["case_id"] is None
+    obs, caso = _reportar(escena.s[0])
+    p2 = _plan(escena, "observacion", obs, caso)
+    despues, = _mision(escena.s[0])
+    assert despues["id"] == antes["id"] and str(despues["case_id"]) == caso and despues["caso_estado"] == "asignado"
+    assert p2["creadas"] == 0
+
+
+@INTEGRACION
+def test_llegada_sin_caso_no_se_atribuye_retroactivamente(escena):
+    from app.db import get_conn
+
+    comuna = f"test-comuna-{escena.run}"
+    with get_conn() as conn:
+        desde = conn.execute("select now() - interval '1 second' as t").fetchone()["t"]
+        conn.execute("update sumideros set comuna = %s where id = %s", (comuna, escena.s[0]))
+    _plan(escena)
+    mision, = _mision(escena.s[0])
+    obs, caso = _reportar(escena.s[0])
+    with get_conn() as conn:
+        cuadrillas.cambiar_estado(conn, mision["id"], "en_camino")
+        cuadrillas.cambiar_estado(conn, mision["id"], "en_sitio")
+
+    _plan(escena, "observacion", obs, caso)
+    actual, = _mision(escena.s[0])
+    assert actual["id"] == mision["id"] and actual["case_id"] is None
+
+    # Si una vinculación administrativa posterior cambia la misión, la auditoría conserva la llegada original.
+    with get_conn() as conn:
+        conn.execute("update missions set case_id = %s where id = %s", (caso, mision["id"]))
+        hasta = conn.execute("select now() + interval '1 second' as t").fetchone()["t"]
+    with get_conn() as conn:
+        datos = report.medir(conn, desde, hasta, True)
+    sector, = [x for x in datos["casos_por_sector"] if x["sector"] == comuna]
+    assert sector["llegada_en_sitio"] == {"medidos": 0, "sin_medicion": 1, "mediana_s": None}
