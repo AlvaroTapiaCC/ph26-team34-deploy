@@ -4,6 +4,7 @@ import { useStore } from "@/lib/store";
 import AvisoDatos from "../AvisoDatos";
 import { Toast } from "../ui";
 import Antes from "./Antes";
+import BandaClima from "./BandaClima";
 import Durante from "./Durante";
 import Ficha from "./Ficha";
 import Modals from "./Modals";
@@ -26,6 +27,7 @@ export default function Desktop() {
   return (
     <div className="desk">
       <TopBar />
+      <BandaClima />
       <Body />
       <Modals />
       <AvisoDatos />

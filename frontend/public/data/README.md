@@ -6,9 +6,11 @@ Estos archivos son una copia generada de `data/` (en la raíz del repo). No se e
 |---|---|
 | `comunas.geojson` | `data/comunas.geojson` (`pipeline/00_comunas.py`, límites de OpenStreetMap) |
 | `rejillas.geojson` | `data/rejillas.geojson` (`pipeline/02_rejillas.py`, catastro SIALL de la DOH), solo `id` y `comuna` |
+| `recorridos.geojson` | `backend/data/transporte_mut.json` (`pipeline/09_gtfs.py`, GTFS de DTPM), un trazado por servicio y sentido |
 
 Para regenerarlos cuando cambie `data/`:
 
 ```
 python pipeline/publicar_front.py
+python pipeline/publicar_front.py --solo-recorridos   # si solo cambió el extracto GTFS
 ```

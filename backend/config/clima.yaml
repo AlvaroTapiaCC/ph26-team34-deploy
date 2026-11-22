@@ -1,0 +1,42 @@
+# Cómo se lleva la lluvia y el viento horarios a la feature `clima` (0-1) y al modo de la página.
+#
+# Lo usan el replay (pipeline/10_replay.py, issue #86) y el clima en vivo (#13).
+# Los umbrales se fijaron el 21-11-2026 con criterios generales de lluvia en Santiago,
+# ANTES de mirar resultados del replay. Si se cambian después, se conserva esta versión
+# y se informan las dos (AGENTS.md, Verificación).
+
+version: 1
+
+# ---------------------------------------------------------------------------
+# clima = clamp(peso_lluvia · lluvia_n + peso_viento · viento_n, 0, 1)
+#   lluvia_n = min(1, lluvia acumulada en las últimas `ventana_lluvia_h` / `lluvia_satura_mm`)
+#   viento_n = clamp((racha máxima en las últimas `ventana_viento_h` − racha_min) / (racha_satura − racha_min))
+# La lluvia pesa más porque es la que arrastra material a la rejilla; el viento bota hojas.
+# ---------------------------------------------------------------------------
+normalizacion:
+  ventana_lluvia_h: 24
+  lluvia_satura_mm: 30        # ~30 mm en un día es un sistema frontal fuerte en Santiago
+  ventana_viento_h: 6
+  racha_min_kmh: 20           # bajo esto el viento casi no bota hojas
+  racha_satura_kmh: 60        # ráfagas de temporal
+  peso_lluvia: 0.6
+  peso_viento: 0.4
+
+# ---------------------------------------------------------------------------
+# Modo de la página en cada hora t. Se evalúa en este orden y gana el primero que se cumple.
+#   durante:            lluvia observada en las últimas `durante_ventana_h` ≥ `durante_mm`
+#   tormenta_inminente: lluvia pronosticada para (t, t + `pronostico_ventana_h`] ≥ `inminente_mm`.
+#                       En el replay se usa el pronóstico emitido un día antes de cada hora
+#                       (Open-Meteo `precipitation_previous_day1`), que ya existía en t.
+#   despues:            lluvia observada en las últimas `despues_ventana_h` ≥ `despues_mm`
+#   seco:               nada de lo anterior
+# Si falta un dato necesario, el modo es `sin_dato` y clima queda nulo; nunca se rellena con 0.
+# ---------------------------------------------------------------------------
+modos:
+  durante_ventana_h: 3
+  durante_mm: 1.0
+  pronostico_ventana_h: 24
+  inminente_mm: 5.0
+  inicio_lluvia_mm: 0.5       # hora pronosticada con al menos esto marca el inicio (plazo)
+  despues_ventana_h: 24
+  despues_mm: 5.0

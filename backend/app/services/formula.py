@@ -49,6 +49,7 @@ class SumideroInput:
     nivel_agua: str | None = None
     # Fase Durante: hay un caso urgente (personas en riesgo) asociado
     urgente: bool = False
+    confianza_foto: str | None = None
 
 
 @dataclass
@@ -116,7 +117,12 @@ def p_final(s: SumideroInput, cfg: Mapping[str, Any]) -> tuple[float, float, flo
     if s.rejilla_observada in ("limpia", "parcial", "tapada"):
         p_obs = float(obs_map[s.rejilla_observada])
         detalle["fuente_p"] = "foto"
-        return p_obs, pp, p_obs, detalle
+        # Las clasificaciones históricas sin confianza conservan el peso original.
+        factor = cfg.get("confianza", {}).get(s.confianza_foto, 1.0)
+        detalle["confianza_foto"] = s.confianza_foto
+        detalle["factor_confianza_foto"] = factor
+        p = p_obs if factor == 1 else pp + factor * (p_obs - pp)
+        return p, pp, p_obs, detalle
 
     rt = cfg["reportes_texto"]
     extra = min(rt["max_aporte"], rt["factor"] * rt["aporte_por_reporte"] * max(0, s.reportes_texto))

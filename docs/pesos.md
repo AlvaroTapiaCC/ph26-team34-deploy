@@ -21,7 +21,8 @@ Cada entrada varía entre 0 y 1. El peso es el máximo que esa entrada aporta a 
 
 | Parámetros | Fuente y decisión |
 |---|---|
-| observado.tapada 0,95; parcial 0,60; limpia 0,05 | La última foto evaluable sustituye la predicción. Los extremos dejan margen para error y la clase parcial conserva prioridad intermedia. |
+| observado.tapada 0,95; parcial 0,60; limpia 0,05 | La última foto evaluable acerca la predicción a este valor según la confianza de Claude. Los extremos dejan margen para error y la clase parcial conserva prioridad intermedia. |
+| confianza.alta 1,0; media 0,7; baja 0,4 | Factores de la alineación del equipo. P = P_pred + factor · (P_obs − P_pred): una foto de confianza alta fija P y una baja mueve el 40 % de la diferencia. Una clasificación sin confianza registrada usa factor 1. Solo rige en `formula.yaml`; `formula_validacion.yaml` quedó congelado antes de este cambio. |
 | observado.vigencia_horas 72 | La hora de captura limita el uso de la foto a tres días para permitir que nuevas condiciones cambien el ranking. |
 | reportes_texto.factor 0,5; aporte_por_reporte 0,3; max_aporte 0,5 | Cada reporte textual vigente aporta 0,15. El cuarto alcanza el tope de 0,5 para limitar la influencia de avisos repetidos. |
 | tipos_que_suben_p | Las clases de texto rejilla_tapada y basura describen obstrucción. Un anegamiento aporta evidencia sobre el nivel de agua. |
