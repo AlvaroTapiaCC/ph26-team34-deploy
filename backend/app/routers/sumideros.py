@@ -53,7 +53,7 @@ def get_sumidero(sumidero_id: str, scenario_id: str = "base"):
                    c.clasificacion
               from observations o
               left join lateral (
-                select resultado - 'ubicacion_texto' - 'desde_cuando' as clasificacion
+                select resultado - 'ubicacion_texto' - 'desde_cuando' - 'nota' as clasificacion
                   from classifications where observation_id = o.id
                  order by created_at desc limit 1
               ) c on true

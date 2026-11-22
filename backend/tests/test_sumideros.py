@@ -20,6 +20,8 @@ def test_ficha_protege_datos_de_observaciones_vecinales():
         "ubicacion_texto": "Domicilio ficticio 123",
         "desde_cuando": "Hora privada de ejemplo",
     }
+    clasificacion_foto_publica = {"evaluable": True, "estado": "obstruida"}
+    clasificacion_foto_completa = {**clasificacion_foto_publica, "nota": "Se lee Pasaje Ficticio 456 en la placa"}
 
     try:
         with get_conn() as conn:
@@ -32,10 +34,15 @@ def test_ficha_protege_datos_de_observaciones_vecinales():
                 "values (%s, 'vecino', 'texto', %s) returning id",
                 (sumidero_id, texto),
             ).fetchone()["id"]
-            conn.execute(
+            foto_id = conn.execute(
                 "insert into observations (sumidero_id, fuente, tipo, media_url) "
-                "values (%s, 'vecino', 'foto_rejilla', %s)",
+                "values (%s, 'vecino', 'foto_rejilla', %s) returning id",
                 (sumidero_id, foto),
+            ).fetchone()["id"]
+            conn.execute(
+                "insert into classifications (observation_id, resultado, modelo, prompt_version) "
+                "values (%s, %s, 'test', 'v0')",
+                (foto_id, Jsonb(clasificacion_foto_completa)),
             )
             conn.execute(
                 "insert into classifications (observation_id, resultado, modelo, prompt_version) "
@@ -46,6 +53,7 @@ def test_ficha_protege_datos_de_observaciones_vecinales():
         respuesta = TestClient(app).get(f"/sumideros/{sumidero_id}")
         assert respuesta.status_code == 200
         assert texto not in respuesta.text
+        assert "Pasaje Ficticio 456" not in respuesta.text
         assert foto not in respuesta.text
         observaciones = respuesta.json()["observaciones"]
         assert len(observaciones) == 2
@@ -58,7 +66,7 @@ def test_ficha_protege_datos_de_observaciones_vecinales():
         assert por_tipo["texto"]["clasificacion"] == clasificacion_publica
         assert por_tipo["foto_rejilla"]["tiene_texto"] is False
         assert por_tipo["foto_rejilla"]["tiene_foto"] is True
-        assert por_tipo["foto_rejilla"]["clasificacion"] is None
+        assert por_tipo["foto_rejilla"]["clasificacion"] == clasificacion_foto_publica
     finally:
         with get_conn() as conn:
             conn.execute("delete from observations where sumidero_id = %s", (sumidero_id,))
