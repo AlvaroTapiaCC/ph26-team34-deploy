@@ -28,15 +28,19 @@ const eol = css.includes("\r\n") ? "\r\n" : "\n";
 const entrada = process.argv[2];
 if (entrada) {
   const nueva = JSON.parse(readFileSync(entrada, "utf8"));
+  // Solo se reemplaza el valor `defecto` de cada color cambiado, en el texto: el formato de
+  // paleta.json (una línea por color) se conserva y el diff muestra solo lo que cambió.
+  let texto = readFileSync(RUTA_JSON, "utf8");
   let cambiados = 0;
   for (const c of paleta) {
     const v = nueva[c.id];
     if (typeof v === "string" && HEX.test(v) && v.toLowerCase() !== c.defecto) {
       c.defecto = v.toLowerCase();
+      texto = texto.replace(new RegExp(`("id": "${c.id}"[^\\n]*"defecto": ")#[0-9a-fA-F]{6}"`), `$1${c.defecto}"`);
       cambiados++;
     }
   }
-  writeFileSync(RUTA_JSON, JSON.stringify(paleta, null, 2) + "\n");
+  writeFileSync(RUTA_JSON, texto);
   writeFileSync(RUTA_CSS, css.replace(BLOQUE, (_, ini, __, fin) => ini + lineas(paleta).replace(/\n/g, eol) + fin));
   console.log(`paleta: ${cambiados} colores actualizados en lib/paleta.json y app/globals.css`);
   process.exit(0);
