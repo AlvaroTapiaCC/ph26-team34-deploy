@@ -12,12 +12,13 @@ import {
   type ObservacionPublica,
 } from "@/lib/central";
 import { getCuadrillas, getRuta, type Cuadrilla, type RutaCuadrilla } from "@/lib/cuadrilla";
-import type { LngLat } from "@/lib/data";
+import type { LngLat, Prioridad } from "@/lib/data";
 import { boundsDe, prioDe } from "@/lib/real";
 import { horaSantiago, NIVEL_AGUA, useExpuestos, type EstadoConsulta } from "@/lib/transporte";
 import Transporte from "../desktop/Transporte";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Logo } from "../ui";
+import { COLORES_CADENAS, useCapaCadenas } from "./capaCadenas";
 import styles from "./central.module.css";
 
 const ESTADO_REJILLA: Record<string, string> = {
@@ -141,18 +142,27 @@ function Misiones({ cuadrilla, ruta, estado }: {
   );
 }
 
-const MapaCentral = memo(function MapaCentral({ ranking, observaciones, cuadrilla, ruta, paraderos }: {
+const MapaCentral = memo(function MapaCentral({ ranking, observaciones, cuadrilla, ruta, paraderos, vigenciaAguaH, alcanceAguaM }: {
   ranking: ApiRankingItem[];
   observaciones: ObservacionPublica[];
   cuadrilla: Cuadrilla | null;
   ruta: RutaCuadrilla | null;
   paraderos: MapLabel[];
+  vigenciaAguaH: number;
+  alcanceAguaM: number;
 }) {
-  const puntajes = new Set(ranking.flatMap((p) => p.prioridad == null ? [] : [p.prioridad]));
-  const pins: MapPin[] = ranking.map((p, i) => ({
-    id: p.sumidero_id, coord: [p.lon, p.lat], rank: i + 1,
-    prio: prioDe(i + 1, ranking.length, puntajes.size > 1),
-  }));
+  const [cadenasVisibles, setCadenasVisibles] = useState(true);
+  const { pins, prioridades } = useMemo(() => {
+    const puntajes = new Set(ranking.flatMap((p) => p.prioridad == null ? [] : [p.prioridad]));
+    const prioridades = new Map<string, Prioridad>();
+    const pins: MapPin[] = ranking.map((p, i) => {
+      const prio = prioDe(i + 1, ranking.length, puntajes.size > 1);
+      if (p.prioridad != null) prioridades.set(p.sumidero_id, prio);
+      return { id: p.sumidero_id, coord: [p.lon, p.lat], rank: i + 1, prio };
+    });
+    return { pins, prioridades };
+  }, [ranking]);
+  const cadenas = useCapaCadenas(prioridades, observaciones, cadenasVisibles, vigenciaAguaH, alcanceAguaM);
   const urgentes = ranking.filter((p) => p.detalle?.urgente);
   const labels: MapLabel[] = urgentes
     .map((p) => ({ coord: [p.lon, p.lat], text: "Urgente", tone: "danger", offset: [0, -22] }));
@@ -180,7 +190,30 @@ const MapaCentral = memo(function MapaCentral({ ranking, observaciones, cuadrill
       <h2>Zona MUT</h2>
       <p className={styles.mapLegend}>Prioridad de limpieza <span>Alta</span> · Media · Baja · <b>Urgente</b>{lineas.length > 0 && " · Línea de ruta propuesta"}</p>
       <DrenaMap bounds={bounds} padding={35} className={styles.map} pins={pins} labels={labels} lines={lineas} pinSize={23}
-        attribution="Mapa base © OpenStreetMap · Rejillas DOH · Paraderos DTPM" />
+        onMapReady={cadenas.onMapReady} attribution="Mapa base © OpenStreetMap · Rejillas DOH · Paraderos DTPM" />
+      <label className={styles.toggleCadenas}>
+        <input type="checkbox" checked={cadenasVisibles} onChange={(e) => setCadenasVisibles(e.target.checked)} />
+        Cadenas calle abajo
+      </label>
+      {cadenasVisibles && (
+        <>
+          {cadenas.estado === "cargando" && <p className={styles.hint} role="status">Cargando cadenas…</p>}
+          {cadenas.estado === "error" && <p className={styles.hint} role="status">No se pudieron cargar las cadenas.</p>}
+          {cadenas.estado === "ok" && (
+            <>
+              <p className={styles.hint}>Escurrimiento estimado a partir de la pendiente y la ubicación de las rejillas. Las flechas orientan la revisión en terreno.</p>
+              <ul className={styles.leyendaCadenas} aria-label="Leyenda de cadenas">
+                <li><i style={{ borderColor: COLORES_CADENAS.prioridad }} />Prioridad calculada</li>
+                <li><i className={styles.puntoCadena} style={{ borderColor: COLORES_CADENAS.prioridad }} />Obstrucción observada</li>
+                <li><i className={styles.trazoCadena} style={{ borderColor: COLORES_CADENAS.prioridad }} />Revisar aguas abajo</li>
+                <li><i className={styles.puntoCadena} style={{ borderColor: COLORES_CADENAS.agua }} />Agua observada</li>
+                <li><i className={styles.trazoCadena} style={{ borderColor: COLORES_CADENAS.agua }} />Posible exposición aguas abajo</li>
+              </ul>
+              {cadenas.haySimulados && <p className={styles.hint}>Incluye observaciones simuladas.</p>}
+            </>
+          )}
+        </>
+      )}
     </section>
   );
 });
@@ -241,7 +274,8 @@ export default function CentralDurante() {
         : <EstadoFuente nombre="ranking inicial" estado={rankingInicial.estado} />)}
       <div className={styles.layout}>
         <div className={styles.column}>
-          <MapaCentral ranking={filas} observaciones={obs} cuadrilla={cuadrilla} ruta={ruta} paraderos={marcas} />
+          <MapaCentral ranking={filas} observaciones={obs} cuadrilla={cuadrilla} ruta={ruta} paraderos={marcas}
+            vigenciaAguaH={tp.datos?.parametros.vigencia_agua_horas ?? 6} alcanceAguaM={tp.datos?.parametros.aguas_abajo_m ?? 150} />
           <section aria-label="Ranking de prioridad" className={styles.card}>
             <h2>Prioridad de limpieza</h2>
             <p className={styles.hint}>Orden y puntaje de prioridad en la zona</p>
