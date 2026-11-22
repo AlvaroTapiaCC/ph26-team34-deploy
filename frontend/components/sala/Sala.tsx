@@ -696,7 +696,7 @@ const Mapa = memo(function Mapa({
               <button type="button" className={`${s.chipMapa} ${menu ? s.chipMapaOn : ""}`} onClick={() => setMenu(!menu)} aria-expanded={menu}>
                 Filtros <small>{Object.values(capas).filter(Boolean).length} de {Object.keys(capas).length}</small>
               </button>
-              {menu && <FiltrosMapa capas={capas} alternar={alternar} />}
+              {menu && <FiltrosMapa capas={capas} alternar={alternar} aguaRealSinLluvia={capas.agua && modoAgua === "real" && sinLluvia} />}
             </span>
           )}
           {!simulacion && capas.agua && (
@@ -709,7 +709,6 @@ const Mapa = memo(function Mapa({
               </button>
             </span>
           )}
-          {!simulacion && capas.agua && modoAgua === "real" && sinLluvia && <span className={s.chipInfo}>Sin lluvia ahora (Open-Meteo): el agua real no escurre</span>}
           {capas.cadenas && !simulacion && cadenas.estado === "cargando" && <span className={s.chipInfo}>Cargando cadenas…</span>}
         </div>
         {!simulacion && (
@@ -761,7 +760,7 @@ const Mapa = memo(function Mapa({
   );
 });
 
-function FiltrosMapa({ capas, alternar }: { capas: Capas; alternar: (capa: keyof Capas) => void }) {
+function FiltrosMapa({ capas, alternar, aguaRealSinLluvia }: { capas: Capas; alternar: (capa: keyof Capas) => void; aguaRealSinLluvia: boolean }) {
   const [capaInfo, setCapaInfo] = useState<keyof Capas | null>(null);
   const controles = (capa: keyof Capas) => ({
     on: capas[capa],
@@ -773,7 +772,11 @@ function FiltrosMapa({ capas, alternar }: { capas: Capas; alternar: (capa: keyof
   return (
     <div className={s.capasMenu} role="group" aria-label="Filtros del mapa">
       <p className={s.capasGrupo}>Agua</p>
-      <CapaCheck {...controles("agua")} titulo="Agua en las calles" sub="Agua corriendo por las calles según la pendiente y la lluvia, con columnas donde no cabe. Con datos reales usa la lluvia de Open-Meteo y las rejillas que Claude vio tapadas; simulada supone un 20 % de rejillas tapadas" />
+      <CapaCheck
+        {...controles("agua")}
+        titulo="Agua en las calles"
+        sub={`Agua corriendo por las calles según la pendiente y la lluvia, con columnas donde no cabe. Con datos reales usa la lluvia de Open-Meteo y las rejillas que Claude vio tapadas; simulada supone un 20 % de rejillas tapadas${aguaRealSinLluvia ? ". Sin lluvia ahora (Open-Meteo): el agua real no escurre" : ""}`}
+      />
       <CapaCheck {...controles("calor")} titulo="Mapa de calor de riesgo" sub="Zonas donde se concentra el puntaje de prioridad; donde el riesgo es bajo el mapa queda gris" />
       <CapaCheck {...controles("cadenas")} titulo="Flujo entre rejillas" sub="Muestra hacia qué rejilla escurre el agua calle abajo, según la pendiente estimada. Si una se tapa, revisa las que reciben su agua" />
       <CapaCheck {...controles("criticos")} titulo="Inundaciones registradas (Las Condes)" sub="Lugares que la Municipalidad de Las Condes registró como inundados o en riesgo de inundación durante la temporada de lluvias de 2026" />
