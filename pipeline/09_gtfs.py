@@ -69,12 +69,13 @@ def validar_match(datos, fuente):
 
 
 class AjustadorOSRM:
-    def __init__(self, servidor, cache):
+    def __init__(self, servidor, cache, solo_cache=False):
         self.servidor = servidor.rstrip("/")
         self.cache = cache
         self.cache.mkdir(parents=True, exist_ok=True)
         self.conteos = {}
         self.fallos = 0
+        self.solo_cache = solo_cache
 
     def consultar(self, puntos):
         coords = ";".join(f"{lon},{lat}" for lon, lat in puntos)
@@ -84,6 +85,8 @@ class AjustadorOSRM:
         if ruta.exists():
             self.fallos = 0
             return json.loads(ruta.read_text())
+        if self.solo_cache:
+            return {}
         for intento in range(3):
             time.sleep(1 + intento*2)
             try:
@@ -117,7 +120,8 @@ class AjustadorOSRM:
         return salida
 
     def metadatos(self):
-        return dict(metodo="OSRM match", servidor=self.servidor, perfil="driving",
+        return dict(metodo="OSRM match", servidor=self.servidor, perfil="driving", solo_cache=self.solo_cache,
+                    respaldo="Geometría GTFS original para chunks sin match válido o sin caché",
                     parametros={**MATCH_PARAMS, "radiuses_m": RADIO_MATCH},
                     fecha_utc=datetime.now(timezone.utc).isoformat(), max_coordenadas=MAX_COORDS,
                     solapamiento=1, confianza_min=CONFIANZA_MIN, desvio_max_m=DESVIO_MAX_M,
@@ -130,17 +134,17 @@ def filas(z, nombre):
         yield from csv.DictReader(io.TextIOWrapper(f, encoding="utf-8-sig", newline=""))
 
 
-def tramos(puntos):
+def tramos(puntos, centro=CENTRO, radio=RADIO):
     """Recorta segmentos al círculo en coordenadas métricas locales, incluso al cruzarlo."""
     partes = []
     for a, b in zip(puntos, puntos[1:]):
         dx, dy = (b[0]-a[0])*METROS_LON, (b[1]-a[1])*METROS_LAT
-        x, y = (a[0]-CENTRO[0])*METROS_LON, (a[1]-CENTRO[1])*METROS_LAT
+        x, y = (a[0]-centro[0])*METROS_LON, (a[1]-centro[1])*METROS_LAT
         longitud2 = dx*dx + dy*dy
         if longitud2 == 0:
             continue
         proy = x*dx + y*dy
-        disc = proy**2 - longitud2*(x*x + y*y - RADIO**2)
+        disc = proy**2 - longitud2*(x*x + y*y - radio**2)
         if disc <= 0:
             continue
         inicio = max(0, (-proy-math.sqrt(disc))/longitud2)
@@ -155,13 +159,13 @@ def tramos(puntos):
     return partes
 
 
-def extraer(z, ajustador=None):
+def extraer(z, ajustador=None, centro=CENTRO, radio=RADIO):
     paraderos = {}
     for r in filas(z, "stops"):
         if r["location_type"] not in ("", "0"):
             continue
         lon, lat = float(r["stop_lon"]), float(r["stop_lat"])
-        if distancia((lon, lat), CENTRO) < RADIO:
+        if distancia((lon, lat), centro) < radio:
             paraderos[r["stop_id"]] = dict(id=r["stop_id"], nombre=r["stop_name"], lon=lon, lat=lat)
     buses = {r["route_id"]: r["route_short_name"] for r in filas(z, "routes") if r["route_type"] == "3"}
     viajes = {r["trip_id"]: r for r in filas(z, "trips") if r["route_id"] in buses}
@@ -192,14 +196,43 @@ def extraer(z, ajustador=None):
         if ajustador:
             puntos = ajustador.ajustar(puntos, v["shape_id"])
         lineas.append(dict(servicio=servicio, sentido=sentido, destino=v["trip_headsign"], viaje=tid,
-                           paraderos=[p for _, p in sorted(secuencias[tid])], geometria=tramos(puntos)))
+                           paraderos=[p for _, p in sorted(secuencias[tid])], geometria=tramos(puntos, centro, radio)))
     stops = []
     for pid, claves in sorted(servicios.items()):
         stops.append({**paraderos[pid], "servicios": [dict(servicio=s, sentido=d, destino=h) for s, d, h in sorted(claves)]})
     return dict(paraderos=stops, recorridos=lineas)
 
 
-def cercanos(stops):
+def zona_san_carlos(ranking, rejillas):
+    with ranking.open(encoding="utf-8") as f:
+        filas_ranking = list(csv.DictReader(f))
+    if not filas_ranking:
+        raise ValueError("El ranking de San Carlos está vacío")
+    coords = {p["properties"]["ID_IDE"]: p["geometry"]["coordinates"]
+              for p in json.loads(rejillas.read_text(encoding="utf-8"))["features"]}
+    sector = [{"id": r["ID_IDE"], "coords": coords[r["ID_IDE"]],
+               "rank": int(r["rank"]), "prioridad": float(r["prioridad"])} for r in filas_ranking]
+    centro = (-70.541, -33.418)
+    radio = math.ceil((max(distancia(r["coords"], centro) for r in sector)+80)/100)*100
+    derivacion = dict(metodo="Centro del caso San Carlos; máxima distancia a rejillas del ranking +80 m, redondeada a 100 m",
+                      ranking="data/validacion/prediccion_replay_julio.csv", rejillas="data/rejillas.geojson",
+                      sha256_ranking=hashlib.sha256(ranking.read_bytes()).hexdigest(),
+                      sha256_rejillas=hashlib.sha256(rejillas.read_bytes()).hexdigest(),
+                      cantidad_rejillas=len(sector), margen_m=80,
+                      etiqueta="Reconstrucción · datos reproducidos (ranking de exposición; buses reales GTFS)")
+    return centro, radio, sector, derivacion
+
+
+def cercanos(stops, sector=None):
+    if sector is not None:
+        pares = []
+        for s in stops:
+            for r in sector:
+                metros = distancia((s["lon"], s["lat"]), r["coords"])
+                if metros < 80:
+                    pares.append(dict(paradero=s["id"], rejilla=r["id"], distancia_m=round(metros, 1),
+                                      rank=r["rank"], prioridad=r["prioridad"]))
+        return sorted(pares, key=lambda p: (p["distancia_m"], p["paradero"], p["rank"]))
     with (ROOT/"data/terreno_mut.csv").open(encoding="utf-8") as f:
         ranking = {r["ID_IDE"] for r in csv.DictReader(f) if r["en_zona_mut"] == "True" and r["fuera_de_red"] == "False"}
     puntos = json.loads((ROOT/"data/rejillas.geojson").read_text(encoding="utf-8"))["features"]
@@ -219,17 +252,28 @@ def main():
     parser.add_argument("--fecha", required=True, help="Fecha de descarga (AAAA-MM-DD)")
     parser.add_argument("--osrm-url", default=os.getenv("OSRM_URL", OSRM_URL))
     parser.add_argument("--cache-osrm", type=Path, default=ROOT/"cache/gtfs-osrm")
+    parser.add_argument("--solo-cache-osrm", action="store_true", help="Sin red; usa GTFS si no hay match en caché")
+    parser.add_argument("--zona", choices=("mut", "san-carlos"), default="mut")
+    parser.add_argument("--ranking", type=Path, default=ROOT/"data/validacion/prediccion_replay_julio.csv")
+    parser.add_argument("--rejillas", type=Path, default=ROOT/"data/rejillas.geojson")
     args = parser.parse_args()
-    ajustador = AjustadorOSRM(args.osrm_url, args.cache_osrm)
+    centro, radio, sector, derivacion = CENTRO, RADIO, None, None
+    if args.zona == "san-carlos":
+        centro, radio, sector, derivacion = zona_san_carlos(args.ranking, args.rejillas)
+    ajustador = AjustadorOSRM(args.osrm_url, args.cache_osrm, args.solo_cache_osrm)
     with ZipFile(args.zip) as z:
-        datos = extraer(z, ajustador)
+        datos = extraer(z, ajustador, centro, radio)
     with args.zip.open("rb") as f:
         digest = hashlib.file_digest(f, "sha256").hexdigest()
     meta = dict(fuente="GTFS de DTPM", url=args.url, fecha_descarga=args.fecha,
-                sha256_zip=digest, centro_lonlat=CENTRO, radio_m=RADIO,
-                paraderos_a_menos_de_80m=cercanos(datos["paraderos"]))
+                sha256_zip=digest, centro_lonlat=centro, radio_m=radio,
+                paraderos_a_menos_de_80m=cercanos(datos["paraderos"], sector))
+    if derivacion:
+        meta["zona"] = args.zona
+        meta["derivacion_zona"] = derivacion
     meta["ajuste_geometria"] = ajustador.metadatos()
-    dest = ROOT/"backend/data/transporte_mut.json"
+    nombre = "san_carlos" if args.zona == "san-carlos" else "mut"
+    dest = ROOT/f"backend/data/transporte_{nombre}.json"
     dest.write_bytes((json.dumps(datos, ensure_ascii=False, separators=(",", ":"))+"\n").encode())
     meta["sha256_salida"] = hashlib.sha256(dest.read_bytes()).hexdigest()
     dest.with_suffix(".meta.json").write_bytes((json.dumps(meta, ensure_ascii=False, indent=2)+"\n").encode())
