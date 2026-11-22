@@ -1,5 +1,6 @@
 import type { ObservacionPublica } from "./central";
 import type { LngLat, Prioridad } from "./data";
+import type { EvidenciaAgua } from "./transporte";
 
 type Feature<Geometry, Properties> = { type: "Feature"; geometry: Geometry; properties: Properties };
 type Linea = { type: "LineString"; coordinates: [LngLat, LngLat] };
@@ -9,7 +10,6 @@ type Cadena = Feature<Linea | Punto, { tipo: string; simulado?: boolean }>;
 
 const HORA_MS = 60 * 60_000;
 const VIGENCIA_FOTO_H = 72; // observado.vigencia_horas en backend/config/formula.yaml
-const NIVELES_AGUA = new Set(["cuneta", "hasta_vereda", "sobre_vereda"]);
 
 let carga: Promise<Tramo[]> | undefined;
 
@@ -27,33 +27,22 @@ export function cargarCadenas() {
   return carga;
 }
 
-type Evidencia = { ts: number; simulado: boolean; activa: boolean };
+type Evidencia = { simulado: boolean; activa: boolean };
 
-function incorporar(mapa: Map<string, Evidencia>, id: string, evidencia: Evidencia) {
-  if ((mapa.get(id)?.ts ?? -Infinity) < evidencia.ts) mapa.set(id, evidencia);
-}
-
-function evidenciaVigente(observaciones: ObservacionPublica[], ahora: number, vigenciaAguaH: number) {
-  const agua = new Map<string, Evidencia>();
-  const obstruccion = new Map<string, Evidencia>();
+function obstruccionesVigentes(observaciones: ObservacionPublica[], ahora: number) {
+  const obstruccion = new Map<string, Evidencia & { ts: number }>();
   for (const o of observaciones) {
     const c = o.clasificacion;
     const id = o.sumidero_id;
     const ts = Date.parse(o.ts);
-    if (!c || !id || c.evaluable === false || !Number.isFinite(ts) || ts > ahora) continue;
-    const h = (ahora - ts) / HORA_MS;
-    const simulado = o.is_simulated;
-    if (o.tipo === "foto_rejilla" && h < VIGENCIA_FOTO_H && (c.rejilla === "tapada" || c.rejilla === "parcial" || c.rejilla === "limpia")) {
-      incorporar(obstruccion, id, { ts, simulado, activa: c.rejilla !== "limpia" });
-    }
-    const nivel = c.nivel_agua ?? "";
-    const mojada = NIVELES_AGUA.has(nivel);
-    // Un acercamiento a la rejilla sin agua no describe el estado de la calle (#91).
-    if (h < vigenciaAguaH && (mojada || (nivel === "sin_agua" && o.tipo !== "foto_rejilla"))) {
-      incorporar(agua, id, { ts, simulado, activa: mojada });
+    if (!c || !id || o.tipo !== "foto_rejilla" || c.evaluable === false || !Number.isFinite(ts) || ts > ahora
+      || ahora - ts >= VIGENCIA_FOTO_H * HORA_MS) continue;
+    if ((c.rejilla === "tapada" || c.rejilla === "parcial" || c.rejilla === "limpia")
+      && (obstruccion.get(id)?.ts ?? -Infinity) < ts) {
+      obstruccion.set(id, { ts, simulado: o.is_simulated, activa: c.rejilla !== "limpia" });
     }
   }
-  return { obstruccion, agua };
+  return obstruccion;
 }
 
 // Recorre la red calle abajo desde cada origen activo hasta `limite` metros. Un tramo que
@@ -89,6 +78,7 @@ export function capaCadenas(
   tramos: Tramo[],
   prioridades: ReadonlyMap<string, Prioridad>,
   observaciones: ObservacionPublica[],
+  evidenciaAgua: readonly EvidenciaAgua[],
   ahora: number,
   vigenciaAguaH: number,
   alcanceAguaM: number,
@@ -105,7 +95,17 @@ export function capaCadenas(
     coordenadas.set(hasta, b);
   }
 
-  const { obstruccion, agua } = evidenciaVigente(observaciones, ahora, vigenciaAguaH);
+  const obstruccion = obstruccionesVigentes(observaciones, ahora);
+  // Transporte elige la última lectura por rejilla. La respuesta en caché sigue envejeciendo.
+  const agua = new Map<string, Evidencia>();
+  let proximoVencimientoAgua = Infinity;
+  for (const o of evidenciaAgua) {
+    const captura = Date.parse(o.ts);
+    const vencimiento = captura + vigenciaAguaH * HORA_MS;
+    if (captura > ahora || !(vencimiento > ahora)) continue;
+    agua.set(o.sumidero_id, { simulado: o.is_simulated, activa: o.nivel !== "sin_agua" });
+    proximoVencimientoAgua = Math.min(proximoVencimientoAgua, vencimiento);
+  }
   const bajoObstruccion = tramosAguasAbajo(obstruccion, salidas, Infinity);
   // Una rejilla observada seca corta el agua inferida desde calle arriba: ni ella ni las
   // siguientes se marcan por ese origen. Es la regla de puntos_con_agua en
@@ -133,6 +133,7 @@ export function capaCadenas(
   }
   return {
     geojson: { type: "FeatureCollection" as const, features },
+    proximoVencimientoAgua,
     haySimulados: features.some(({ properties }) => properties.simulado),
   };
 }

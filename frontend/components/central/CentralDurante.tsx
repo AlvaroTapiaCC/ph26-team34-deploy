@@ -14,7 +14,7 @@ import {
 import { getCuadrillas, getRuta, type Cuadrilla, type RutaCuadrilla } from "@/lib/cuadrilla";
 import type { LngLat, Prioridad } from "@/lib/data";
 import { boundsDe, prioDe } from "@/lib/real";
-import { horaSantiago, NIVEL_AGUA, useExpuestos, type EstadoConsulta } from "@/lib/transporte";
+import { horaSantiago, NIVEL_AGUA, useExpuestos, type EstadoConsulta, type EvidenciaAgua } from "@/lib/transporte";
 import Transporte from "../desktop/Transporte";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Logo } from "../ui";
@@ -142,9 +142,12 @@ function Misiones({ cuadrilla, ruta, estado }: {
   );
 }
 
-const MapaCentral = memo(function MapaCentral({ ranking, observaciones, cuadrilla, ruta, paraderos, vigenciaAguaH, alcanceAguaM }: {
+const SIN_EVIDENCIA_AGUA: readonly EvidenciaAgua[] = [];
+
+const MapaCentral = memo(function MapaCentral({ ranking, observaciones, evidenciaAgua, cuadrilla, ruta, paraderos, vigenciaAguaH, alcanceAguaM }: {
   ranking: ApiRankingItem[];
   observaciones: ObservacionPublica[];
+  evidenciaAgua: readonly EvidenciaAgua[];
   cuadrilla: Cuadrilla | null;
   ruta: RutaCuadrilla | null;
   paraderos: MapLabel[];
@@ -162,7 +165,7 @@ const MapaCentral = memo(function MapaCentral({ ranking, observaciones, cuadrill
     });
     return { pins, prioridades };
   }, [ranking]);
-  const cadenas = useCapaCadenas(prioridades, observaciones, cadenasVisibles, vigenciaAguaH, alcanceAguaM);
+  const cadenas = useCapaCadenas(prioridades, observaciones, evidenciaAgua, cadenasVisibles, vigenciaAguaH, alcanceAguaM);
   const urgentes = ranking.filter((p) => p.detalle?.urgente);
   const labels: MapLabel[] = urgentes
     .map((p) => ({ coord: [p.lon, p.lat], text: "Urgente", tone: "danger", offset: [0, -22] }));
@@ -275,7 +278,9 @@ export default function CentralDurante() {
       <div className={styles.layout}>
         <div className={styles.column}>
           <MapaCentral ranking={filas} observaciones={obs} cuadrilla={cuadrilla} ruta={ruta} paraderos={marcas}
-            vigenciaAguaH={tp.datos?.parametros.vigencia_agua_horas ?? 6} alcanceAguaM={tp.datos?.parametros.aguas_abajo_m ?? 150} />
+            evidenciaAgua={tp.datos?.evidencia_agua ?? SIN_EVIDENCIA_AGUA}
+            vigenciaAguaH={tp.datos?.parametros.vigencia_agua_horas ?? 6}
+            alcanceAguaM={tp.datos?.parametros.aguas_abajo_m ?? 150} />
           <section aria-label="Ranking de prioridad" className={styles.card}>
             <h2>Prioridad de limpieza</h2>
             <p className={styles.hint}>Orden y puntaje de prioridad en la zona</p>

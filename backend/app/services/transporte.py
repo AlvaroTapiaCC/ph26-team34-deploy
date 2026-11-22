@@ -33,6 +33,7 @@ from typing import Any
 from psycopg import Connection
 
 from app.config import get_formula_config
+from app.db import DatabaseUnavailable
 from app.services.formula import StreetChain, cadena_valida
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -319,18 +320,31 @@ def expuestos(conn_fn, scenario_id: str = "base", incluir_simulados: bool = True
     ahora = datetime.now(UTC).isoformat()
     base = {"scenario_id": scenario_id, "calculado_at": ahora, "nota": NOTA,
             "parametros": {k: prm[k] for k in ("radio_m", "aguas_abajo_m", "riesgo_top_n", "vigencia_agua_horas")}}
-    if datos is None:
-        return {**base, "fuente": None, "expuestos": [], "en_riesgo": [],
-                "aviso": "No está el archivo de paraderos (transporte_mut.json): no se puede calcular la exposición."}
 
     def consultar(conn: Connection):
         ultimas = ultimas_observaciones_agua(conn, prm["vigencia_agua_horas"], incluir_simulados)
+        if datos is None:
+            return ultimas, [], {}, []
         chains, coords = cadenas_y_coords(conn, [u["sumidero_id"] for u in ultimas
                                                  if u["nivel"] in NIVELES_CON_AGUA])
         riesgo = puntos_en_riesgo(conn, scenario_id, prm)
         return ultimas, chains, coords, riesgo
 
-    ultimas, chains, coords, riesgo = conn_fn(consultar)
+    try:
+        ultimas, chains, coords, riesgo = conn_fn(consultar)
+    except DatabaseUnavailable:
+        if datos is not None:
+            raise
+        ultimas, chains, coords, riesgo = None, [], {}, []
+
+    # El mapa usa la misma evidencia que los paraderos. Solo necesita datos de la rejilla.
+    base["evidencia_agua"] = None if ultimas is None else [
+        {k: u[k] for k in ("sumidero_id", "nivel", "ts", "is_simulated")} for u in ultimas
+    ]
+    if datos is None:
+        return {**base, "fuente": None, "expuestos": [], "en_riesgo": [],
+                "aviso": "No está el archivo de paraderos (transporte_mut.json): no se puede calcular la exposición."}
+
     agua = puntos_con_agua(ultimas, chains, coords, prm["aguas_abajo_m"])
     aviso = None if riesgo else f"Sin puntajes para el escenario {scenario_id!r}: no se calcula 'en riesgo'."
     return {**base, "fuente": datos.fuente, "aviso": aviso, **calcular(datos, agua, riesgo, prm["radio_m"])}

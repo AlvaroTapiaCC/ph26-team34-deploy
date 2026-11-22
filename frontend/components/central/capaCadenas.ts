@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { capaCadenas, cargarCadenas, type Tramo } from "@/lib/cadenas";
 import type { ObservacionPublica } from "@/lib/central";
 import type { Prioridad } from "@/lib/data";
+import type { EvidenciaAgua } from "@/lib/transporte";
 import type { MapLibre } from "../map/maplibre";
 
 export const COLORES_CADENAS = {
@@ -79,6 +80,7 @@ function instalarCapas(mapa: MapLibre) {
 export function useCapaCadenas(
   prioridades: ReadonlyMap<string, Prioridad>,
   observaciones: ObservacionPublica[],
+  evidenciaAgua: readonly EvidenciaAgua[],
   visible: boolean,
   vigenciaAguaH: number,
   alcanceAguaM: number,
@@ -88,8 +90,10 @@ export function useCapaCadenas(
   const [estado, setEstado] = useState<"cargando" | "ok" | "error">("cargando");
   const [ahora, setAhora] = useState(Date.now);
   const datos = useMemo(
-    () => visible && tramos ? capaCadenas(tramos, prioridades, observaciones, Math.max(ahora, Date.now()), vigenciaAguaH, alcanceAguaM) : null,
-    [visible, tramos, prioridades, observaciones, ahora, vigenciaAguaH, alcanceAguaM],
+    () => visible && tramos
+      ? capaCadenas(tramos, prioridades, observaciones, evidenciaAgua, Math.max(ahora, Date.now()), vigenciaAguaH, alcanceAguaM)
+      : null,
+    [visible, tramos, prioridades, observaciones, evidenciaAgua, ahora, vigenciaAguaH, alcanceAguaM],
   );
 
   const onMapReady = useCallback((mapaListo: MapLibre) => {
@@ -107,13 +111,17 @@ export function useCapaCadenas(
     }).catch(() => {
       if (vigente) setEstado("error");
     });
-    // Expira la evidencia incluso cuando las consultas periódicas devuelven el mismo contenido.
-    const reloj = setInterval(() => setAhora(Date.now()), 30_000);
-    return () => {
-      vigente = false;
-      clearInterval(reloj);
-    };
+    return () => { vigente = false; };
   }, [visible]);
+
+  useEffect(() => {
+    if (!datos) return;
+    // Mantiene la revisión de obstrucciones cada 30 s y retira el agua justo al vencer.
+    const hastaVencimiento = Math.ceil(datos.proximoVencimientoAgua - Date.now());
+    const espera = Math.min(30_000, Math.max(0, hastaVencimiento));
+    const reloj = setTimeout(() => setAhora(Date.now()), espera);
+    return () => clearTimeout(reloj);
+  }, [datos]);
 
   useEffect(() => {
     mapa?.getSource(FUENTE)?.setData(datos?.geojson ?? VACIA);
