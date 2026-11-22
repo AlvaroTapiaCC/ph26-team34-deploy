@@ -5,6 +5,7 @@ import { getEscenarios, getFicha, getRanking } from "./api";
 import { buildRuta, CADENA, COMUNAS, PUNTOS, rankingFor, SCENARIOS, TOTAL_INTERSECCIONES, type Comuna, type RankedPunto, type RutaCuadrilla, type Scenario, type ScenarioId } from "./data";
 import type { EstadoRejilla } from "./flujo/config";
 import { aEscenario, aFichaReal, aRankingReal, type FichaReal, type RankingReal } from "./real";
+import { suscribirPuntajes } from "./supabase";
 
 // De dónde salen los datos del modo Antes: servidor real o respaldo de ejemplo (lib/data.ts)
 export type Fuente = "cargando" | "api" | "ejemplo";
@@ -255,6 +256,47 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (fuente === "api" && !rankings[s.scenario] && escenarios.some((x) => x.id === s.scenario)) cargarRanking(s.scenario);
   }, [fuente, s.scenario, rankings, escenarios, cargarRanking]);
+
+  const rankingCargado = Boolean(rankings[s.scenario]);
+  useEffect(() => {
+    if (fuente !== "api" || !rankingCargado) return;
+    const id = s.scenario;
+    let vigente = true;
+    let enCurso = false;
+    let pendiente = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    function invalidar() {
+      if (!vigente) return;
+      pendiente = true;
+      if (enCurso || timer !== undefined) return;
+      timer = setTimeout(() => {
+        timer = undefined;
+        void refrescar();
+      }, 250);
+    }
+
+    async function refrescar() {
+      pendiente = false;
+      enCurso = true;
+      try {
+        const respuesta = await getRanking(id, { cache: "no-store", reintentos: 0 });
+        if (vigente) setRankings((prev) => ({ ...prev, [id]: aRankingReal(respuesta) }));
+      } catch {
+        // Ante una caída transitoria se mantiene el último dato real.
+      } finally {
+        enCurso = false;
+        if (pendiente) invalidar();
+      }
+    }
+
+    const desuscribir = suscribirPuntajes(id, invalidar);
+    return () => {
+      vigente = false;
+      clearTimeout(timer);
+      desuscribir?.();
+    };
+  }, [fuente, rankingCargado, s.scenario]);
 
   // ?ficha= con ids reales: se aplica cuando llega el ranking
   useEffect(() => {

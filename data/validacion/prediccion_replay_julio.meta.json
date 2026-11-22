@@ -1,0 +1,134 @@
+{
+  "generado_utc": "2026-11-22T01:20:45+00:00",
+  "git_head_al_generar": "d581f247cd6fd9e60599d3ee1d18ec891dec7638",
+  "regla": "Ranking base del sector con la configuración congelada, sin clima.",
+  "zona_replay_julio": {
+    "sufijo": "replay_julio",
+    "centro_lonlat": [
+      -70.541,
+      -33.418
+    ],
+    "radio_m": 1500,
+    "centro_confirmado": false,
+    "nota": "Concentración de puntos críticos públicos del invierno de 2026, al oriente de Rotonda Atenas",
+    "columna": "en_zona_replay_julio",
+    "rejillas_en_zona": 568,
+    "rejillas_rankeadas": 562,
+    "fuera_de_red_excluidas": [
+      "AL13SU013154",
+      "AL13SU013268",
+      "AL13SU013269",
+      "AL13SU013270",
+      "AL13SU013296",
+      "AL13SU014926"
+    ]
+  },
+  "formula": {
+    "config": "backend/config/formula_validacion.yaml",
+    "sha256_config": "fde77019056cd4a9fcb88d5ad58dabd85f5c25462cd8faf95d648322a6f3e848",
+    "codigo": "backend/app/services/formula.py",
+    "sha256_codigo": "8d1bc4c63e41ac3b112e439b2c3778a17060a67f5fd2d2157e5fcad56ab13e1d",
+    "modo": "antes",
+    "pesos_config": {
+      "w_arb": 0.289474,
+      "w_feria": 0.184211,
+      "w_obra": 0.105263,
+      "w_suelo": 0.105263,
+      "w_pend": 0.184211,
+      "w_clima": 0.131578,
+      "w_dias": 0.0,
+      "w_cam": 0.0
+    },
+    "variables_sin_dato_peso_0": {
+      "w_clima": "clima"
+    },
+    "pesos_efectivos": {
+      "w_arb": 0.333333,
+      "w_feria": 0.212122,
+      "w_obra": 0.121212,
+      "w_suelo": 0.121212,
+      "w_pend": 0.212122,
+      "w_clima": 0.0,
+      "w_dias": 0.0,
+      "w_cam": 0.0
+    },
+    "reescalado": "pesos con dato divididos por 0.868422 para sumar 1",
+    "cadena": {
+      "alpha": 0.35,
+      "lambda_m": 150,
+      "tope": 0.3
+    },
+    "consecuencia": {
+      "normalizacion_area": "log",
+      "piso_area": 0.15,
+      "w_crit": 1.0,
+      "radio_crit_m": 200,
+      "criticidad": {
+        "metro": 1.0,
+        "paso_bajo_nivel": 1.0,
+        "hospital": 0.9,
+        "punto_critico_gobierno": 0.8,
+        "colegio": 0.6
+      }
+    }
+  },
+  "parametros_entradas": {
+    "terreno": {
+      "ancho_aporte_m": 20.0,
+      "pendiente_ref": 0.04026,
+      "pendiente_ref_regla": "percentil 90 de pendiente_tramo de las rejillas en_zona_replay_julio",
+      "snap_max_m": 30.0,
+      "cadena_max_m": 3000.0
+    },
+    "variables": {
+      "arboles": "fracción WorldCover clase 10 a < 15 m",
+      "suelo": "fracción WorldCover clase 60 a < 100 m",
+      "feria": "max(0, 1 - d/300 m) al amenity=marketplace más cercano",
+      "obras": "1 si landuse/building=construction a <= 100 m",
+      "criticidad": "máximo peso de consecuencia.criticidad a <= 200 m (sin puntos críticos del Gobierno)"
+    }
+  },
+  "cadenas": {
+    "usadas": 174,
+    "regla": "cadenas de 03_terreno recortadas a las rejillas de la zona"
+  },
+  "entradas": {
+    "terreno": {
+      "ruta": "data/terreno_replay_julio.csv",
+      "sha256": "6a33b5a975fff97f36a54933110dfb884aa5e5ccf30beb90e2bd56db74fcb8a8"
+    },
+    "variables": {
+      "ruta": "data/variables_replay_julio.csv",
+      "sha256": "b356b99495555b79385a1981df0bef8210505762bee5e1829cb6176f8297585d"
+    },
+    "cadenas": {
+      "ruta": "data/street_chains_replay_julio.json",
+      "sha256": "afd38d52f522e6548096bdbbb09263567d4f52b9392bc6ce61185a52dbc857a2"
+    },
+    "rejillas": {
+      "ruta": "data/rejillas.geojson",
+      "sha256": "dde763af25b2afb38c8b17f9aa66c670c860fae797d1821c9191fd012c55de22"
+    }
+  },
+  "metas_entradas": {
+    "terreno": {
+      "ruta": "pipeline/03_terreno.py",
+      "version": "0.5.0",
+      "sha256": "3390ba95842a7a71d14805696b442ffd31a45c2a08f3c0b910b408a3acb48cf7"
+    },
+    "variables": {
+      "ruta": "pipeline/04_variables.py",
+      "version": "0.4.0",
+      "sha256": "46fa217d5c997cbd5800bb8aef411730927c75f98934a8ee7ccfacdeccaf79a2"
+    }
+  },
+  "salida": {
+    "archivo": "prediccion_replay_julio.csv",
+    "sha256": "7f29c8e13fb57a50d748b7a23241c709cc5f058bc24d4d3fcdc6cd7acab674f1"
+  },
+  "script": {
+    "ruta": "pipeline/05_prediccion.py",
+    "version": "1.1.1",
+    "sha256": "8d17af297748ee60e7720e86471e557939fb9c2878c14bae09efe8a58f5d29b8"
+  }
+}

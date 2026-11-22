@@ -1,0 +1,34 @@
+{
+  "fuente": "https://api.openstreetmap.org/api/0.6",
+  "licencia": "https://www.openstreetmap.org/copyright",
+  "corte_utc": "2026-07-16T03:59:59Z",
+  "fecha_extraccion_local": "2026-11-21",
+  "bbox_descarga_lonlat": [
+    -70.5745,
+    -33.446,
+    -70.5075,
+    -33.39
+  ],
+  "metodo": "Inventario de extractos por caja y recuperación de la última versión visible de cada objeto y dependencia al corte, con la API de OpenStreetMap.",
+  "limitacion": "Un objeto eliminado entre el corte y la extracción puede quedar fuera si no figura entre las dependencias de objetos que siguen visibles.",
+  "objetos_recuperados_a_version_previa": {
+    "node": 527,
+    "way": 372,
+    "relation": 52
+  },
+  "objetos_creados_despues_excluidos": {
+    "node": 975,
+    "way": 148,
+    "relation": 5
+  },
+  "vias_sin_nodos_completos_excluidas": 0,
+  "relaciones_incompletas_excluidas": 0,
+  "conteo": {
+    "node": 23686,
+    "way": 4335,
+    "relation": 1
+  },
+  "via_elegibles_drive": 4195,
+  "archivo": "fuente_osm_replay_julio.osm.bz2",
+  "sha256": "314854fdf073562f7e06d42010d870bdf30fc1734842114745519a43e72142f6"
+}
