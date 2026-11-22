@@ -3,7 +3,7 @@
 // en este hilo. Flujo estimado; no es una simulación hidráulica ni una medición.
 import type { LngLat, ScenarioId } from "../data";
 import { ESTADOS, estadosDe, FLUJO_CONFIG, type EstadoRejilla } from "./config";
-import type { ObservacionPunto } from "./fuentes";
+import type { FuenteObservaciones, ObservacionPunto } from "./fuentes";
 import { agregarAlGrafo, grafoVacio, leerTesela, type Grafo, type TeselaCruda } from "./grafo";
 import type { Lecturas } from "./motor";
 import { crearSimulador, type Foto, type MensajeAlMotor, type MensajeDelMotor } from "./simulador";
@@ -110,6 +110,10 @@ export class MotorRemoto {
   }
 
   // ---- Órdenes al motor ----
+  setFuente(id: FuenteObservaciones["id"]) {
+    this.enviar({ tipo: "fuente", id });
+  }
+
   asociarPuntos(puntos: { id: string; coord: LngLat }[]) {
     this.enviar({ tipo: "puntos", puntos });
   }
