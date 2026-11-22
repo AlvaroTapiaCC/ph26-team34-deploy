@@ -1,0 +1,89 @@
+{
+  "generado_utc": "2026-11-22T01:25:45Z",
+  "git_head_al_generar": "74386beeb4280348fd4c4851e0b5627e8b44991e",
+  "fuente": {
+    "nombre": "Atención Vecino (capa 6), Portal de Datos Abiertos de la Municipalidad de Las Condes",
+    "portal": "https://datos.lascondes.cl/datos",
+    "descarga": "https://datos.lascondes.cl/download/capa/6/csv",
+    "ficha": "https://datos.lascondes.cl/capas/6/details",
+    "licencia": "No declarada en la ficha de la capa. El portal publica un «Decreto Portal de Datos Abiertos» (https://datos.lascondes.cl/recursos) que no se pudo leer de forma automática porque está escaneado. Pendiente de confirmar.",
+    "descargado_utc": "2026-11-22T01:21:28Z",
+    "sha256_crudo": "6ce34ceec415e7c4345038082a08b3b2a9cef23b28f146e113704e23d35fe237",
+    "filas_crudo": 116304,
+    "columnas_usadas": [
+      "tipo_solicitud",
+      "motivo",
+      "ubicacion_solicitud",
+      "lat_solicitud",
+      "long_solicitud",
+      "fc_creacion"
+    ],
+    "privacidad": "El CSV crudo no se versiona. ubicacion_solicitud, lat_solicitud y long_solicitud se usan solo en memoria para la cuadra, el sector y las distancias."
+  },
+  "filtro": {
+    "tipos_solicitud": {
+      "Sumideros de Aguas Lluvias": "sumideros",
+      "Anegamiento por aguas lluvias o desbordamiento de canales": "anegamiento"
+    },
+    "motivos": "todos (Solicitud, Reclamo, Denuncia, etc.)",
+    "tickets_drenaje_totales": 853,
+    "descartados": {}
+  },
+  "evento": {
+    "nombre": "2026-10-13",
+    "desde_santiago": "2026-10-13",
+    "hasta_santiago": "2026-10-13",
+    "nota": "Evento principal si #73 entrega verdad de terreno suficiente."
+  },
+  "clima_meta": {
+    "ruta": "data/escenarios/2026-10-13.meta.json",
+    "sha256": "0dab264ac4caebc3c9c7086e246b483a73b1b07356ee20f12659dfb87575bbb7"
+  },
+  "agrupacion": "cuadra = calle normalizada (mayúsculas, sin tildes) + tramo de numeración de 100",
+  "metodo": {
+    "cortes": [
+      {
+        "top_porcentaje": 20,
+        "distancia_m_menor_que": 100
+      },
+      {
+        "top_porcentaje": 10,
+        "distancia_m_menor_que": 100
+      },
+      {
+        "top_porcentaje": 20,
+        "distancia_m_menor_que": 50
+      },
+      {
+        "top_porcentaje": 10,
+        "distancia_m_menor_que": 50
+      }
+    ],
+    "unidad": "cuadra con al menos un ticket dentro del sector",
+    "semilla": 86,
+    "permutaciones_azar": 1000,
+    "distancia": "Haversine",
+    "ventanas": "principal: días del evento; sensibilidad: agrega el día siguiente"
+  },
+  "formula": {
+    "config": {
+      "ruta": "backend/config/formula_validacion.yaml",
+      "sha256": "fde77019056cd4a9fcb88d5ad58dabd85f5c25462cd8faf95d648322a6f3e848"
+    },
+    "sha256_config_al_congelar": "fde77019056cd4a9fcb88d5ad58dabd85f5c25462cd8faf95d648322a6f3e848",
+    "prediccion": {
+      "ruta": "data/validacion/prediccion_congelada.csv",
+      "sha256": "584029a89d8a7aabbc3b14ec73ffefef05b145246fb57619e258635971f9637f"
+    },
+    "git_head_al_congelar": "48d9904901ceec572acf26762e193664ea3f6d9d"
+  },
+  "script": {
+    "ruta": "pipeline/12_reclamos.py",
+    "version": "1.0.0",
+    "sha256": "64748134d9b74bf5655832c9eed0884cea5e869ebbd49b4b5b90247cb4ad2045"
+  },
+  "salida": {
+    "archivo": "2026-10-13.json",
+    "sha256": "a4713c540ba7c6d08f00f03673f82503409fdc00562106df776b88e209b4aa90"
+  }
+}

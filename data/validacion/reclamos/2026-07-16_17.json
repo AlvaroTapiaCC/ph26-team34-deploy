@@ -1,0 +1,131 @@
+{
+  "rotulo": "Datos reales del portal municipal, agregados por cuadra. Sin domicilios ni identificadores.",
+  "evento": "2026-07-16_17",
+  "nota": "Evento del replay de #86: plan B del 16 y 17 de julio en el sector MUT, porque el 13 de octubre no reunió 8 lugares (data/validacion/anegados_20261013.md).",
+  "sector": {
+    "centro_lonlat": [
+      -70.601433,
+      -33.417741
+    ],
+    "radio_m": 700.0,
+    "rejillas": 46
+  },
+  "resolucion_temporal": "día (fc_creacion), sin hora",
+  "ventanas": {
+    "principal": {
+      "desde_santiago": "2026-07-16",
+      "hasta_santiago": "2026-07-17",
+      "tickets_comuna": 12,
+      "tickets_comuna_por_tipo": {
+        "anegamiento": 8,
+        "sumideros": 4
+      },
+      "tickets_sin_coordenadas": 0,
+      "tickets_en_sector": 0,
+      "tickets_en_sector_sin_cuadra": 0,
+      "cuadras_en_sector": 0,
+      "cuadras": [],
+      "cobertura": null,
+      "nota": "No hay tickets de drenaje dentro del sector en esta ventana. No se calcula cobertura."
+    },
+    "sensibilidad_dia_siguiente": {
+      "desde_santiago": "2026-07-16",
+      "hasta_santiago": "2026-07-18",
+      "tickets_comuna": 13,
+      "tickets_comuna_por_tipo": {
+        "anegamiento": 8,
+        "sumideros": 5
+      },
+      "tickets_sin_coordenadas": 0,
+      "tickets_en_sector": 0,
+      "tickets_en_sector_sin_cuadra": 0,
+      "cuadras_en_sector": 0,
+      "cuadras": [],
+      "cobertura": null,
+      "nota": "No hay tickets de drenaje dentro del sector en esta ventana. No se calcula cobertura."
+    }
+  },
+  "serie_diaria_comuna": [
+    {
+      "dia": "2026-07-09",
+      "anegamiento": 0,
+      "sumideros": 0
+    },
+    {
+      "dia": "2026-07-10",
+      "anegamiento": 0,
+      "sumideros": 0
+    },
+    {
+      "dia": "2026-07-11",
+      "anegamiento": 0,
+      "sumideros": 2
+    },
+    {
+      "dia": "2026-07-12",
+      "anegamiento": 1,
+      "sumideros": 1
+    },
+    {
+      "dia": "2026-07-13",
+      "anegamiento": 2,
+      "sumideros": 5
+    },
+    {
+      "dia": "2026-07-14",
+      "anegamiento": 2,
+      "sumideros": 4
+    },
+    {
+      "dia": "2026-07-15",
+      "anegamiento": 1,
+      "sumideros": 3
+    },
+    {
+      "dia": "2026-07-16",
+      "anegamiento": 5,
+      "sumideros": 3
+    },
+    {
+      "dia": "2026-07-17",
+      "anegamiento": 3,
+      "sumideros": 1
+    },
+    {
+      "dia": "2026-07-18",
+      "anegamiento": 0,
+      "sumideros": 1
+    },
+    {
+      "dia": "2026-07-19",
+      "anegamiento": 0,
+      "sumideros": 1
+    },
+    {
+      "dia": "2026-07-20",
+      "anegamiento": 3,
+      "sumideros": 1
+    },
+    {
+      "dia": "2026-07-21",
+      "anegamiento": 0,
+      "sumideros": 0
+    },
+    {
+      "dia": "2026-07-22",
+      "anegamiento": 0,
+      "sumideros": 0
+    },
+    {
+      "dia": "2026-07-23",
+      "anegamiento": 1,
+      "sumideros": 0
+    },
+    {
+      "dia": "2026-07-24",
+      "anegamiento": 0,
+      "sumideros": 3
+    }
+  ],
+  "ranking_horario_b": "No aplica: los tickets solo traen el día de creación."
+}

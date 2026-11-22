@@ -68,6 +68,12 @@ El [registro del 13 de octubre de 2026](validacion/anegados_20261013.geojson) do
 En el sector más concentrado caben 4 en un radio de 1,5 km. La [auditoría](validacion/anegados_20261013.md) explica las fuentes,
 las horas de aviso o publicación y el corte que lleva al evento de julio para el replay (#86).
 
+## Reclamos de Atención Vecino (#72)
+
+`validacion/reclamos/` reúne los tickets de sumideros y anegamiento del portal de datos abiertos de Las Condes,
+agrupados por cuadra y sin domicilios. El crudo no se versiona. `pipeline/12_reclamos.py` los cruza con el ranking
+congelado del MUT. El [README](validacion/reclamos/README.md) explica la fuente, la licencia pendiente y los resultados.
+
 ## Obsoleto
 
 `data/sumideros_nunoa.geojson` y `pipeline/01_sumideros.py` quedan solo como referencia: no los usa nadie.
