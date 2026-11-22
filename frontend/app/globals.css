@@ -682,6 +682,42 @@ p {
 .topbar__spacer {
   flex: 1;
 }
+.banda-clima {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 24px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--text-2);
+}
+.banda-clima strong {
+  color: var(--text);
+}
+.banda-clima--alerta {
+  background: var(--lime-dim);
+}
+.banda-clima__esc {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: var(--r-10);
+  background: var(--text);
+  color: var(--surface);
+}
+.banda-clima__dato {
+  color: var(--text-3);
+}
+.banda-clima__fuente {
+  margin-left: auto;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
 .bento {
   flex: 1;
   min-height: 0;

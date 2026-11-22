@@ -133,3 +133,27 @@ export interface ApiFicha {
 export const getEscenarios = (o?: GetOpts) => apiGet<ApiEscenario[]>("/scenarios", o);
 export const getRanking = (id: string, o?: GetOpts) => apiGet<ApiRanking>(`/scenarios/${encodeURIComponent(id)}/ranking?modo=antes&limit=5000`, o);
 export const getFicha = (id: string, escenario: string, o?: GetOpts) => apiGet<ApiFicha>(`/sumideros/${encodeURIComponent(id)}?scenario_id=${encodeURIComponent(escenario)}`, o);
+
+// --- Clima en vivo (backend/app/routers/clima.py, issue #13) ---
+
+export type ModoClima = "seco" | "tormenta_inminente" | "durante" | "despues" | "sin_dato";
+
+export interface ApiClima {
+  modo: ModoClima;
+  plazo: string | null;
+  inicio_lluvia_pronosticado_utc: string | null;
+  clima: number | null;
+  lluvia_acum_24h_mm: number | null;
+  racha_max_6h_kmh: number | null;
+  lluvia_pronosticada_prox_24h_mm: number | null;
+  lluvia_pronosticada_48h_mm: number | null;
+  racha_max_pronosticada_48h_kmh: number | null;
+  hora_dato_utc: string | null;
+  fuente: { nombre: string; url: string; celda_latlon: [number, number] | null; licencia: string };
+  /** false: Open-Meteo no respondió y es el último valor obtenido (o sin_dato). */
+  vigente: boolean;
+  consultado_utc: string | null;
+  detalle?: string;
+}
+
+export const getClima = (o?: GetOpts) => apiGet<ApiClima>("/clima", { reintentos: 1, ...o });
