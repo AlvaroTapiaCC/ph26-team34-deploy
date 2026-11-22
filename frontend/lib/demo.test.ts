@@ -30,6 +30,16 @@ test("la exposición aparece con el agua y el alternativo sigue al expuesto en e
   assert.ok(Math.abs(alternativo.lat - s.alternativo!.lat) < 0.000001);
 });
 
+test("el detalle de la foto conserva su evidencia y la descomposición del puntaje", () => {
+  const { durante, observaciones } = datosDemo(1);
+  const p = durante.find((r) => r.sumidero_id === DEMO_SUMIDERO)!;
+  assert.equal(p.detalle?.fuente_p, "foto");
+  assert.equal(p.p_ef, p.p_obs);
+  assert.ok(p.c != null);
+  assert.equal(p.prioridad, p.p_ef! * p.c!);
+  assert.equal(observaciones[0].prioridad?.despues?.prioridad, p.prioridad);
+});
+
 test("repetir produce el mismo escenario sin contaminar el ranking inicial", () => {
   const inicial = JSON.stringify(datosDemo(0));
   for (let i = 0; i < PASOS_DEMO.length; i++) {
