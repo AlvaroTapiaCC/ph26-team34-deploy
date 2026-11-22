@@ -3,6 +3,7 @@ import type { ReporteMapa } from "@/lib/reportesMapa";
 import { colorDe, EVENTO_PALETA } from "@/lib/paleta";
 import { horaSantiago } from "@/lib/transporte";
 import type { MapLibre } from "../map/maplibre";
+import s from "./sala.module.css";
 
 const SOURCE = "reportes-mapa";
 const VACIA = { type: "FeatureCollection", features: [] };
@@ -96,10 +97,11 @@ export function useCapaReportes(reportes: ReporteMapa[], visible: boolean, onSel
       const r = refs.current.reportes.find((r) => r.id === e.features?.[0]?.properties?.id);
       if (!r) return;
       const el = document.createElement("div");
+      el.className = s.reportePopup;
       const titulo = document.createElement("b");
       titulo.textContent = `${r.simulado ? "SIMULADO · " : ""}${r.titulo}`;
       const captura = document.createElement("span");
-      captura.textContent = `${r.fuente} · ${new Intl.DateTimeFormat("es-CL", { timeZone: "America/Santiago", day: "numeric", month: "short" }).format(new Date(r.ts))}, ${horaSantiago(r.ts)}`;
+      captura.textContent = `Fuente: ${r.fuente} · ${new Intl.DateTimeFormat("es-CL", { timeZone: "America/Santiago", day: "numeric", month: "short" }).format(new Date(r.ts))}, ${horaSantiago(r.ts)} Santiago`;
       const nota = document.createElement("span");
       nota.textContent = `${r.ubicacion}. Último reporte recibido, no confirma cierre del cruce.`;
       el.append(titulo, captura, nota);
@@ -107,7 +109,6 @@ export function useCapaReportes(reportes: ReporteMapa[], visible: boolean, onSel
         const boton = document.createElement("button");
         boton.type = "button";
         boton.textContent = "Ver prioridad de la rejilla →";
-        boton.style.cssText = "margin-top:8px;text-decoration:underline;text-align:left;color:inherit";
         boton.onclick = () => refs.current.onSelect(r.sumideroId!);
         el.append(boton);
       }

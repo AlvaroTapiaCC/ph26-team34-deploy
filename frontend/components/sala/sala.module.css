@@ -1718,6 +1718,19 @@
 }
 
 /* Una clave compacta y estable; el detalle de las fuentes se abre a demanda. */
+.reportePopup { display: grid; gap: 6px; padding-right: 8px; }
+.reportePopup > span { display: block; }
+.reportePopup > button {
+  min-height: 36px;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--principal-suave);
+  color: var(--secundario);
+  text-align: left;
+  font-weight: 650;
+}
+.reportePopup > button:hover { background: color-mix(in srgb, var(--principal) 32%, var(--surface)); }
 .lecturaMapa {
   position: absolute;
   bottom: 14px;
