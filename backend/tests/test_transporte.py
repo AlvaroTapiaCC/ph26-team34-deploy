@@ -81,6 +81,39 @@ def test_una_observacion_posterior_sin_agua_apaga_la_cadena_en_esa_rejilla():
     assert {p["sumidero_id"] for p in agua} == {"r1"}
 
 
+# Cadena A → B → C dentro de 150 m (revisión de #136): r1 junto al paradero B, r3 junto a C.
+# El mapa (frontend/lib/cadenas.test.ts) prueba el mismo caso con la misma regla.
+CADENA_CORTA = StreetChain("flujo:r1-corta", ["r1", "r2", "r3"], [0.0, 50.0, 120.0])
+
+
+def test_sin_observacion_calle_abajo_el_agua_llega_a_la_tercera_rejilla():
+    agua = {p["sumidero_id"]: p for p in svc.puntos_con_agua([obs("r1", "cuneta")], [CADENA_CORTA], COORDS, 150)}
+    assert agua["r3"]["via"] == "calle_abajo" and agua["r3"]["calle_abajo_m"] == 120
+    r = calcular([obs("r1", "cuneta")], chains=(CADENA_CORTA,))
+    assert {e["id"] for e in r["expuestos"]} == {"B", "C"}
+
+
+def test_una_rejilla_seca_corta_el_agua_inferida_calle_abajo():
+    # A con agua, B seca, C sin observación: ni B ni C quedan con agua inferida desde A
+    ultimas = [obs("r1", "cuneta"), obs("r2", "sin_agua")]
+    agua = svc.puntos_con_agua(ultimas, [CADENA_CORTA], COORDS, 150)
+    assert {p["sumidero_id"] for p in agua} == {"r1"}
+    assert [e["id"] for e in calcular(ultimas, chains=(CADENA_CORTA,))["expuestos"]] == ["B"]
+
+
+def test_la_rejilla_tras_la_seca_se_marca_por_otra_cadena_que_no_pasa_por_ella():
+    atajo = StreetChain("flujo:r1-r3", ["r1", "r3"], [0.0, 100.0])
+    agua = svc.puntos_con_agua([obs("r1", "cuneta"), obs("r2", "sin_agua")], [CADENA_CORTA, atajo], COORDS, 150)
+    por_id = {p["sumidero_id"]: p for p in agua}
+    assert set(por_id) == {"r1", "r3"} and por_id["r3"]["calle_abajo_m"] == 100
+
+
+def test_la_rejilla_tras_la_seca_con_agua_propia_sigue_expuesta():
+    agua = svc.puntos_con_agua([obs("r1", "cuneta"), obs("r2", "sin_agua"), obs("r3", "cuneta")],
+                               [CADENA_CORTA], COORDS, 150)
+    assert {p["sumidero_id"]: p["via"] for p in agua} == {"r1": "observado", "r3": "observado"}
+
+
 # --- R3: faltante no es un valor válido ----------------------------------------------------
 def test_sin_observaciones_no_hay_expuestos():
     assert calcular([])["expuestos"] == []

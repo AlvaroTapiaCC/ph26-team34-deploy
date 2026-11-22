@@ -56,6 +56,8 @@ function evidenciaVigente(observaciones: ObservacionPublica[], ahora: number, vi
   return { obstruccion, agua };
 }
 
+// Recorre la red calle abajo desde cada origen activo hasta `limite` metros. Un tramo que
+// `ignoraTramo` descarta corta el recorrido: no se pinta ni se sigue más allá de él.
 function tramosAguasAbajo(
   origenes: Map<string, Evidencia>,
   salidas: Map<string, Tramo[]>,
@@ -105,6 +107,9 @@ export function capaCadenas(
 
   const { obstruccion, agua } = evidenciaVigente(observaciones, ahora, vigenciaAguaH);
   const bajoObstruccion = tramosAguasAbajo(obstruccion, salidas, Infinity);
+  // Una rejilla observada seca corta el agua inferida desde calle arriba: ni ella ni las
+  // siguientes se marcan por ese origen. Es la regla de puntos_con_agua en
+  // backend/app/services/transporte.py; el caso A → B → C está en lib/cadenas.test.ts.
   const bajoAgua = tramosAguasAbajo(
     agua, salidas, alcanceAguaM,
     ({ properties }) => agua.get(properties.hasta)?.activa === false,

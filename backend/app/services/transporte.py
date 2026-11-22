@@ -6,7 +6,8 @@ la prioridad de la zona.
 
 Dos niveles que no se mezclan (lo observado manda sobre lo estimado):
 - **expuesto:** hay agua observada (nivel `cuneta` o más) a menos de `radio_m` del paradero,
-  en la rejilla observada o calle abajo de ella en la misma cadena. La causa dice cuál
+  en la rejilla observada o calle abajo de ella en la misma cadena, hasta `aguas_abajo_m` o
+  hasta la primera rejilla observada seca, lo que ocurra antes. La causa dice cuál
   observación lo provocó y si el punto es el observado o uno inferido calle abajo.
 - **en_riesgo:** solo hay prioridad alta cerca: una de las `riesgo_top_n` rejillas de mayor
   prioridad de la zona (el mismo criterio con que el despacho elige candidatas, #32).
@@ -128,8 +129,11 @@ def puntos_con_agua(
     """Rejillas con agua: las observadas y las de calle abajo en su cadena.
 
     `ultimas`: la última observación de agua vigente de cada rejilla (incluye `sin_agua`).
-    Una rejilla cuya propia última observación dice `sin_agua` no se marca por la cadena:
-    lo observado ahí manda sobre lo inferido.
+    Una rejilla cuya propia última observación dice `sin_agua` no se marca por la cadena y
+    corta el recorrido: lo observado ahí manda sobre lo inferido, y el agua de calle arriba no
+    se infiere más allá de un punto observado seco. Las rejillas siguientes solo se marcan con
+    agua observada en ellas o en otra cadena que no pase por la seca. El mapa de cadenas
+    (`frontend/lib/cadenas.ts`) aplica la misma regla.
     """
     ultimas = list(ultimas)
     secas = {u["sumidero_id"] for u in ultimas if u["nivel"] == "sin_agua"}
@@ -153,7 +157,9 @@ def puntos_con_agua(
                 if d > aguas_abajo_m:
                     break
                 sid = ch.sumidero_ids[j]
-                if sid in secas or sid not in coords:
+                if sid in secas:
+                    break  # lo observado seco corta el agua inferida calle abajo de esa rejilla
+                if sid not in coords:
                     continue
                 prev = puntos.get(sid)
                 if prev is not None and (prev["via"] == "observado" or prev["calle_abajo_m"] <= d):
