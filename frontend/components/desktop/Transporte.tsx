@@ -85,7 +85,7 @@ function Expuesto({ p, activo, onSelect }: { p: ParaderoExpuesto; activo: boolea
             <span className="tp__dir">{sentidoTexto(s)}</span>
             {s.alternativo ? (
               <span className="tp__alt">
-                ↪ {partirNombre(s.alternativo.nombre).nombre} · {s.alternativo.distancia_m} m a pie ({s.alternativo.en_secuencia})
+                ↪ {partirNombre(s.alternativo.nombre).nombre} · {s.alternativo.distancia_m} m en línea recta ({s.alternativo.en_secuencia})
                 {s.alternativo.en_riesgo && <span className="tp__badge tp__badge--riesgo">en riesgo</span>}
               </span>
             ) : (
