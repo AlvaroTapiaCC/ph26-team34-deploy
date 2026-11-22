@@ -1,53 +1,44 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
-import { datosDemo, DEMO_SUMIDERO, DURACION_DEMO, PASOS_DEMO, pasoDemo } from "./demo.ts";
+import { capasDemo, datosDemo, DEMO_SUMIDERO, HORAS_DEMO, PASOS_DEMO } from "./demo.ts";
 
-test("el guion pasa de #4 a #1 antes de cambiar la propuesta de ruta", () => {
-  const antes = datosDemo(0);
-  const foto = datosDemo(1);
-  const despacho = datosDemo(2);
-  assert.equal(antes.durante[3].sumidero_id, DEMO_SUMIDERO);
-  assert.equal(foto.durante[0].sumidero_id, DEMO_SUMIDERO);
-  assert.equal(foto.observaciones[0].prioridad?.antes?.rank, 4);
-  assert.equal(foto.observaciones[0].prioridad?.despues?.rank, 1);
-  assert.deepEqual(foto.ruta, antes.ruta);
-  assert.equal(despacho.ruta.misiones[0].sumidero_id, DEMO_SUMIDERO);
-  assert.equal(despacho.observaciones[0].despachos?.[0].siguiente_despues, despacho.ruta.misiones[0].nombre);
+test("la reconstrucción usa 562 rejillas y dos cortes horarios reales de octubre", () => {
+  const antes = datosDemo(0), lluvia = datosDemo(1);
+  assert.equal(antes.inicial.length, 562);
+  assert.equal(antes.hora.hora_utc, "2026-10-07T21:00:00Z");
+  assert.equal(lluvia.hora.hora_utc, "2026-10-08T20:00:00Z");
+  assert.equal(lluvia.hora.lluvia_mm, 6.4);
+  assert.equal(HORAS_DEMO.length, 72);
+  assert.notDeepEqual(antes.durante, lluvia.durante);
+  assert.equal(antes.durante.find((p) => p.sumidero_id === DEMO_SUMIDERO)?.rank, 12);
+  assert.equal(lluvia.durante.find((p) => p.sumidero_id === DEMO_SUMIDERO)?.rank, 18);
 });
 
-test("la exposición aparece con el agua y el alternativo sigue al expuesto en el mismo servicio/sentido GTFS", () => {
-  assert.equal(datosDemo(2).transporte.expuestos.length, 0);
-  const { transporte } = datosDemo(3);
-  const p = transporte.expuestos[0];
-  assert.equal(transporte.evidencia_agua?.[0].sumidero_id, p.causa.sumidero_id);
-  const s = p.servicios[0];
-  const gtfs = JSON.parse(readFileSync(new URL("../../backend/data/transporte_mut.json", import.meta.url), "utf8"));
-  const recorrido = gtfs.recorridos.find((r: { servicio: string; sentido: string }) => r.servicio === s.servicio && r.sentido === s.sentido);
-  assert.equal(recorrido.paraderos[recorrido.paraderos.indexOf(p.id) + 1], s.alternativo?.id);
-  const alternativo = gtfs.paraderos.find((a: { id: string }) => a.id === s.alternativo?.id);
-  assert.ok(Math.abs(alternativo.lon - s.alternativo!.lon) < 0.000001);
-  assert.ok(Math.abs(alternativo.lat - s.alternativo!.lat) < 0.000001);
-});
-
-test("el detalle de la foto conserva su evidencia y la descomposición del puntaje", () => {
-  const { durante, observaciones } = datosDemo(1);
-  const p = durante.find((r) => r.sumidero_id === DEMO_SUMIDERO)!;
+test("la foto simulada cambia #18 a #1 usando la fórmula y después la siguiente parada", () => {
+  const lluvia = datosDemo(1), foto = datosDemo(2), ruta = datosDemo(3);
+  const p = foto.durante[0];
+  assert.equal(p.sumidero_id, DEMO_SUMIDERO);
   assert.equal(p.detalle?.fuente_p, "foto");
-  assert.equal(p.p_ef, p.p_obs);
-  assert.ok(p.c != null);
+  assert.equal(p.p_obs, .95);
   assert.equal(p.prioridad, p.p_ef! * p.c!);
-  assert.equal(observaciones[0].prioridad?.despues?.prioridad, p.prioridad);
+  assert.equal(foto.observaciones[0].prioridad?.antes?.rank, 18);
+  assert.equal(foto.observaciones[0].prioridad?.despues?.rank, 1);
+  assert.deepEqual(foto.ruta.misiones, lluvia.ruta.misiones);
+  assert.equal(ruta.ruta.misiones[0].sumidero_id, DEMO_SUMIDERO);
+  assert.equal(ruta.ruta.geojson, null); // No línea recta presentada como ruta vial.
 });
 
-test("repetir produce el mismo escenario sin contaminar el ranking inicial", () => {
+test("cada paso restablece solo las capas útiles, sin contaminar el estado inicial", () => {
   const inicial = JSON.stringify(datosDemo(0));
   for (let i = 0; i < PASOS_DEMO.length; i++) {
-    const d = datosDemo(i);
+    const d = datosDemo(i), capas = capasDemo(i);
     assert.ok(d.durante.every((p) => p.is_simulated));
-    assert.ok(d.observaciones.every((o) => o.is_simulated));
-    assert.equal(pasoDemo(PASOS_DEMO[i].segundo), i);
+    assert.equal(capas.transporte, i >= 4);
+    assert.equal(capas.reportes, i >= 2);
+    assert.equal(capas.infra, false);
+    assert.equal(capas.agua, i === 1);
   }
+  assert.equal(datosDemo(3).transporte.evidencia_agua?.length, 0);
+  assert.equal(datosDemo(4).transporte.evidencia_agua?.length, 1);
   assert.equal(JSON.stringify(datosDemo(0)), inicial);
-  assert.equal(pasoDemo(DURACION_DEMO), PASOS_DEMO.length - 1);
 });

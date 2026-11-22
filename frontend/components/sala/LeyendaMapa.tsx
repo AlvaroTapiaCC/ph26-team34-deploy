@@ -5,7 +5,7 @@ import s from "./sala.module.css";
 export type CapasMapa = { agua: boolean; calor: boolean; cadenas: boolean; transporte: boolean; limites: boolean; catastro: boolean; infra: boolean; colectores: boolean; criticos: boolean; reportes: boolean; ruta: boolean };
 
 export default function LeyendaMapa({ capas, durante, nReportes, modoAgua }: { capas: CapasMapa; durante: boolean; nReportes: number; modoAgua: "real" | "simulada" }) {
-  const { antes, durante: rankingDurante, clima, observaciones, transporte, ruta, cuadrilla } = useSala();
+  const { antes, durante: rankingDurante, clima, observaciones, transporte, ruta, cuadrilla, demo } = useSala();
   const ranking = durante ? rankingDurante : antes;
   return (
     <details className={s.lecturaMapa} aria-label="Cómo leer el mapa">
@@ -20,7 +20,7 @@ export default function LeyendaMapa({ capas, durante, nReportes, modoAgua }: { c
       <div className={s.lecturaContenido}>
       {(capas.catastro || capas.calor) && <>
       <h2>Prioridad de limpieza</h2>
-      <p>{ranking.estado === "cargando" ? "Consultando prioridades…" : `${ranking.filas.filter((p) => p.prioridad != null).length} rejillas priorizadas · ${ranking.estado === "error" ? "sin actualizar" : "zona MUT"}`}</p>
+      <p>{ranking.estado === "cargando" ? "Consultando prioridades…" : `${ranking.filas.filter((p) => p.prioridad != null).length} rejillas priorizadas · ${demo.activo ? "San Carlos y entorno · reconstrucción" : ranking.estado === "error" ? "sin actualizar" : "zona MUT"}`}</p>
       <ul className={s.clavesMapa}>
         <li><i className={s.lgAlta} />Alta</li>
         <li><i className={s.lgMedia} />Media</li>
@@ -43,7 +43,7 @@ export default function LeyendaMapa({ capas, durante, nReportes, modoAgua }: { c
       <details className={s.fuentesMapa}>
         <summary>Capas y fuentes</summary>
         <p><b>Rejillas · SIALL / DOH.</b> Catastro parcial de {CATASTRO.total.toLocaleString("es-CL")} rejillas en tres comunas. Fuera del ranking no significa riesgo bajo.</p>
-        <p><b>Prioridad calculada.</b> {ranking.estado === "error" ? "Consulta fallando; puede quedar el último dato recibido." : ranking.estado === "cargando" ? "Consultando API…" : "Ranking recibido desde la API."} Relativa al escenario: 10 % alta, siguiente 20 % media; si todos los puntajes coinciden, baja.</p>
+        <p><b>Prioridad calculada.</b> {demo.activo ? "Fórmula congelada aplicada retrospectivamente; datos locales." : ranking.estado === "error" ? "Consulta fallando; puede quedar el último dato recibido." : ranking.estado === "cargando" ? "Consultando API…" : "Ranking recibido desde la API."} Relativa al escenario: 10 % alta, siguiente 20 % media; si todos los puntajes coinciden, baja.</p>
         <p><b>Reportes.</b> {observaciones.estado === "error" ? "Consulta fallando; datos sin actualizar." : observaciones.estado === "cargando" ? "Consultando…" : "Conectados."} Último por lugar en 72 h, no un cierre vial confirmado. Cada reporte simulado lleva su rótulo.</p>
         <p><b>Open-Meteo.</b> {clima.datos ? `${clima.datos.vigente ? "Pronóstico disponible" : "Último pronóstico, sin actualizar"} · ${horaSantiago(clima.datos.hora_dato_utc)} Santiago.` : "Sin pronóstico disponible."} El escurrimiento es un modelo, no agua observada.</p>
         {capas.transporte && <p><b>GTFS · DTPM.</b> {transporte.estado === "error" ? "Exposición sin actualizar." : "Trazados y exposición calculada."} Las líneas no son desvíos: Red debe confirmarlos. Caminata punteada: conexión en línea recta, no ruta peatonal.</p>}

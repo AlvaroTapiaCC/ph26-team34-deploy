@@ -10,7 +10,7 @@ import { getCuadrillas, getRuta, type Cuadrilla, type RutaCuadrilla } from "./cu
 import type { Prioridad } from "./data";
 import { prioDe } from "./real";
 import { useExpuestos, type EstadoConsulta, type Expuestos } from "./transporte";
-import { datosDemo, DURACION_DEMO, PASOS_DEMO, pasoDemo } from "./demo";
+import { datosDemo, PASOS_DEMO } from "./demo";
 
 export type Fila = ApiRankingItem & { puesto: number; prio: Prioridad };
 
@@ -23,7 +23,7 @@ function aFilas(items: ApiRankingItem[] | undefined): Fila[] {
 const getClimaSala = () => getClima({ reintentos: 0 });
 
 interface Sala {
-  demo: { activo: boolean; corriendo: boolean; segundo: number; paso: number; iniciar: () => void; pausar: () => void; siguiente: () => void; salir: () => void };
+  demo: { activo: boolean; paso: number; iniciar: () => void; anterior: () => void; siguiente: () => void; salir: () => void };
   antes: { filas: Fila[]; estado: EstadoConsulta };
   durante: { filas: Fila[]; estado: EstadoConsulta; esInicial: boolean };
   observaciones: { datos: ObservacionPublica[]; estado: EstadoConsulta };
@@ -41,27 +41,21 @@ const Ctx = createContext<Sala | null>(null);
 
 export function SalaProvider({ children }: { children: ReactNode }) {
   const [activo, setActivo] = useState(false);
-  const [corriendo, setCorriendo] = useState(false);
-  const [segundo, setSegundo] = useState(0);
-  const paso = pasoDemo(segundo);
+  const [paso, setPaso] = useState(0);
+  const iniciar = useCallback(() => { setPaso(0); setActivo(true); }, []);
+  const anterior = useCallback(() => setPaso((p) => Math.max(0, p - 1)), []);
+  const siguiente = useCallback(() => setPaso((p) => Math.min(PASOS_DEMO.length - 1, p + 1)), []);
+  const salir = useCallback(() => { setActivo(false); setPaso(0); }, []);
+  const demo = useMemo(() => ({ activo, paso, iniciar, anterior, siguiente, salir }), [activo, paso, iniciar, anterior, siguiente, salir]);
+  const [transporteDemo, setTransporteDemo] = useState<Expuestos | null>(null);
   useEffect(() => {
-    if (!activo || !corriendo) return;
-    let anterior = performance.now();
-    const t = setInterval(() => {
-      const ahora = performance.now();
-      const delta = (ahora - anterior) / 1000;
-      anterior = ahora;
-      setSegundo((s) => Math.min(DURACION_DEMO, s + delta));
-    }, 250);
-    return () => clearInterval(t);
-  }, [activo, corriendo]);
-  useEffect(() => { if (segundo >= DURACION_DEMO) setCorriendo(false); }, [segundo]);
-  const iniciar = useCallback(() => { setSegundo(0); setActivo(true); setCorriendo(true); }, []);
-  const pausar = useCallback(() => setCorriendo((c) => !c), []);
-  const siguiente = useCallback(() => setSegundo((s) => PASOS_DEMO.find((p) => p.segundo > s)?.segundo ?? DURACION_DEMO), []);
-  const salir = useCallback(() => { setActivo(false); setCorriendo(false); setSegundo(0); }, []);
-  const demo = useMemo(() => ({ activo, corriendo, segundo, paso, iniciar, pausar, siguiente, salir }), [activo, corriendo, segundo, paso, iniciar, pausar, siguiente, salir]);
-  const simulado = useMemo(() => datosDemo(paso), [paso]);
+    if (!activo) return;
+    let vigente = true;
+    fetch("/data/demo-san-carlos-transporte.json").then((r) => r.ok ? r.json() : null)
+      .then((datos: Expuestos | null) => { if (vigente) setTransporteDemo(datos); }).catch(() => {});
+    return () => { vigente = false; };
+  }, [activo]);
+  const simulado = useMemo(() => datosDemo(paso, transporteDemo), [paso, transporteDemo]);
   const simAntes = useMemo(() => aFilas(simulado.inicial), [simulado.inicial]);
   const simDurante = useMemo(() => aFilas(simulado.durante), [simulado.durante]);
   const rAntes = useConsultaPeriodica(activo ? null : getRankingInicial, "ranking");
@@ -94,7 +88,16 @@ export function SalaProvider({ children }: { children: ReactNode }) {
       cuadrillas: [simulado.cuadrilla], estadoCuadrillas: "ok", cuadrilla: simulado.cuadrilla,
       elegirCuadrilla: () => {}, ruta: simulado.ruta, estadoRuta: "ok",
       transporte: { datos: simulado.transporte, calculadoAt: simulado.transporte.calculado_at, estado: "ok" },
-      clima: { datos: null, estado: "ok" },
+      clima: { datos: {
+        modo: simulado.hora.modo as ApiClima["modo"], plazo: null,
+        inicio_lluvia_pronosticado_utc: simulado.hora.inicio_lluvia_pronosticado_utc,
+        clima: simulado.hora.clima, lluvia_acum_24h_mm: simulado.hora.lluvia_acum_24h_mm,
+        racha_max_6h_kmh: simulado.hora.racha_max_6h_kmh,
+        lluvia_pronosticada_prox_24h_mm: simulado.hora.lluvia_pronosticada_prox_24h_mm,
+        lluvia_pronosticada_48h_mm: null, racha_max_pronosticada_48h_kmh: null,
+        hora_dato_utc: simulado.hora.hora_utc, vigente: false, consultado_utc: null,
+        fuente: { nombre: "Open-Meteo · reconstrucción histórica", url: "https://open-meteo.com/en/docs/previous-runs-api", celda_latlon: [-33.418, -70.541], licencia: "CC BY 4.0" },
+      }, estado: "ok" },
     } : ({
       demo,
       antes: { filas: filasAntes, estado: rAntes.estado },
