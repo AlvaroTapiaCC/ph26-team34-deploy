@@ -229,9 +229,6 @@ function Inicio({ activo, mapaListo }: { activo: boolean; mapaListo: boolean }) 
           <Link href="/central/durante" className={s.ctaSec}>
             Ir a Durante la lluvia
           </Link>
-          <Link href="/explorar" className={s.ctaSec}>
-            Explorar las 3 comunas
-          </Link>
           <span className={s.mapaEstado} data-listo={mapaListo}>
             <i aria-hidden />
             {mapaListo ? "Mapa listo" : "Preparando el mapa…"}
