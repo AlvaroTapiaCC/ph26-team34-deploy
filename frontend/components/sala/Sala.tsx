@@ -10,7 +10,7 @@ import * as Select from "@radix-ui/react-select";
 import * as Tabs from "@radix-ui/react-tabs";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePulso, type ObservacionPublica } from "@/lib/central";
-import type { Cuadrilla } from "@/lib/cuadrilla";
+import { urlGoogleMaps, type Cuadrilla } from "@/lib/cuadrilla";
 import type { LngLat } from "@/lib/data";
 import { boundsDe } from "@/lib/real";
 import { APORTES, dos, nombreFila, puntaje, SalaProvider, useSala, type Fila } from "@/lib/sala";
@@ -27,7 +27,7 @@ import { fuenteReportes, fuenteSimulada } from "@/lib/flujo/fuentes";
 import { useFlujo, type Flujo } from "@/lib/flujo/useFlujo";
 import { precargarMapLibre } from "../map/maplibre";
 import { Logo } from "../ui";
-import { DEMO_PARADERO, DEMO_SERVICIO, DEMO_SUMIDERO } from "@/lib/demo";
+import { capasDemo, datosDemo, DEMO_CENTRO, DEMO_SUMIDERO } from "@/lib/demo";
 import { BotonDemo, GuionDemo } from "./Demo";
 import s from "./sala.module.css";
 
@@ -163,7 +163,7 @@ function Barra({ vista }: { vista: Vista }) {
               </Link>
             ))}
           </nav>
-          <span className={s.zona}>Zona MUT · Providencia y Las Condes</span>
+          <span className={s.zona}>{demo.activo ? "San Carlos y entorno · Las Condes" : "Zona MUT · Providencia y Las Condes"}</span>
           <span className={s.barraDer}>
             {demo.activo ? <span className={s.chipSim}>Demo simulada · sin conexión a producción</span> : <><BotonDemo /><Pulso /><Reloj /></>}
           </span>
@@ -412,7 +412,7 @@ function EncabezadoDurante() {
 }
 
 function QueCambio({ nuevo }: { nuevo: boolean }) {
-  const { observaciones, durante, cuadrilla } = useSala();
+  const { observaciones, durante, cuadrilla, demo } = useSala();
   const o = observaciones.datos[0] ?? null;
   if (!o)
     return (
@@ -455,7 +455,7 @@ function QueCambio({ nuevo }: { nuevo: boolean }) {
       </p>
       <div className={s.antesDespues}>
         <div>
-          <span>Puesto en la zona MUT</span>
+          <span>{demo.activo ? "Puesto en San Carlos y entorno" : "Puesto en la zona MUT"}</span>
           <p>
             <s>{puestoAntes ? `#${puestoAntes}` : "Fuera del plan"}</s> <i aria-hidden>→</i> <b>{punto ? `#${punto.puesto}` : "Sin dato"}</b>
             <small>
@@ -557,6 +557,7 @@ function Misiones() {
       {demo.activo ? <p className={s.hint}>Propuesta simulada en este navegador. No se envió al celular de una cuadrilla.</p> : <Link className={s.btnSec} href={`/cuadrilla?id=${encodeURIComponent(cuadrilla.id)}`} target="_blank">
         Abrir el celular de la cuadrilla <i aria-hidden>↗</i>
       </Link>}
+      {demo.activo && !!ruta?.misiones.length && <a className={s.btnSec} href={urlGoogleMaps(ruta.misiones.flatMap((m) => m.lat != null && m.lon != null ? [{ lat: m.lat, lon: m.lon }] : []))} target="_blank" rel="noreferrer">Abrir ruta en Google Maps ↗</a>}
     </div>
   );
 }
@@ -606,7 +607,7 @@ const Mapa = memo(function Mapa({
   setModoAgua: (m: ModoAgua) => void;
   sinLluvia: boolean;
 }) {
-  const { observaciones, transporte, ruta } = useSala();
+  const { observaciones, transporte, ruta, demo } = useSala();
   const [tresD, setTresD] = useState(false);
   const [menu, setMenu] = useState(false);
   const durante = vista === "durante";
@@ -619,7 +620,8 @@ const Mapa = memo(function Mapa({
     const reloj = setInterval(() => setAhoraReportes(Date.now()), 30_000);
     return () => clearInterval(reloj);
   }, []);
-  const reportes = useMemo(() => reportesParaMapa(observaciones.datos, filas, ahoraReportes), [observaciones.datos, filas, ahoraReportes]);
+  const horaReportes = demo.activo ? Date.parse(datosDemo(demo.paso).hora.hora_utc) : ahoraReportes;
+  const reportes = useMemo(() => reportesParaMapa(observaciones.datos, filas, horaReportes), [observaciones.datos, filas, horaReportes]);
   const incidentes = useCapaReportes(reportes, capas.reportes && durante, onSel);
   const contexto = useCapaContexto({ infra: capas.infra && !simulacion, colectores: capas.colectores && !simulacion, criticos: capas.criticos && !simulacion });
   const recorridos = useRecorridos(verTransporte);
@@ -724,7 +726,7 @@ const Mapa = memo(function Mapa({
               {menu && <FiltrosMapa capas={capas} alternar={alternar} durante={durante} aguaRealSinLluvia={capas.agua && modoAgua === "real" && sinLluvia} />}
             </span>
           )}
-          {!simulacion && capas.agua && (
+          {!demo.activo && !simulacion && capas.agua && (
             <span className={s.segmento} role="radiogroup" aria-label="Datos del agua">
               <button type="button" role="radio" aria-checked={modoAgua === "real"} className={modoAgua === "real" ? s.segOn : ""} onClick={() => setModoAgua("real")}>
                 Agua: datos reales
@@ -736,6 +738,11 @@ const Mapa = memo(function Mapa({
           )}
           {capas.cadenas && !simulacion && cadenas.estado === "cargando" && <span className={s.chipInfo}>Cargando cadenas…</span>}
         </div>
+        {demo.activo && demo.paso <= 1 && <div className={s.demoMapa}>
+          <span>San Carlos · {demo.paso === 0 ? "7 oct · 18:00" : "8 oct · 17:00"}</span>
+          <strong>{datosDemo(demo.paso).hora.lluvia_pronosticada_mm.toLocaleString("es-CL")} <small>previstos</small> → {datosDemo(demo.paso).hora.lluvia_mm.toLocaleString("es-CL")} <small>históricos · mm/h</small></strong>
+          <span>{demo.paso === 0 ? "Color: prioridad de limpieza reconstruida" : "Agua: escurrimiento modelado con lluvia histórica; no huella observada"}</span>
+        </div>}
         {!simulacion && (
           <LeyendaMapa capas={capas} durante={durante} nReportes={reportes.length} modoAgua={modoAgua} />
         )}
@@ -1024,23 +1031,24 @@ function SalaInterior({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!demoActivo) return;
     router.replace(demoPaso === 0 ? "/central/antes" : "/central/durante");
-    setPestana(demoPaso >= 3 ? "transporte" : demoPaso === 2 ? "cuadrilla" : "prioridad");
-    setSel(demoPaso >= 1 ? DEMO_SUMIDERO : null);
-    setParadero(demoPaso >= 3 ? DEMO_PARADERO : null);
-    setServicio(demoPaso >= 3 ? DEMO_SERVICIO : null);
-    setFoco(demoPaso >= 1 ? { coord: [-70.604457, -33.417855], siempre: true } : null);
-    setCapas({ ...CAPAS_DURANTE, agua: false });
-  }, [demoActivo, demoPaso, router]);
+    setPestana(demoPaso >= 4 ? "transporte" : demoPaso === 3 ? "cuadrilla" : "prioridad");
+    setSel(demoPaso === 2 ? DEMO_SUMIDERO : null);
+    setParadero(null);
+    setServicio(null);
+    setFoco(demoPaso === 2 ? { coord: DEMO_CENTRO, siempre: true } : null);
+    setCapas(capasDemo(demoPaso));
+  }, [demoActivo, demoPaso, router, vista]);
 
   // Las capas por defecto cambian con la fase (Durante muestra transporte); el usuario puede ajustarlas después
   useEffect(() => {
+    if (demoActivo) return;
     setCapas(vista === "durante" ? CAPAS_DURANTE : CAPAS_ANTES);
-  }, [vista]);
+  }, [vista, demoActivo]);
 
   // Motor de flujo: solo pide la red (por teselas: lo visible y lo que está aguas arriba) y dibuja en la vista Simulación
   const puntosFlujo = useMemo(() => sala.antes.filas.map((p) => ({ id: p.sumidero_id, nombre: nombreFila(p), coord: [p.lon, p.lat] as LngLat })), [sala.antes.filas]);
   const simulando = vista === "simulacion";
-  const aguaEnMapa = !demoActivo && (simulando || ((vista === "antes" || vista === "durante") && capas.agua));
+  const aguaEnMapa = simulando || ((vista === "antes" || vista === "durante") && capas.agua);
   const aguaReal = !simulando && modoAgua === "real";
   const flujoRef = useRef<Flujo | null>(null);
   // Agua simulada en Antes/Durante: supuesto fijo de 1 de cada 5 rejillas tapadas (siempre las mismas), para ver dónde no cabe
@@ -1048,8 +1056,8 @@ function SalaInterior({ children }: { children: ReactNode }) {
   const flujo = useFlujo({
     scenario: "base",
     puntos: puntosFlujo,
-    estados: simulando ? estados : aguaReal ? SIN_ESTADOS : supuestas,
-    fuente: aguaReal ? fuenteReportes : fuenteSimulada,
+    estados: demoActivo ? SIN_ESTADOS : simulando ? estados : aguaReal ? SIN_ESTADOS : supuestas,
+    fuente: demoActivo ? fuenteSimulada : aguaReal ? fuenteReportes : fuenteSimulada,
     visible: aguaEnMapa,
     soloAgua: !simulando,
     activo: aguaEnMapa,
@@ -1078,9 +1086,9 @@ function SalaInterior({ children }: { children: ReactNode }) {
   }, [aguaEnMapa, flujo.ui.cargado]);
   useEffect(() => {
     if (!flujo.ui.cargado || simulando) return;
-    flujo.setLluvia(aguaReal ? Math.round(mmhReal * 10) / 10 : picoEscenario("base"));
+    flujo.setLluvia(demoActivo ? datosDemo(demoPaso).hora.lluvia_mm : aguaReal ? Math.round(mmhReal * 10) / 10 : picoEscenario("base"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aguaReal, mmhReal, flujo.ui.cargado, simulando]);
+  }, [demoActivo, demoPaso, aguaReal, mmhReal, flujo.ui.cargado, simulando]);
 
   const elegir = useCallback(
     (id: string) => {
@@ -1106,6 +1114,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
   const ultimoId = sala.observaciones.datos[0]?.id;
   const visto = useRef<string | null | undefined>(undefined);
   useEffect(() => {
+    if (demoActivo) return;
     if (visto.current === undefined) {
       if (sala.observaciones.estado !== "cargando") visto.current = ultimoId ?? null;
       return;
@@ -1122,7 +1131,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
     setNuevo(true);
     const t = setTimeout(() => setNuevo(false), 2600);
     return () => clearTimeout(t);
-  }, [ultimoId, sala.observaciones.estado, sala.observaciones.datos, sala.durante.filas, vista]);
+  }, [demoActivo, ultimoId, sala.observaciones.estado, sala.observaciones.datos, sala.durante.filas, vista]);
 
   // Modo presentación: tecla P (fuera de campos de texto)
   useEffect(() => {
