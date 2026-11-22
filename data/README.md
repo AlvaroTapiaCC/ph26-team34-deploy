@@ -111,10 +111,9 @@ La versión pública disponible de la capa 12 produjo 64 subáreas con este filt
 
 ## Reclamos de Atención Vecino (#72)
 
-`validacion/reclamos/` reúne los tickets de sumideros y anegamiento del portal de datos abiertos de Las Condes,
-agrupados por cuadra y sin domicilios. El CSV crudo, pendiente en #74, no se versiona porque trae domicilios. `pipeline/14_reclamos.py` los cruza con el ranking A
-del sector del replay de julio (`prediccion_replay_julio.csv`). El [README](validacion/reclamos/README.md) explica la fuente,
-la licencia pendiente y los resultados.
+`validacion/reclamos/` contiene totales y métricas por evento y sector para los reportes municipales de sumideros y anegamientos.
+`pipeline/14_reclamos.py` procesa el CSV con domicilios fuera del repositorio y compara el evento de julio con el ranking A
+de `prediccion_replay_julio.csv`. El [README](validacion/reclamos/README.md) explica la fuente, la licencia pendiente y los resultados.
 
 ## Obsoleto
 
