@@ -67,7 +67,8 @@ export default async function ValidacionPage() {
       <header className={styles.header}>
         <Link href="/" aria-label="Drena, inicio"><Logo /></Link>
         <nav className={styles.nav} aria-label="Vistas de la central">
-          <Link href="/">Antes</Link>
+          <Link href="/">Inicio</Link>
+          <Link href="/central/antes">Antes</Link>
           <Link href="/central/durante">Durante</Link>
           <Link href="/central/validacion" aria-current="page">Validación</Link>
         </nav>

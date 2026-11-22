@@ -15,10 +15,12 @@ export default function TopBar() {
         <Logo />
       </button>
       <nav className={nav.nav} aria-label="Vistas de la central">
-        <Link href="/" aria-current="page">
-          Antes
-        </Link>
+        <Link href="/">Inicio</Link>
+        <Link href="/central/antes">Antes</Link>
         <Link href="/central/durante">Durante</Link>
+        <Link href="/explorar" aria-current="page">
+          Explorar comunas
+        </Link>
         <Link href="/central/validacion">Validación</Link>
       </nav>
       <div className="topbar__spacer" />

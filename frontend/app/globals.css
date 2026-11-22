@@ -2,9 +2,9 @@
 :root {
   /* paleta:inicio — generado por scripts/paleta.mjs desde lib/paleta.json (#131). No editar a mano. */
   /* Editables (?paleta=1) */
-  --principal: #3fa3a1; /* Principal */
-  --secundario: #eef0f2; /* Texto */
-  --fondo: #15171b; /* Fondo */
+  --principal: #2cc5c0; /* Principal */
+  --secundario: #f2f5f7; /* Texto */
+  --fondo: #0c0e11; /* Fondo */
   /* Derivados de los editables */
   --surface: color-mix(in srgb, var(--fondo) 92%, var(--secundario)); /* Tarjeta */
   --surface-2: color-mix(in srgb, var(--fondo) 86%, var(--secundario)); /* Tarjeta secundaria */
@@ -23,11 +23,11 @@
   --agua-suave: color-mix(in srgb, var(--agua) 12%, var(--surface)); /* Agua suave */
   /* Fijos: tienen significado propio (peligro, correcto, advertencia, transporte) */
   --sobre-color: #15171b; /* Texto sobre color fuerte */
-  --senal-alta: #f5a524; /* Prioridad alta (señal ámbar) */
-  --senal-media: #c9b98f; /* Prioridad media (arena) */
+  --senal-alta: #2cc5c0; /* Prioridad alta (calipso) */
+  --senal-media: #7fa9ae; /* Prioridad media (calipso apagado) */
   --danger: #ff5d52; /* Peligro */
   --ok: #3ccf7a; /* Correcto */
-  --aviso: #ffb547; /* Advertencia */
+  --aviso: #e8c37a; /* Advertencia */
   --agua: #5b9bff; /* Agua (poco caudal) */
   --agua-hondo: #2e64c9; /* Agua (mucho caudal) */
   --agua-brillo: #a8c8ff; /* Brillo del agua */

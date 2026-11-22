@@ -14,6 +14,8 @@ export interface MapPin {
   faded?: boolean;
   ring?: "flood"; // Durante: ondas del punto anegado
   onClick?: () => void;
+  nombre?: string; // globo al pasar el mouse
+  sub?: string;
 }
 
 export interface MapLabel {
@@ -31,6 +33,7 @@ export interface MapPunto {
   coord: LngLat;
   prio: Prioridad;
   nombre?: string;
+  sub?: string;
 }
 
 export interface MapParadero {
@@ -56,6 +59,9 @@ export interface DrenaMapProps {
   tresD?: boolean;
   chain?: LngLat[] | null; // Durante: cadena aguas abajo del punto anegado
   celda?: { poly: LngLat[]; rayos: LngLat[]; link: [LngLat, LngLat] } | null; // Durante: celda convectiva ilustrativa
+  resaltado?: string | null; // id de pin o punto a resaltar (p. ej. la fila bajo el mouse en la lista)
+  onHover?: (id: string | null) => void; // mouse sobre un pin o punto del mapa
+  focoSiempre?: boolean; // con foco: centrar aunque ya esté a la vista (llegada de un reporte)
   foco?: LngLat | null; // centra el mapa en este punto (sin cambiar el zoom) al elegirlo en una lista
   ruta?: LngLat[][] | null; // ruta propuesta de una cuadrilla (color de acción, no de agua)
   puntos?: MapPunto[] | null; // rejillas como puntos GL, coloreados por prioridad
@@ -82,8 +88,9 @@ const COLORS: Record<string, string> = {
   anegado: "var(--danger)",
 };
 
-function pinEl(p: MapPin, size: number, alClic: () => void): HTMLElement {
+function pinEl(p: MapPin, size: number, alClic: () => void, alHover: (dentro: boolean) => void): HTMLElement {
   const el = document.createElement("div");
+  el.dataset.id = p.id;
   el.className = "pin" + (p.faded ? " pin--faded" : "") + (p.onClick ? " pin--click" : "") + (p.prio === "alta" ? " pin--tri" : "") + ` pin--${p.prio}`;
   el.style.width = el.style.height = `${size}px`;
   const fill = COLORS[p.prio];
@@ -103,6 +110,8 @@ function pinEl(p: MapPin, size: number, alClic: () => void): HTMLElement {
       alClic();
     });
   }
+  el.addEventListener("mouseenter", () => alHover(true));
+  el.addEventListener("mouseleave", () => alHover(false));
   return el;
 }
 
@@ -168,6 +177,7 @@ const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
   ["chain-halo", "line-color", "principal"],
   ["ruta-halo", "line-color", "principal"],
   ["ruta-line", "line-color", "principal"],
+  ["puntos-hover", "circle-stroke-color", "secundario"],
   ["chain-line", "line-color", "principal"],
 ];
 
@@ -175,7 +185,7 @@ function pintarMapa(map: MapLibre) {
   for (const [capa, prop, color] of COLORES_CAPAS) if (map.getLayer(capa)) map.setPaintProperty(capa, prop, colorDe(color));
   if (map.getLayer("puntos")) {
     map.setPaintProperty("puntos", "circle-color", ["match", ["get", "prio"], "alta", colorDe("prio-alta"), "media", colorDe("prio-media"), colorDe("prio-baja")]);
-    map.setPaintProperty("puntos", "circle-stroke-color", colorDe("fondo"));
+    map.setPaintProperty("puntos-brillo", "circle-color", ["match", ["get", "prio"], "alta", colorDe("prio-alta"), "media", colorDe("prio-media"), colorDe("prio-baja")]);
   }
 }
 
@@ -212,6 +222,9 @@ export default function DrenaMap(props: DrenaMapProps) {
   const markerKeys = useRef<Map<string, MapLibre>>(new Map());
   const clicks = useRef<Map<string, () => void>>(new Map());
   const rejillasCargadas = useRef(false);
+  const pinesInfo = useRef(new Map<string, { coord: LngLat; nombre?: string; sub?: string }>());
+  const globo = useRef<MapLibre>(null);
+  const hoverRef = useRef<((id: string | null, info?: { coord: LngLat; nombre?: string; sub?: string }) => void) | null>(null);
   const comunaMarkers = useRef<{ el: HTMLElement; marker: MapLibre }[]>([]);
   const unsubTema = useRef<() => void>(() => {});
   const [ready, setReady] = useState(false);
@@ -242,6 +255,11 @@ export default function DrenaMap(props: DrenaMapProps) {
           dragRotate: !!props.relieve, // en 3D se puede girar e inclinar con el botón derecho
           pitchWithRotate: !!props.relieve,
           maxPitch: 70,
+          // Fluidez: en pantallas de alta densidad el lienzo se dibuja a 1,5× como máximo (la diferencia no se nota y
+          // el costo por cuadro baja a la mitad o menos); sin copias del mundo ni fundido de teselas.
+          pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+          renderWorldCopies: false,
+          fadeDuration: 0,
         });
         if (!props.relieve) map.touchZoomRotate.disableRotation();
         mapRef.current = map;
@@ -335,13 +353,30 @@ export default function DrenaMap(props: DrenaMapProps) {
           map.addLayer({ id: "ruta-line", type: "line", source: "ruta", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 3, "line-dasharray": [2, 1.5] } });
           map.addSource("puntos", { type: "geojson", data: fc([]) });
           map.addLayer({
+            id: "puntos-hover",
+            type: "circle",
+            source: "puntos",
+            filter: ["==", ["get", "id"], ""],
+            paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 9, 16, 14], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2.5 },
+          });
+          map.addLayer({
+            id: "puntos-brillo",
+            type: "circle",
+            source: "puntos",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 9, 16, 16],
+              "circle-blur": 1,
+              "circle-opacity": ["match", ["get", "prio"], "alta", 0.55, "media", 0.35, 0.18],
+            },
+          });
+          map.addLayer({
             id: "puntos",
             type: "circle",
             source: "puntos",
             paint: {
-              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 3.5, 16, 7],
-              "circle-stroke-width": 1.5,
-              "circle-opacity": ["match", ["get", "prio"], "baja", 0.75, 1],
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 3, 16, 5.5],
+              "circle-stroke-width": 0,
+              "circle-opacity": ["match", ["get", "prio"], "baja", 0.7, 1],
             },
           });
           pintarMapa(map);
@@ -401,9 +436,9 @@ export default function DrenaMap(props: DrenaMapProps) {
     if (!ready || !props.foco) return;
     const map = mapRef.current;
     const b = map.getBounds();
-    if (b.contains(props.foco)) return;
+    if (!props.focoSiempre && b.contains(props.foco)) return;
     const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    map.easeTo({ center: props.foco, duration: reducido ? 0 : 450 });
+    map.easeTo({ center: props.foco, zoom: props.focoSiempre ? Math.max(map.getZoom(), 15.5) : map.getZoom(), duration: reducido ? 0 : 700 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, props.foco?.[0], props.foco?.[1]]);
 
@@ -421,31 +456,74 @@ export default function DrenaMap(props: DrenaMapProps) {
     set("rec", fc((props.recorridos ?? []).map(line)));
     set("caminata", fc((props.caminatas ?? []).map(line)));
     set("ruta", fc((props.ruta ?? []).map(line)));
-    set("puntos", fc((props.puntos ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, prio: p.prio, nombre: p.nombre ?? "" }, geometry: { type: "Point", coordinates: p.coord } }))));
+    set("puntos", fc((props.puntos ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, prio: p.prio, nombre: p.nombre ?? "", sub: p.sub ?? "" }, geometry: { type: "Point", coordinates: p.coord } }))));
     set("gore", fc((props.gore ?? []).map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }))));
   }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.caminatas, props.puntos, props.ruta]);
 
-  // Clic y cursor sobre los puntos GL
   const onClickPuntoRef = useRef(props.onClickPunto);
   onClickPuntoRef.current = props.onClickPunto;
+  // Globo (nombre y puntaje) y resaltado al pasar el mouse por un pin o un punto
+  const onHoverRef = useRef(props.onHover);
+  onHoverRef.current = props.onHover;
   useEffect(() => {
     if (!ready) return;
+    const ml = libRef.current;
     const map = mapRef.current;
+    globo.current = new ml.Popup({ closeButton: false, closeOnClick: false, offset: 16, className: "globo", maxWidth: "280px" });
+    hoverRef.current = (id, info) => {
+      onHoverRef.current?.(id);
+      const d = id ? (info ?? pinesInfo.current.get(id)) : null;
+      if (!id || !d?.nombre) {
+        globo.current?.remove();
+        return;
+      }
+      const el = document.createElement("div");
+      const t = document.createElement("b");
+      t.textContent = d.nombre;
+      el.appendChild(t);
+      if (d.sub) {
+        const sub = document.createElement("span");
+        sub.textContent = d.sub;
+        el.appendChild(sub);
+      }
+      globo.current.setLngLat(d.coord).setDOMContent(el).addTo(map);
+    };
     const clic = (e: MapLibre) => {
       const id = e.features?.[0]?.properties?.id;
       if (id) onClickPuntoRef.current?.(String(id));
     };
-    const entra = () => (map.getCanvas().style.cursor = onClickPuntoRef.current ? "pointer" : "");
-    const sale = () => (map.getCanvas().style.cursor = "");
+    const mueve = (e: MapLibre) => {
+      const f = e.features?.[0];
+      if (!f) return;
+      map.getCanvas().style.cursor = onClickPuntoRef.current ? "pointer" : "";
+      const pr = f.properties ?? {};
+      hoverRef.current?.(String(pr.id), { coord: f.geometry.coordinates as LngLat, nombre: pr.nombre || undefined, sub: pr.sub || undefined });
+    };
+    const sale = () => {
+      map.getCanvas().style.cursor = "";
+      hoverRef.current?.(null);
+    };
     map.on("click", "puntos", clic);
-    map.on("mouseenter", "puntos", entra);
+    map.on("mousemove", "puntos", mueve);
     map.on("mouseleave", "puntos", sale);
     return () => {
       map.off("click", "puntos", clic);
-      map.off("mouseenter", "puntos", entra);
+      map.off("mousemove", "puntos", mueve);
       map.off("mouseleave", "puntos", sale);
+      globo.current?.remove();
     };
   }, [ready]);
+
+  // Resaltado que viene de afuera (fila de la lista bajo el mouse)
+  useEffect(() => {
+    if (!ready) return;
+    const map = mapRef.current;
+    const id = props.resaltado ?? "";
+    if (map.getLayer("puntos-hover")) map.setFilter("puntos-hover", ["==", ["get", "id"], id]);
+    const raiz = ref.current?.parentElement;
+    raiz?.querySelectorAll(".pin.is-resaltado").forEach((e) => e.classList.remove("is-resaltado"));
+    if (id) raiz?.querySelector(`.pin[data-id="${CSS.escape(id)}"]`)?.classList.add("is-resaltado");
+  }, [ready, props.resaltado, props.pins]);
 
   // Visibilidad de las capas de datos reales
   useEffect(() => {
@@ -521,6 +599,7 @@ export default function DrenaMap(props: DrenaMapProps) {
       }),
     );
     clicks.current.clear();
+    pinesInfo.current.clear();
     // Paraderos bajo los pines de prioridad; el activo al final para que quede encima
     [...(props.paraderos ?? [])]
       .sort((a, b) => Number(!!a.activo) - Number(!!b.activo))
@@ -533,7 +612,11 @@ export default function DrenaMap(props: DrenaMapProps) {
       .sort((a, b) => Number(!!b.faded) - Number(!!a.faded))
       .forEach((p) => {
         if (p.onClick) clicks.current.set(`pin|${p.id}`, p.onClick);
-        reusar(`pin|${p.id}|${p.rank}|${p.prio}|${!!p.faded}|${p.ring ?? ""}|${!!p.onClick}|${p.coord}|${size}`, () => ({ el: pinEl(p, size, () => clicks.current.get(`pin|${p.id}`)?.()), coord: p.coord }));
+        pinesInfo.current.set(p.id, { coord: p.coord, nombre: p.nombre, sub: p.sub });
+        reusar(`pin|${p.id}|${p.rank}|${p.prio}|${!!p.faded}|${p.ring ?? ""}|${!!p.onClick}|${p.coord}|${size}`, () => ({
+          el: pinEl(p, size, () => clicks.current.get(`pin|${p.id}`)?.(), (dentro) => hoverRef.current?.(dentro ? p.id : null)),
+          coord: p.coord,
+        }));
       });
     (props.labels ?? []).forEach((l) =>
       reusar(`lbl|${l.text}|${l.sub ?? ""}|${l.tone}|${l.coord}|${l.anchor ?? ""}|${l.offset ?? ""}|${size}`, () => ({

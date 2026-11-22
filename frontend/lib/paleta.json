@@ -3,20 +3,20 @@
     {
       "id": "principal",
       "nombre": "Principal",
-      "uso": "Botón principal, selección y acciones. La prioridad alta tiene su propio color (ámbar)",
-      "defecto": "#3fa3a1"
+      "uso": "Calipso de Drena: botones, selección y prioridad alta",
+      "defecto": "#2cc5c0"
     },
     {
       "id": "secundario",
       "nombre": "Texto",
       "uso": "Texto y prioridad media; de él salen los textos tenues y, mezclado con el fondo, tarjetas y bordes",
-      "defecto": "#eef0f2"
+      "defecto": "#f2f5f7"
     },
     {
       "id": "fondo",
       "nombre": "Fondo",
       "uso": "Fondo de la página, barra superior y franja del clima; de él salen las tarjetas, bordes y el fondo del mapa",
-      "defecto": "#15171b"
+      "defecto": "#0c0e11"
     }
   ],
   "derivados": [
@@ -164,13 +164,13 @@
     },
     {
       "id": "senal-alta",
-      "nombre": "Prioridad alta (señal ámbar)",
-      "valor": "#f5a524"
+      "nombre": "Prioridad alta (calipso)",
+      "valor": "#2cc5c0"
     },
     {
       "id": "senal-media",
-      "nombre": "Prioridad media (arena)",
-      "valor": "#c9b98f"
+      "nombre": "Prioridad media (calipso apagado)",
+      "valor": "#7fa9ae"
     },
     {
       "id": "danger",
@@ -185,7 +185,7 @@
     {
       "id": "aviso",
       "nombre": "Advertencia",
-      "valor": "#ffb547"
+      "valor": "#e8c37a"
     },
     {
       "id": "agua",
