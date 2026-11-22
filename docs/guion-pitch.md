@@ -2,6 +2,8 @@
 
 Dos personas: una narra y la otra opera los celulares. Los intervalos incluyen la interacción. Usar el recorrido en vivo si el ensayo #50 pasó de punta a punta. Si se usa una grabación o el simulador, anunciar «secuencia reproducida» al empezar. Si falta una función, presentarla en futuro y omitir su acción en pantalla.
 
+Ver el orden para integrar, desplegar, ensayar y grabar. [Ruta crítica de la demo](ruta-critica-demo.md)
+
 ### 0:00–0:25 · Una decisión en plena lluvia
 
 «El 13 de octubre hubo más de 1.900 llamadas en dos horas. Imaginen estar en la central municipal. Hay agua en varias calles, una cuadrilla disponible y un catastro público que cubre cerca de un tercio de las rejillas. ¿Qué dirección le dan por radio? ¿Qué le dicen a la persona que espera la micro en esa esquina?»

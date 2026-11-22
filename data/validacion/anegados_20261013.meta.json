@@ -1,0 +1,43 @@
+{
+  "archivo": "anegados_20261013.geojson",
+  "sha256": "6fe71517dc20060456294bfde960eccd2a3c7f4a6088643ad59d215200658833",
+  "fecha_evento_santiago": "2026-10-13",
+  "fecha_revision_santiago": "2026-11-21",
+  "zona_horaria": "America/Santiago",
+  "sistema_coordenadas": "WGS84, [longitud, latitud]",
+  "fuentes_fecha_evento": [
+    "https://climatologia.meteochile.gob.cl/publicaciones/climaHoy/climaHoy20261016.pdf",
+    "https://www.senapred.cl/alerta/se-declara-alerta-temprana-preventiva-para-la-region-metropolitana-por-evento-meteorologico-2026-10-02-09-41-28"
+  ],
+  "fuentes_georreferencia": [
+    "https://www.openstreetmap.org/copyright",
+    "https://www.nunoa.cl/app/uploads/2025/07/Plan-de-Desarrollo-Comunal-de-Nunoa-2022-2028-1.pdf"
+  ],
+  "total_puntos": 9,
+  "conteo_por_comuna": {
+    "Las Condes": 2,
+    "Providencia": 2,
+    "Ñuñoa": 5
+  },
+  "conteo_por_tipo_hora": {
+    "aviso": 5,
+    "publicacion": 4
+  },
+  "seleccion_replay": {
+    "radio_m": 1500,
+    "minimo_puntos": 8,
+    "maximo_puntos_documentados": 4,
+    "centro_mejor_sector_lon_lat": [
+      -70.613275,
+      -33.442825
+    ],
+    "ids_mejor_sector": [
+      "lyon-eliodoro-yanez",
+      "bilbao-pedro-valdivia",
+      "irarrazaval-pedro-valdivia",
+      "irarrazaval-italia"
+    ],
+    "cumple": false,
+    "alternativa": "2026-07-16_17"
+  }
+}

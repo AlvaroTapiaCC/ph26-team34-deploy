@@ -52,6 +52,26 @@ def test_confianza_foto_acerca_el_ranking_a_lo_observado(estado, confianza, fact
     assert score.detalle["factor_confianza_foto"] == factor
 
 
+def test_tapada_con_confianza_baja_sube_menos_la_prioridad():
+    def prioridad(conf):
+        s = SumideroInput("a", {"arboles": 1, "area_aporte": 500}, rejilla_observada="tapada",
+                          confianza_foto=conf)
+        return calcular_ranking([s], [], CFG)[0]
+
+    alta, media, baja = prioridad("alta"), prioridad("media"), prioridad("baja")
+    assert alta.prioridad > media.prioridad > baja.prioridad > alta.p_pred * alta.c
+    assert baja.detalle["factor_confianza_foto"] == CFG["confianza"]["baja"]
+
+
+def test_foto_sin_confianza_conserva_el_valor_observado():
+    s = SumideroInput("a", {"arboles": 1}, rejilla_observada="tapada")
+    p, _, po, det = p_final(s, CFG)
+    assert p == pytest.approx(po) and det["factor_confianza_foto"] == 1.0
+    sin_tabla = {k: v for k, v in CFG.items() if k != "confianza"}
+    baja = SumideroInput("a", {"arboles": 1}, rejilla_observada="tapada", confianza_foto="baja")
+    assert p_final(baja, sin_tabla)[0] == pytest.approx(po)
+
+
 def test_no_evaluable_no_cuenta_como_confirmado():
     p, _, po, _ = p_final(SumideroInput("a", {"arboles": 1}, rejilla_observada="no_evaluable"), CFG)
     assert po is None and p == pytest.approx(CFG["p_pred"]["w_arb"])

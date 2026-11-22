@@ -41,7 +41,7 @@ from pathlib import Path
 
 import yaml
 
-SCRIPT_VERSION = "0.3.0"
+SCRIPT_VERSION = "0.4.0"
 UTM = 32719
 CENTRO = (-70.601433, -33.417741)  # MUT confirmado; debe ser el mismo de 03_terreno.py (se verifica)
 
@@ -117,6 +117,7 @@ def main():
     ap.add_argument("--salida", default=None, help="por defecto data/variables_<sufijo>.csv")
     ap.add_argument("--overpass", default="https://maps.mail.ru/osm/tools/overpass/api",
                     help="servidor Overpass (overpass-api.de a veces rechaza conexiones)")
+    ap.add_argument("--osm-xml", help="extracto OSM XML local con elementos y relaciones completos")
     a = ap.parse_args()
     a.terreno = a.terreno or f"data/terreno_{a.sufijo}.csv"
     a.salida = a.salida or f"data/variables_{a.sufijo}.csv"
@@ -163,9 +164,16 @@ def main():
         "railway": ["station", "subway_entrance"],
         "tunnel": "yes",
     }
-    ox.settings.overpass_url = a.overpass
-    print(f"Bajando elementos de OSM a {alcance:.0f} m del centro desde {a.overpass}...")
-    osm = ox.features_from_point((centro[1], centro[0]), tags=tags, dist=alcance).reset_index()
+    if a.osm_xml:
+        from shapely.geometry import box
+
+        bbox_osm = ox.utils_geo.bbox_from_point((centro[1], centro[0]), dist=alcance)
+        print(f"Leyendo elementos de OSM de {a.osm_xml}, a {alcance:.0f} m del centro...")
+        osm = ox.features_from_xml(a.osm_xml, polygon=box(*bbox_osm), tags=tags).reset_index()
+    else:
+        ox.settings.overpass_url = a.overpass
+        print(f"Bajando elementos de OSM a {alcance:.0f} m del centro desde {a.overpass}...")
+        osm = ox.features_from_point((centro[1], centro[0]), tags=tags, dist=alcance).reset_index()
 
     def col(nombre):
         return osm[nombre] if nombre in osm else pd.Series([None] * len(osm))
@@ -248,6 +256,11 @@ def main():
         "salida": {"archivo": salida.name, "sha256": sha256(salida)},
         "script": {"ruta": "pipeline/04_variables.py", "version": SCRIPT_VERSION, "sha256": sha256(__file__)},
     }
+    if a.osm_xml:
+        meta["fuentes"]["osm"].pop("overpass")
+        meta["fuentes"]["osm"].pop("descargado_utc")
+        meta["fuentes"]["osm"]["via"] = f"OpenStreetMap XML, OSMnx {ox.__version__} features_from_xml"
+        meta["fuentes"]["osm"]["extracto_xml"] = {"ruta": a.osm_xml, "sha256": sha256(a.osm_xml)}
     ruta_meta = salida.with_name(f"variables_{a.sufijo}.meta.json")
     ruta_meta.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Guardado {salida}, {ruta_osm} y {ruta_meta}")
