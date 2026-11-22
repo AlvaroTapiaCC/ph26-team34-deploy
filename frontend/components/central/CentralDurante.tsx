@@ -302,7 +302,7 @@ export default function CentralDurante() {
         <div className={styles.column}>
           <QueCambio observacion={obs[0] ?? null} ranking={filas} estado={reportes.estado} />
           {cuadrilla && <Misiones cuadrilla={cuadrilla} ruta={ruta} estado={estadoRuta} />}
-          <Transporte {...tp} activo={paradero} onSelect={setParadero} />
+          <Transporte {...tp} activo={paradero} onSelect={setParadero} className={styles.transporte} />
         </div>
       </div>
     </main>
