@@ -65,6 +65,8 @@ export function useFlujo(opts: {
   fuente?: FuenteObservaciones;
   /** Muestra u oculta las capas del flujo en el mapa. */
   visible?: boolean;
+  /** Solo el agua (sin las rejillas de la red): para las vistas que no son la simulación. */
+  soloAgua?: boolean;
   /** Pide flujo.geojson (690 KB) solo cuando hace falta: al abrir la simulación o encender la capa. Por defecto, sí. */
   activo?: boolean;
 }) {
@@ -73,6 +75,9 @@ export function useFlujo(opts: {
   const activo = opts.activo ?? true;
   const visibleRef = useRef(visible);
   visibleRef.current = visible;
+  const soloAgua = opts.soloAgua ?? false;
+  const soloAguaRef = useRef(soloAgua);
+  soloAguaRef.current = soloAgua;
   const fuente = opts.fuente ?? fuenteSimulada;
   const [ui, setUi] = useState<UiFlujo>(() => ({
     cargado: false,
@@ -156,14 +161,14 @@ export function useFlujo(opts: {
         onClickRef.current(id);
       },
     });
-    capa.current.setVisible(visibleRef.current);
+    capa.current.setVisible(visibleRef.current, soloAguaRef.current);
     capa.current.setSeleccion(seleccionRef.current);
     capa.current.actualizarEstado();
   }, []);
 
   useEffect(() => {
-    capa.current?.setVisible(visible);
-  }, [visible]);
+    capa.current?.setVisible(visible, soloAgua);
+  }, [visible, soloAgua]);
 
   useEffect(() => {
     capa.current?.setSeleccion(seleccion);

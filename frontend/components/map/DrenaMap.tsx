@@ -33,6 +33,7 @@ export interface MapPunto {
   coord: LngLat;
   prio: Prioridad;
   top?: boolean; // de las primeras: más grande y con brillo
+  peso?: number; // 0 a 1: aporte al mapa de calor de riesgo
   nombre?: string;
   sub?: string;
 }
@@ -71,6 +72,8 @@ export interface DrenaMapProps {
   onClickPunto?: (id: string) => void;
   paraderos?: MapParadero[] | null; // transporte: expuestos, en riesgo y alternativos (#92)
   recorridos?: LngLat[][] | null; // trazado de los servicios afectados
+  recorridosFondo?: LngLat[][] | null; // todos los recorridos de la zona, tenues
+  calor?: boolean; // mapa de calor de riesgo a partir de `puntos` (peso)
   caminatas?: [LngLat, LngLat][] | null; // paradero expuesto → paradero alternativo
   bounds: [LngLat, LngLat];
   padding?: number | { top: number; bottom: number; left: number; right: number };
@@ -166,7 +169,7 @@ const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
   ["lim", "line-color", "text-2"],
   ["rm-fill", "fill-color", "text-3"],
   ["rm-line", "line-color", "text-3"],
-  ["rm-line-proy", "line-color", "text-3"],
+  ["rm-line-proy", "line-color", "secundario"],
   ["rej-cluster", "circle-color", "contexto"],
   ["rej-cluster", "circle-stroke-color", "contexto"],
   ["rej-point", "circle-color", "contexto"],
@@ -183,11 +186,35 @@ const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
   ["puntos-hover", "circle-stroke-color", "secundario"],
   ["puntos-sel", "circle-stroke-color", "principal"],
   ["puntos", "circle-stroke-color", "secundario"],
+  ["rec-fondo", "line-color", "bus"],
   ["chain-line", "line-color", "principal"],
 ];
 
+/** Chevrón para el sentido de los recorridos de bus, con el color de transporte de la paleta. */
+function flechaBus(): ImageData {
+  const c = document.createElement("canvas");
+  c.width = c.height = 24;
+  const ctx = c.getContext("2d")!;
+  ctx.beginPath();
+  ctx.moveTo(8, 6);
+  ctx.lineTo(16, 12);
+  ctx.lineTo(8, 18);
+  ctx.strokeStyle = colorDe("bus");
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.stroke();
+  return ctx.getImageData(0, 0, 24, 24);
+}
+
 function pintarMapa(map: MapLibre) {
+  if (map.hasImage?.("bus-sentido")) map.updateImage("bus-sentido", flechaBus());
   for (const [capa, prop, color] of COLORES_CAPAS) if (map.getLayer(capa)) map.setPaintProperty(capa, prop, colorDe(color));
+  if (map.getLayer("riesgo-calor")) {
+    // Riesgo bajo = transparente (el mapa queda gris); medio = calipso tenue; alto = calipso a blanco
+    const t = (c: string, a: number) => colorDe(c).replace(/^#(..)(..)(..)$/, (_m, r, g, b) => `rgba(${parseInt(r, 16)},${parseInt(g, 16)},${parseInt(b, 16)},${a})`); // paleta-ok: transparencia sobre colores de la paleta
+    map.setPaintProperty("riesgo-calor", "heatmap-color", ["interpolate", ["linear"], ["heatmap-density"], 0, "rgba(0,0,0,0)", 0.12, "rgba(0,0,0,0)", 0.3, t("principal", 0.15), 0.6, t("principal", 0.35), 0.85, t("principal", 0.55), 1, t("principal", 0.7)]); // paleta-ok: transparente
+  }
   if (map.getLayer("puntos")) {
     map.setPaintProperty("puntos", "circle-color", ["match", ["get", "prio"], "alta", colorDe("prio-alta"), "media", colorDe("prio-media"), colorDe("prio-baja")]);
     map.setPaintProperty("puntos-brillo", "circle-color", ["match", ["get", "prio"], "alta", colorDe("prio-alta"), "media", colorDe("prio-media"), colorDe("prio-baja")]);
@@ -315,13 +342,13 @@ export default function DrenaMap(props: DrenaMapProps) {
           const hidden = { visibility: "none" };
           // Límites de todas las comunas: línea fina punteada en --text-3, relleno casi invisible; las 3 del proyecto, algo más marcadas.
           map.addLayer({ id: "rm-fill", type: "fill", source: "comunas-rm", paint: { "fill-opacity": 0.035 } });
-          map.addLayer({ id: "rm-line", type: "line", source: "comunas-rm", paint: { "line-width": 0.9, "line-opacity": 0.85, "line-dasharray": [2, 2] } });
+          map.addLayer({ id: "rm-line", type: "line", source: "comunas-rm", paint: { "line-width": 1.2, "line-opacity": 0.9, "line-dasharray": [2, 2] } });
           map.addLayer({
             id: "rm-line-proy",
             type: "line",
             source: "comunas-rm",
             filter: ["==", ["get", "en_proyecto"], true],
-            paint: { "line-width": 1.8, "line-opacity": 1, "line-dasharray": [3, 2] },
+            paint: { "line-width": 2.4, "line-opacity": 0.85 },
           });
           // Capas de contexto (catastro completo y GORE): pequeñas, en gris y solo de cerca, para no competir con el agua
           const zc = FLUJO_CONFIG.zoomContexto;
@@ -350,6 +377,14 @@ export default function DrenaMap(props: DrenaMapProps) {
           // Durante: cadena aguas abajo del punto anegado en accent (alerta).
           // Transporte: azul fuera de la paleta de prioridad para no confundir un recorrido con escurrimiento.
           map.addLayer({ id: "rec-line", type: "line", source: "rec", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 3, "line-opacity": 0.55 } });
+          map.addImage("bus-sentido", flechaBus(), { pixelRatio: 2 });
+          map.addLayer({
+            id: "rec-flecha",
+            type: "symbol",
+            source: "rec",
+            layout: { "symbol-placement": "line", "symbol-spacing": 60, "icon-image": "bus-sentido", "icon-size": 0.8, "icon-rotation-alignment": "map", "icon-allow-overlap": false },
+            paint: { "icon-opacity": 0.9 },
+          });
           map.addLayer({ id: "caminata", type: "line", source: "caminata", layout: { "line-cap": "round" }, paint: { "line-width": 2.5, "line-dasharray": [0.5, 2] } });
           map.addLayer({ id: "chain-halo", type: "line", source: "chain", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 14, "line-opacity": 0.2 } });
           map.addLayer({ id: "chain-line", type: "line", source: "chain", paint: { "line-width": 3, "line-dasharray": [1.5, 1.5] } });
@@ -362,21 +397,35 @@ export default function DrenaMap(props: DrenaMapProps) {
             type: "circle",
             source: "puntos",
             filter: ["==", ["get", "id"], ""],
-            paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 11, 16, 17], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 3 }, // paleta-ok: relleno transparente
+            paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 7, 16, 11], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2.5 }, // paleta-ok: relleno transparente
           });
           map.addLayer({
             id: "puntos-hover",
             type: "circle",
             source: "puntos",
             filter: ["==", ["get", "id"], ""],
-            paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 9, 16, 14], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2.5 }, // paleta-ok: relleno transparente
+            paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 6, 16, 10], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2 }, // paleta-ok: relleno transparente
+          });
+          map.addSource("rec-fondo", { type: "geojson", data: fc([]) });
+          map.addLayer({ id: "rec-fondo", type: "line", source: "rec-fondo", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 1.5, "line-opacity": 0.22 } });
+          map.addLayer({
+            id: "riesgo-calor",
+            type: "heatmap",
+            source: "puntos",
+            layout: { visibility: "none" },
+            paint: {
+              "heatmap-weight": ["get", "w"],
+              "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 13, 1.6, 16, 2.6],
+              "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 13, 30, 16, 90],
+              "heatmap-opacity": 0.5,
+            },
           });
           map.addLayer({
             id: "puntos-brillo",
             type: "circle",
             source: "puntos",
             paint: {
-              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["get", "top"], 16, 9], 16, ["case", ["get", "top"], 30, 16]],
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["get", "top"], 8, 5], 16, ["case", ["get", "top"], 16, 9]],
               "circle-blur": 1,
               "circle-opacity": ["case", ["get", "top"], 0.75, ["match", ["get", "prio"], "alta", 0.5, "media", 0.3, 0.15]],
             },
@@ -386,8 +435,8 @@ export default function DrenaMap(props: DrenaMapProps) {
             type: "circle",
             source: "puntos",
             paint: {
-              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["get", "top"], 6, 3], 16, ["case", ["get", "top"], 10, 5.5]],
-              "circle-stroke-width": ["case", ["get", "top"], 2, 0],
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["get", "top"], 3.5, 2], 16, ["case", ["get", "top"], 6.5, 4]],
+              "circle-stroke-width": ["case", ["get", "top"], 1.5, 0],
               "circle-opacity": ["match", ["get", "prio"], "baja", 0.7, 1],
             },
           });
@@ -438,8 +487,15 @@ export default function DrenaMap(props: DrenaMapProps) {
     const map = mapRef.current;
     const ter = props.camara3D ?? FLUJO_CONFIG.terreno;
     const bearing = props.tresD ? ter.bearing : 0;
+    // El padding de la cámara queda guardado en el mapa: se limpia antes de calcular para que no se acumule
+    if (props.camara3D) map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
     const cam = map.cameraForBounds(props.bounds, { padding: props.padding ?? 40, bearing });
-    if (cam) map.easeTo({ ...cam, bearing, pitch: props.tresD ? ter.pitch : 0, duration: 900 });
+    if (cam && props.camara3D) {
+      // Vista de la sala: centro de la zona con margen para el panel (padding de easeTo), sin que la inclinación la corra
+      const [[x0, y0], [x1, y1]] = props.bounds;
+      const pad = props.padding ?? 40;
+      map.easeTo({ center: [(x0 + x1) / 2, (y0 + y1) / 2], zoom: cam.zoom - (props.tresD ? 0.15 : 0), bearing, pitch: props.tresD ? ter.pitch : 0, padding: pad, duration: 900 });
+    } else if (cam) map.easeTo({ ...cam, bearing, pitch: props.tresD ? ter.pitch : 0, duration: 900 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, JSON.stringify(props.bounds), props.tresD]);
 
@@ -468,9 +524,16 @@ export default function DrenaMap(props: DrenaMapProps) {
     set("rec", fc((props.recorridos ?? []).map(line)));
     set("caminata", fc((props.caminatas ?? []).map(line)));
     set("ruta", fc((props.ruta ?? []).map(line)));
-    set("puntos", fc((props.puntos ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, prio: p.prio, top: !!p.top, nombre: p.nombre ?? "", sub: p.sub ?? "" }, geometry: { type: "Point", coordinates: p.coord } }))));
+    set("rec-fondo", fc((props.recorridosFondo ?? []).map(line)));
+    set("puntos", fc((props.puntos ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, prio: p.prio, top: !!p.top, w: p.peso ?? 0, nombre: p.nombre ?? "", sub: p.sub ?? "" }, geometry: { type: "Point", coordinates: p.coord } }))));
     set("gore", fc((props.gore ?? []).map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }))));
-  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.caminatas, props.puntos, props.ruta]);
+  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.caminatas, props.puntos, props.ruta, props.recorridosFondo]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const map = mapRef.current;
+    if (map.getLayer("riesgo-calor")) map.setLayoutProperty("riesgo-calor", "visibility", props.calor ? "visible" : "none");
+  }, [ready, props.calor]);
 
   const onClickPuntoRef = useRef(props.onClickPunto);
   onClickPuntoRef.current = props.onClickPunto;
@@ -482,7 +545,11 @@ export default function DrenaMap(props: DrenaMapProps) {
     const ml = libRef.current;
     const map = mapRef.current;
     globo.current = new ml.Popup({ closeButton: false, closeOnClick: false, offset: 16, className: "globo", maxWidth: "280px" });
+    let actual: string | null = null;
     hoverRef.current = (id, info) => {
+      // Solo cuando cambia el punto: el globo no se rehace en cada movimiento del mouse
+      if (id === actual) return;
+      actual = id;
       onHoverRef.current?.(id);
       const d = id ? (info ?? pinesInfo.current.get(id)) : null;
       if (!id || !d?.nombre) {
@@ -505,8 +572,15 @@ export default function DrenaMap(props: DrenaMapProps) {
       if (id) onClickPuntoRef.current?.(String(id));
     };
     const mueve = (e: MapLibre) => {
-      const f = e.features?.[0];
-      if (!f) return;
+      // Con puntos solapados se toma el más cercano al cursor (estable), no el primero que devuelve la capa
+      const fs: MapLibre[] = e.features ?? [];
+      if (!fs.length) return;
+      const px = e.point;
+      const f = fs.reduce((a: MapLibre, b: MapLibre) => {
+        const pa = map.project(a.geometry.coordinates);
+        const pb = map.project(b.geometry.coordinates);
+        return (pa.x - px.x) ** 2 + (pa.y - px.y) ** 2 <= (pb.x - px.x) ** 2 + (pb.y - px.y) ** 2 ? a : b;
+      });
       map.getCanvas().style.cursor = onClickPuntoRef.current ? "pointer" : "";
       const pr = f.properties ?? {};
       hoverRef.current?.(String(pr.id), { coord: f.geometry.coordinates as LngLat, nombre: pr.nombre || undefined, sub: pr.sub || undefined });

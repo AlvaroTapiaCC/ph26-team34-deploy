@@ -23,16 +23,16 @@ function flechaImagen(): ImageData | null {
   lienzo.width = lienzo.height = 24;
   const ctx = lienzo.getContext("2d");
   if (!ctx) return null;
+  // Chevrón fino (›), no un triángulo: indica sentido sin competir con los puntos del ranking
   ctx.beginPath();
-  ctx.moveTo(6, 4);
-  ctx.lineTo(20, 12);
-  ctx.lineTo(6, 20);
-  ctx.closePath();
-  ctx.strokeStyle = colorDe("surface");
-  ctx.lineWidth = 3;
+  ctx.moveTo(8, 6);
+  ctx.lineTo(16, 12);
+  ctx.lineTo(8, 18);
+  ctx.strokeStyle = colorDe("secundario");
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   ctx.stroke();
-  ctx.fillStyle = colorDe("secundario");
-  ctx.fill();
   return ctx.getImageData(0, 0, 24, 24);
 }
 
@@ -73,17 +73,22 @@ function instalarCapas(mapa: MapLibre) {
       paint: { "line-width": ancho, "line-offset": desplazamiento, "line-dasharray": [1, 1.4] },
     }, antesDeRuta);
   }
+  // Flechas y observaciones van por debajo de los puntos del ranking (si existen) para no taparlos
+  const bajoPuntos = mapa.getLayer("puntos-brillo") ? "puntos-brillo" : undefined;
   if (flecha) {
     mapa.addLayer({
       id: "cadenas-flechas", type: "symbol", source: FUENTE, filter: base,
       layout: {
-        "symbol-placement": "line-center",
+        "symbol-placement": "line",
+        "symbol-spacing": 70,
         "icon-image": FLECHA,
+        "icon-size": 0.85,
         "icon-rotation-alignment": "map",
         "icon-keep-upright": false,
         "icon-allow-overlap": false,
       },
-    });
+      paint: { "icon-opacity": 0.6 },
+    }, bajoPuntos);
   }
   mapa.addLayer({
     id: "cadenas-observaciones", type: "circle", source: FUENTE,
@@ -93,7 +98,7 @@ function instalarCapas(mapa: MapLibre) {
       "circle-opacity": 0.35,
       "circle-stroke-width": 2.5,
     },
-  });
+  }, bajoPuntos);
   pintarCadenas(mapa);
 }
 

@@ -15,9 +15,11 @@ import { boundsDe } from "@/lib/real";
 import { APORTES, CATASTRO, dos, nombreFila, puntaje, SalaProvider, useSala, type Fila } from "@/lib/sala";
 import { horaSantiago, NIVEL_AGUA, useRecorridos, type EstadoConsulta, type EvidenciaAgua } from "@/lib/transporte";
 import { useCapaCadenas } from "../central/capaCadenas";
+import { useCapaContexto } from "./capaContexto";
 import Transporte, { capasTransporte } from "../desktop/Transporte";
 import DrenaMap, { type MapLabel, type MapPunto } from "../map/DrenaMap";
-import { ESTADOS, FLUJO_CONFIG, type EstadoRejilla } from "@/lib/flujo/config";
+import { ESTADOS, FLUJO_CONFIG, picoEscenario, type EstadoRejilla } from "@/lib/flujo/config";
+import { fuenteReportes, fuenteSimulada } from "@/lib/flujo/fuentes";
 import { useFlujo, type Flujo } from "@/lib/flujo/useFlujo";
 import { precargarMapLibre } from "../map/maplibre";
 import { Logo } from "../ui";
@@ -274,7 +276,6 @@ function Inicio({ activo, mapaListo }: { activo: boolean; mapaListo: boolean }) 
                 <Skel h={22} />
               </div>
             )}
-            <p className={s.decPie}>Puntaje para ordenar visitas; no es probabilidad de inundación.</p>
           </article>
 
           <article className={s.decision} style={{ ["--i" as string]: 1 }}>
@@ -659,8 +660,10 @@ function Misiones() {
 /* ───────────────────────── Mapa ───────────────────────── */
 
 const SIN_AGUA: readonly EvidenciaAgua[] = [];
+const SIN_ESTADOS: Record<string, EstadoRejilla> = {};
 
-type Capas = { cadenas: boolean; transporte: boolean; limites: boolean; catastro: boolean };
+type Capas = { agua: boolean; calor: boolean; cadenas: boolean; transporte: boolean; limites: boolean; catastro: boolean; infra: boolean; colectores: boolean; criticos: boolean };
+type ModoAgua = "real" | "simulada";
 
 const Mapa = memo(function Mapa({
   filas,
@@ -676,6 +679,9 @@ const Mapa = memo(function Mapa({
   flujo,
   capas,
   setCapas,
+  modoAgua,
+  setModoAgua,
+  sinLluvia,
 }: {
   filas: Fila[];
   vista: Vista;
@@ -690,6 +696,9 @@ const Mapa = memo(function Mapa({
   flujo: Flujo;
   capas: Capas;
   setCapas: (c: Capas) => void;
+  modoAgua: ModoAgua;
+  setModoAgua: (m: ModoAgua) => void;
+  sinLluvia: boolean;
 }) {
   const { observaciones, transporte, cuadrilla, ruta } = useSala();
   const [tresD, setTresD] = useState(true);
@@ -699,7 +708,9 @@ const Mapa = memo(function Mapa({
   const prioridades = useMemo(() => new Map(filas.flatMap((p) => (p.prioridad == null ? [] : [[p.sumidero_id, p.prio] as const]))), [filas]);
   const cadenas = useCapaCadenas(prioridades, durante ? observaciones.datos : [], durante ? (transporte.datos?.evidencia_agua ?? SIN_AGUA) : SIN_AGUA, capas.cadenas && !simulacion, transporte.datos?.parametros.vigencia_agua_horas ?? 6, transporte.datos?.parametros.aguas_abajo_m ?? 150);
   const verTransporte = capas.transporte && !simulacion;
+  const contexto = useCapaContexto({ infra: capas.infra && !simulacion, colectores: capas.colectores && !simulacion, criticos: capas.criticos && !simulacion });
   const recorridos = useRecorridos(verTransporte);
+  const recorridosFondo = useMemo(() => (verTransporte ? recorridos.flatMap((r) => r.tramos) : []), [verTransporte, recorridos]);
   const tp = useMemo(() => (verTransporte ? capasTransporte(transporte.datos, recorridos, paradero, onParadero) : { paraderos: [], recorridos: [], caminatas: [] }), [verTransporte, transporte.datos, recorridos, paradero, onParadero]);
 
   // Todas las rejillas del ranking como puntos (capa GL): las 5 primeras más grandes y con brillo, sin números
@@ -707,7 +718,18 @@ const Mapa = memo(function Mapa({
     () =>
       simulacion
         ? []
-        : filas.map((p) => ({ id: p.sumidero_id, coord: [p.lon, p.lat], prio: p.prio, top: p.puesto <= TOP_DESTACADOS, nombre: `${p.puesto} · ${nombreFila(p)}`, sub: `Puntaje ${puntaje(p.prioridad)}` })),
+        : (() => {
+            const max = Math.max(...filas.map((f) => f.prioridad ?? 0), 0.0001);
+            return filas.map((p) => ({
+              id: p.sumidero_id,
+              coord: [p.lon, p.lat] as LngLat,
+              prio: p.prio,
+              top: p.puesto <= TOP_DESTACADOS,
+              peso: Math.pow((p.prioridad ?? 0) / max, 2),
+              nombre: `${p.puesto} · ${nombreFila(p)}`,
+              sub: `Puntaje ${puntaje(p.prioridad)}`,
+            }));
+          })(),
     [filas, simulacion],
   );
   const labels = useMemo(() => {
@@ -724,16 +746,18 @@ const Mapa = memo(function Mapa({
   const clave = filas.map((p) => p.sumidero_id).sort().join("|");
   const bounds = useMemo(() => boundsDe(filas.map((p) => ({ coord: [p.lon, p.lat] as LngLat }))), [clave]); // eslint-disable-line react-hooks/exhaustive-deps
   const onMapReady = useCallback(
-    (m: unknown) => {
+    (m: unknown, ml: unknown) => {
       onListo();
       const a = cadenas.onMapReady(m) as unknown;
       const b = flujo.alMapaListo(m);
+      const c = contexto.onMapReady(m, ml);
       return () => {
         if (typeof a === "function") (a as () => void)();
         b();
+        c();
       };
     },
-    [cadenas, flujo, onListo],
+    [cadenas, flujo, contexto, onListo],
   );
   const alternar = (k: keyof Capas) => setCapas({ ...capas, [k]: !capas[k] });
 
@@ -759,6 +783,8 @@ const Mapa = memo(function Mapa({
         rejillas={capas.catastro}
         paraderos={tp.paraderos}
         recorridos={tp.recorridos}
+        recorridosFondo={recorridosFondo}
+        calor={capas.calor && !simulacion}
         caminatas={tp.caminatas}
         onMapReady={onMapReady}
         attribution="© Esri, OpenStreetMap · Rejillas DOH · Paraderos DTPM · relieve AWS · edificios OpenFreeMap"
@@ -773,15 +799,32 @@ const Mapa = memo(function Mapa({
               3D
             </button>
           </span>
+          {!simulacion && capas.agua && (
+            <span className={s.segmento} role="radiogroup" aria-label="Datos del agua">
+              <button type="button" role="radio" aria-checked={modoAgua === "real"} className={modoAgua === "real" ? s.segOn : ""} onClick={() => setModoAgua("real")}>
+                Agua: datos reales
+              </button>
+              <button type="button" role="radio" aria-checked={modoAgua === "simulada"} className={modoAgua === "simulada" ? s.segOn : ""} onClick={() => setModoAgua("simulada")}>
+                Simulada
+              </button>
+            </span>
+          )}
+          {!simulacion && capas.agua && modoAgua === "real" && sinLluvia && <span className={s.chipInfo}>Sin lluvia ahora (Open-Meteo): el agua real no escurre</span>}
           {!simulacion && (
             <span className={s.capasWrap}>
               <button type="button" className={`${s.chipMapa} ${menu ? s.chipMapaOn : ""}`} onClick={() => setMenu(!menu)} aria-expanded={menu}>
-                Capas <small>{Object.values(capas).filter(Boolean).length} de 4</small>
+                Filtros <small>{Object.values(capas).filter(Boolean).length} de {Object.keys(capas).length}</small>
               </button>
               {menu && (
-                <div className={s.capasMenu} role="group" aria-label="Capas del mapa">
-                  <CapaCheck on={capas.cadenas} onClick={() => alternar("cadenas")} titulo="Cadenas calle abajo" sub="Escurrimiento estimado por pendiente; el color se propaga con la evidencia" muestra="cadena" />
-                  <CapaCheck on={capas.transporte} onClick={() => alternar("transporte")} titulo="Transporte público" sub="Paraderos expuestos, recorridos y alternativo (GTFS DTPM)" muestra="bus" />
+                <div className={s.capasMenu} role="group" aria-label="Filtros del mapa">
+                  <p className={s.capasGrupo}>Agua</p>
+                  <CapaCheck on={capas.agua} onClick={() => alternar("agua")} titulo="Agua en las calles" sub="Agua corriendo por las calles según la pendiente y la lluvia, con columnas donde no cabe. Con datos reales usa la lluvia de Open-Meteo y las rejillas que Claude vio tapadas; simulada supone un 20 % de rejillas tapadas" muestra="agua" />
+                  <CapaCheck on={capas.calor} onClick={() => alternar("calor")} titulo="Mapa de calor de riesgo" sub="Zonas donde se concentra el puntaje de prioridad; donde el riesgo es bajo el mapa queda gris" muestra="calor" />
+                  <CapaCheck on={capas.cadenas} onClick={() => alternar("cadenas")} titulo="Cadenas calle abajo" sub="Qué rejillas reciben el agua de cuál, según la pendiente (estimado). Si una se tapa, revisa las de abajo" muestra="cadena" />
+                  <CapaCheck on={capas.criticos} onClick={() => alternar("criticos")} titulo="Anegamientos registrados" sub="Lugares donde la Municipalidad de Las Condes registró anegamientos o riesgo en la temporada de lluvias 2026. Es el único registro público de este tipo que conseguimos; sirve de referencia de dónde ya se ha inundado" muestra="critico" />
+                  <p className={s.capasGrupo}>Ciudad</p>
+                  <CapaCheck on={capas.infra} onClick={() => alternar("infra")} titulo="Infraestructura crítica" sub="Metro, pasos bajo nivel, hospital y colegios (OSM): suben la consecuencia" muestra="infra" />
+                  <CapaCheck on={capas.transporte} onClick={() => alternar("transporte")} titulo="Transporte público" sub="Recorridos de la zona (tenues), los afectados resaltados, paraderos expuestos y caminata al alternativo (GTFS DTPM)" muestra="bus" />
                   <CapaCheck on={capas.limites} onClick={() => alternar("limites")} titulo="Límites comunales" sub="Providencia, Ñuñoa y Las Condes" muestra="limite" />
                   <CapaCheck on={capas.catastro} onClick={() => alternar("catastro")} titulo="Catastro completo" sub="3.002 rejillas DOH; el ranking existe solo en la zona MUT" muestra="catastro" />
                 </div>
@@ -789,7 +832,6 @@ const Mapa = memo(function Mapa({
             </span>
           )}
           {capas.cadenas && !simulacion && cadenas.estado === "cargando" && <span className={s.chipInfo}>Cargando cadenas…</span>}
-          {lineas.length > 0 && <span className={s.chipInfo}>— — orden de visita (línea recta)</span>}
         </div>
         {!simulacion && (
           <ul className={s.leyendaMapa} aria-label="Leyenda">
@@ -814,6 +856,25 @@ const Mapa = memo(function Mapa({
                 Agua observada
               </li>
             )}
+            {capas.infra && (
+              <>
+                <li>
+                  <i className={s.lgMetro} />
+                  Metro
+                </li>
+                <li>
+                  <i className={s.lgPbn} />
+                  Paso bajo nivel
+                </li>
+              </>
+            )}
+            {capas.cadenas && (
+              <li>
+                <i className={s.lgEscurre} />
+                Escurrimiento ›
+              </li>
+            )}
+
           </ul>
         )}
       </DrenaMap>
@@ -821,16 +882,21 @@ const Mapa = memo(function Mapa({
   );
 });
 
-function CapaCheck({ on, onClick, titulo, sub, muestra }: { on: boolean; onClick: () => void; titulo: string; sub: string; muestra: string }) {
+/** Un filtro del mapa: casilla para mostrarlo u ocultarlo y una «i» que despliega qué muestra. */
+function CapaCheck({ on, onClick, titulo, sub }: { on: boolean; onClick: () => void; titulo: string; sub: string; muestra?: string }) {
+  const [info, setInfo] = useState(false);
   return (
-    <button type="button" role="switch" aria-checked={on} className={`${s.capa} ${on ? s.capaOn : ""}`} onClick={onClick}>
-      <i className={s.capaMuestra} data-m={muestra} aria-hidden />
-      <span>
+    <div className={s.filtro}>
+      <label className={`${s.capa} ${on ? s.capaOn : ""}`}>
+        <input type="checkbox" checked={on} onChange={onClick} className={s.filtroCheck} />
+        <span className={s.filtroCaja} aria-hidden />
         <b>{titulo}</b>
-        <small>{sub}</small>
-      </span>
-      <span className={s.capaSwitch} aria-hidden />
-    </button>
+      </label>
+      <button type="button" className={`${s.filtroInfo} ${info ? s.filtroInfoOn : ""}`} onClick={() => setInfo(!info)} aria-expanded={info} aria-label={`Qué muestra: ${titulo}`}>
+        i
+      </button>
+      {info && <p className={s.filtroTexto}>{sub}</p>}
+    </div>
   );
 }
 
@@ -1000,7 +1066,6 @@ function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, nuevo, p
         <Tabs.Content value="prioridad" className={s.tabPanel}>
           {fase === "durante" && sala.durante.esInicial && datos.filas.length > 0 && <p className={s.hint}>Todavía sin evidencia de la lluvia: se muestra el ranking inicial.</p>}
           <Ranking filas={datos.filas} estado={datos.estado} sel={sel} onSel={onSel} hover={hover} onHover={onHover} />
-          <p className={s.nota}>El puntaje ordena visitas; no es una probabilidad de inundación.</p>
         </Tabs.Content>
         <Tabs.Content value="cuadrilla" className={s.tabPanel}>
           <Misiones />
@@ -1020,8 +1085,8 @@ function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, nuevo, p
 
 /* ───────────────────────── Sala ───────────────────────── */
 
-const CAPAS_ANTES: Capas = { cadenas: true, transporte: false, limites: true, catastro: false };
-const CAPAS_DURANTE: Capas = { cadenas: true, transporte: true, limites: true, catastro: false };
+const CAPAS_ANTES: Capas = { agua: true, calor: true, cadenas: false, transporte: false, limites: true, catastro: false, infra: false, colectores: false, criticos: false };
+const CAPAS_DURANTE: Capas = { agua: true, calor: true, cadenas: false, transporte: true, limites: true, catastro: false, infra: false, colectores: false, criticos: false };
 
 function SalaInterior({ children }: { children: ReactNode }) {
   const vista = vistaDe(usePathname() ?? "/");
@@ -1038,6 +1103,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
   const [nuevo, setNuevo] = useState(false);
   const [capas, setCapas] = useState<Capas>(CAPAS_ANTES);
   const [estados, setEstados] = useState<Record<string, EstadoRejilla>>({});
+  const [modoAgua, setModoAgua] = useState<ModoAgua>("simulada");
 
   // Las capas por defecto cambian con la fase (Durante muestra transporte); el usuario puede ajustarlas después
   useEffect(() => {
@@ -1047,13 +1113,19 @@ function SalaInterior({ children }: { children: ReactNode }) {
   // Motor de flujo: solo pide la red (690 KB) y dibuja en la vista Simulación
   const puntosFlujo = useMemo(() => sala.antes.filas.map((p) => ({ id: p.sumidero_id, nombre: nombreFila(p), coord: [p.lon, p.lat] as LngLat })), [sala.antes.filas]);
   const simulando = vista === "simulacion";
+  const aguaEnMapa = simulando || ((vista === "antes" || vista === "durante") && capas.agua);
+  const aguaReal = !simulando && modoAgua === "real";
   const flujoRef = useRef<Flujo | null>(null);
+  // Agua simulada en Antes/Durante: supuesto fijo de 1 de cada 5 rejillas tapadas (siempre las mismas), para ver dónde no cabe
+  const [supuestas, setSupuestas] = useState<Record<string, EstadoRejilla>>(SIN_ESTADOS);
   const flujo = useFlujo({
     scenario: "base",
     puntos: puntosFlujo,
-    estados,
-    visible: simulando,
-    activo: simulando,
+    estados: simulando ? estados : aguaReal ? SIN_ESTADOS : supuestas,
+    fuente: aguaReal ? fuenteReportes : fuenteSimulada,
+    visible: aguaEnMapa,
+    soloAgua: !simulando,
+    activo: aguaEnMapa,
     onClickRejilla: (id) => {
       const actual: EstadoRejilla = flujoRef.current?.estadoDe(id) ?? "limpia";
       setEstados((e) => ({ ...e, [id]: ESTADOS[(ESTADOS.indexOf(actual) + 1) % ESTADOS.length] }));
@@ -1061,12 +1133,26 @@ function SalaInterior({ children }: { children: ReactNode }) {
     },
   });
   flujoRef.current = flujo;
-  // Al entrar a la simulación, el agua parte sola
   useEffect(() => {
-    if (simulando && flujo.ui.cargado && !flujo.ui.corriendo) flujo.reproducir();
-    if (!simulando && flujo.ui.corriendo) flujo.alternar();
+    if (!flujo.ui.cargado) return;
+    const ids = flujo.rejillas().map((r) => r.id).sort();
+    setSupuestas(Object.fromEntries(ids.map((id, i) => [id, (i % 5 === 0 ? "tapada" : "limpia") as EstadoRejilla])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [simulando, flujo.ui.cargado]);
+  }, [flujo.ui.cargado]);
+  // El agua corre sola cuando está a la vista. Con datos reales, la lluvia es la del pronóstico de Open-Meteo (mm/h);
+  // simulada, la del escenario de la demo.
+  const mmhReal = (sala.clima.datos?.lluvia_pronosticada_prox_24h_mm ?? 0) / 24;
+  useEffect(() => {
+    if (!flujo.ui.cargado) return;
+    if (aguaEnMapa && !flujo.ui.corriendo) flujo.reproducir();
+    if (!aguaEnMapa && flujo.ui.corriendo) flujo.alternar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aguaEnMapa, flujo.ui.cargado]);
+  useEffect(() => {
+    if (!flujo.ui.cargado || simulando) return;
+    flujo.setLluvia(aguaReal ? Math.round(mmhReal * 10) / 10 : picoEscenario("base"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aguaReal, mmhReal, flujo.ui.cargado, simulando]);
 
   const elegir = useCallback(
     (id: string) => {
@@ -1121,7 +1207,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
     <div className={`${s.sala} ${presentacion ? s.presentacion : ""}`} data-vista={vista}>
       <Barra vista={vista} />
       <main className={s.escena}>
-        <Mapa filas={filas} vista={vista} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} foco={foco} onListo={listo} flujo={flujo} capas={capas} setCapas={setCapas} />
+        <Mapa filas={filas} vista={vista} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} foco={foco} onListo={listo} flujo={flujo} capas={capas} setCapas={setCapas} modoAgua={modoAgua} setModoAgua={setModoAgua} sinLluvia={mmhReal < 0.1} />
         {conMapa(vista) && <EsqueletoMapa key={`esq-${vista}`} listo={mapaListo && (!simulando || flujo.ui.cargado || flujo.ui.error)} />}
         <Inicio activo={vista === "inicio"} mapaListo={mapaListo} />
         {vista === "validacion" && <div className={s.pagina}>{children}</div>}

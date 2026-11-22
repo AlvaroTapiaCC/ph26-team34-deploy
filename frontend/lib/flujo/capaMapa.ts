@@ -40,7 +40,7 @@ export interface CapaFlujo {
   actualizarEstado(): void;
   /** Un cuadro de animación. `dtS` y `tS` son segundos reales. */
   cuadro(dtS: number, tS: number): void;
-  setVisible(v: boolean): void;
+  setVisible(v: boolean, soloAgua?: boolean): void;
   setSeleccion(id: string | null): void;
   /** Animación breve sobre una rejilla (al cambiar su estado). */
   pulsar(id: string): void;
@@ -374,8 +374,10 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
   return {
     actualizarEstado,
     cuadro,
-    setVisible(v) {
-      LAYERS.forEach((id) => map.getLayer(id) && map.setLayoutProperty(id, "visibility", v ? "visible" : "none"));
+    setVisible(v, soloAgua = false) {
+      // soloAgua: muestra el agua y sus columnas, sin las rejillas de la red ni su zona de clic
+      const rejillas = new Set(["flujo-rej", "flujo-rej-tap", "flujo-rej-ico", "flujo-sel", "flujo-pop", "flujo-hit", "flujo-flecha"]);
+      LAYERS.forEach((id) => map.getLayer(id) && map.setLayoutProperty(id, "visibility", v && !(soloAgua && rejillas.has(id)) ? "visible" : "none"));
     },
     setSeleccion(id) {
       if (map.getLayer("flujo-sel")) map.setFilter("flujo-sel", ["==", ["get", "id"], id ?? ""]);

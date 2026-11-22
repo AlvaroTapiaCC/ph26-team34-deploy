@@ -42,6 +42,10 @@ export function capasTransporte(d: Expuestos | null, recorridos: Recorrido[], ac
         alternativos.set(a.id, { id: a.id, coord: coord(a), nivel: "alternativo", titulo: `Paradero alternativo · ${a.nombre}` });
     }
   }
+  for (const p of d.en_riesgo) {
+    // Los servicios de un paradero en riesgo también se dibujan (sin selección o si es el elegido)
+    if (!activo || activo === p.id) for (const s of p.servicios) afectados.add(claveServicio(s));
+  }
   for (const p of d.en_riesgo)
     paraderos.push({ id: p.id, coord: coord(p), nivel: "en_riesgo", activo: p.id === activo, titulo: `En riesgo · ${p.nombre}`, onClick: () => onSelect(p.id) });
   paraderos.push(...alternativos.values());
