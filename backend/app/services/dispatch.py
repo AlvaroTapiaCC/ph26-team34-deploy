@@ -9,8 +9,9 @@ Versión mínima para la demo (zona MUT, cuadrillas simuladas de #79):
    hace menos de `excluir_cerradas_horas` (la cuadrilla acaba de limpiarlas).
 2. Las misiones ya iniciadas (`en_camino`, `en_sitio`) NO se mueven: siguen con su cuadrilla y
    van primero.
-3. Asignación: equipamiento compatible (sedimento visto en la última foto → hidrojet; hojas o
-   basura → cualquiera) y, entre las compatibles, la de menor costo = tiempo por calle desde su
+3. Asignación: una misión pendiente se queda con su cuadrilla si esta sigue disponible y tiene
+   el equipo. Las demás van a una de equipamiento compatible (sedimento visto en la última
+   foto → hidrojet; hojas o basura → cualquiera) y, entre las compatibles, la de menor costo = tiempo por calle desde su
    posición + carga × tiempo de intervención ("más cercana por calle y con menos carga").
 4. Orden de cada cuadrilla: iniciadas, después urgentes, después el resto. Dentro de cada grupo,
    la siguiente parada es la que más prioridad atiende por segundo invertido:
@@ -116,13 +117,23 @@ def _inicio(c: Cuadrilla) -> str | None:
 def asignar(pendientes: list[Parada], equipo: list[Cuadrilla], tiempo: Tiempo, intervencion_s: float) -> None:
     """Agrega cada parada pendiente a la cuadrilla compatible de menor costo (modifica `equipo`).
 
-    Orden de asignación: urgentes primero, después por prioridad; empates por clave (determinista).
+    Una parada que ya tiene misión se queda con su cuadrilla si esta sigue disponible y tiene el
+    equipo: así un reporte cambia solo las rutas a las que llega o de las que sale una rejilla.
+    Las demás, en orden: urgentes primero, después por prioridad; empates por clave (determinista).
     Si ninguna cuadrilla tiene el equipo pedido, va a la de menor costo de todas (mejor que nadie).
     """
     disponibles = [c for c in equipo if _inicio(c) is not None]
     if not disponibles:
         return
+    por_id = {c.id: c for c in disponibles}
+    nuevas: list[Parada] = []
     for p in sorted(pendientes, key=lambda x: (not x.urgente, -x.prioridad, x.clave)):
+        actual = por_id.get(p.crew_id) if p.crew_id else None
+        if actual is not None and (actual.hidrojet or not p.hidrojet):
+            actual.paradas.append(p)
+        else:
+            nuevas.append(p)
+    for p in nuevas:
         compatibles = [c for c in disponibles if c.hidrojet or not p.hidrojet] or disponibles
         _, _, elegida = min((tiempo(_inicio(c), p.clave) + len(c.paradas) * intervencion_s, c.id, c)
                             for c in compatibles)
