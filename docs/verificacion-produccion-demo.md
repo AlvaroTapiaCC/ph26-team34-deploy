@@ -14,14 +14,14 @@ El espejo de despliegue apuntaba a `bb83a38` (PR #58). El `main` oficial estaba 
 | Render `GET /observations` | HTTP 405 |
 | CORS de las consultas a Render con el origen de Vercel | La respuesta permite ese origen |
 
-La revisión activa todavía impide iniciar la prueba completa. Quedan pendientes la publicación, la confirmación de las migraciones y cargas, la prueba con datos móviles y las dos pasadas con evidencia.
+En la comprobación de las 22:24 de Santiago, las respuestas HTTP se mantuvieron. El espejo seguía en `bb83a38` y el `main` oficial avanzó a `74386be`. Quedan pendientes la publicación, la confirmación de los SHA activos, las migraciones y cargas, la prueba con datos móviles y las dos pasadas con evidencia.
 
 ## Preparar la revisión
 
 1. Fijar el SHA que se va a ensayar en el `main` oficial y registrar el SHA publicado en el espejo. Revisar que las tres rutas web estén incluidas.
-2. En Render, confirmar `DATABASE_URL`, las credenciales de Storage, `ANTHROPIC_API_KEY`, `CREW_TOKEN`, `ADMIN_TOKEN`, `SIM_TOKEN` y `CORS_ORIGINS`. En Vercel, revisar `NEXT_PUBLIC_API_URL` y la configuración de la vista de cuadrilla. Registrar solo cuáles están configuradas.
+2. En Render, confirmar `DATABASE_URL`, las credenciales de Storage, `ANTHROPIC_API_KEY`, `CREW_TOKEN`, `ADMIN_TOKEN`, `SIM_TOKEN` y `CORS_ORIGINS`. En Vercel, confirmar `NEXT_PUBLIC_API_URL` y que `NEXT_PUBLIC_CREW_TOKEN`, usado por `/cuadrilla`, coincide con `CREW_TOKEN` de Render. Comparar los valores en sus paneles y registrar el resultado de la comprobación sin copiar el token. Si se cambia la variable en Vercel, volver a desplegar para incorporarla al build.
 3. Con el entorno de producción seleccionado, aplicar `python -m db.migrate` desde `backend/` y verificar que figure la migración `0007`. Primero ejecutar ambas cargas con `--dry-run`. Desde la raíz, ejecutar `python pipeline/07_cargar.py` y luego `python pipeline/08_simulados.py --recalcular`.
-4. Confirmar en la central que el escenario base muestra el ranking MUT, que sus puntajes varían y que aparece la ruta inicial de una cuadrilla simulada. Confirmar el estado de la base y que cada servicio publicó el SHA acordado. [Deploy de Drena](deploy.md)
+4. Registrar el SHA activo de Vercel en *Deployments* y el de Render en *Events*. Verificar que ambos coincidan con el SHA acordado. Confirmar el estado de la base y abrir la central para comprobar que el ranking MUT tiene puntajes distintos y aparece la ruta inicial de una cuadrilla simulada. [Deploy de Drena](deploy.md)
 
 ## Probar dos veces con dos celulares
 
@@ -33,9 +33,9 @@ Usar el escenario de ensayo, las tres imágenes preparadas y las URLs del despli
 4. Enviar la foto de la rejilla limpia desde la cuadrilla. Confirmar el estado de cierre y la disminución del puntaje.
 5. Revisar en la red del navegador que la central recibe únicamente las señales públicas y que las respuestas excluyen fotos vecinales, texto crudo y GPS exacto. Reiniciar el escenario con el control de administración y repetir.
 
-Registrar cada paso fallido con el SHA y la issue correspondiente. Completar los tiempos a partir de las dos pasadas observadas.
+Registrar los SHA verificados, ambos tiempos en segundos, el resultado del cierre y la comprobación de privacidad en cada pasada. Anotar cada paso fallido con la issue correspondiente.
 
-| Pasada | SHA | Ranking y ruta | Foto → central (s) | Foto → móvil (s) | Paraderos | Cierre | Privacidad | Incidencias |
+| Pasada | SHA Vercel / Render | Ranking y ruta | Foto → central (s) | Foto → móvil (s) | Paraderos | Cierre | Privacidad | Incidencias |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Pendiente | | | | | | | |
 | 2 | Pendiente | | | | | | | |
