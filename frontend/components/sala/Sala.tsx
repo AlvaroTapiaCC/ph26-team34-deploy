@@ -25,6 +25,7 @@ import Transporte, { capasTransporte } from "../desktop/Transporte";
 import DrenaMap, { type MapLabel, type MapPunto } from "../map/DrenaMap";
 import { ESTADOS, FLUJO_CONFIG, picoEscenario, type EstadoRejilla } from "@/lib/flujo/config";
 import { fuenteReportes, fuenteSimulada } from "@/lib/flujo/fuentes";
+import { pronosticoEscurrimiento } from "@/lib/flujo/pronostico";
 import { useFlujo, type Flujo } from "@/lib/flujo/useFlujo";
 import { precargarMapLibre } from "../map/maplibre";
 import { Logo } from "../ui";
@@ -585,7 +586,7 @@ const Mapa = memo(function Mapa({
   setCapas,
   modoAgua,
   setModoAgua,
-  sinLluvia,
+  textoPronostico,
 }: {
   filas: Fila[];
   vista: Vista;
@@ -603,7 +604,7 @@ const Mapa = memo(function Mapa({
   setCapas: (c: Capas) => void;
   modoAgua: ModoAgua;
   setModoAgua: (m: ModoAgua) => void;
-  sinLluvia: boolean;
+  textoPronostico?: string;
 }) {
   const { observaciones, transporte, ruta, demo } = useSala();
   const [tresD, setTresD] = useState(false);
@@ -721,7 +722,7 @@ const Mapa = memo(function Mapa({
               <button type="button" className={`${s.chipMapa} ${menu ? s.chipMapaOn : ""}`} onClick={() => setMenu(!menu)} aria-expanded={menu}>
                 Filtros <small>{Object.values(capas).filter(Boolean).length} de {Object.keys(capas).length}</small>
               </button>
-              {menu && <FiltrosMapa capas={capas} alternar={alternar} durante={durante} aguaRealSinLluvia={capas.agua && modoAgua === "real" && sinLluvia} />}
+              {menu && <FiltrosMapa capas={capas} alternar={alternar} durante={durante} textoPronostico={capas.agua && modoAgua === "real" ? textoPronostico : undefined} />}
             </span>
           )}
           {!demo.activo && !simulacion && capas.agua && (
@@ -749,7 +750,7 @@ const Mapa = memo(function Mapa({
   );
 });
 
-function FiltrosMapa({ capas, alternar, durante, aguaRealSinLluvia }: { capas: Capas; alternar: (capa: keyof Capas) => void; durante: boolean; aguaRealSinLluvia: boolean }) {
+function FiltrosMapa({ capas, alternar, durante, textoPronostico }: { capas: Capas; alternar: (capa: keyof Capas) => void; durante: boolean; textoPronostico?: string }) {
   const [capaInfo, setCapaInfo] = useState<keyof Capas | null>(null);
   const controles = (capa: keyof Capas) => ({
     on: capas[capa],
@@ -762,7 +763,7 @@ function FiltrosMapa({ capas, alternar, durante, aguaRealSinLluvia }: { capas: C
     <div className={s.capasMenu} role="group" aria-label="Filtros del mapa">
       <p className={s.capasGrupo}>Evidencia y cálculo</p>
       {durante && <CapaCheck {...controles("reportes")} titulo="Reportes en el mapa" sub="Último reporte por lugar de las últimas 72 horas. Toca el anillo para ver fuente y hora; no confirma un cierre vial. Los simulados se identifican en el globo." muestra="reporte" />}
-      <CapaCheck {...controles("agua")} titulo="Escurrimiento estimado" sub={`Modelo por pendiente, no agua medida. Puede usar lluvia pronosticada y reportes recibidos, o un escenario con lluvia supuesta y 20 % de rejillas tapadas. Para ver incidentes usa Reportes.${aguaRealSinLluvia ? " Sin lluvia ahora (Open-Meteo): el agua real no escurre" : ""}`} muestra="agua" />
+      <CapaCheck {...controles("agua")} titulo="Escurrimiento estimado" sub={`Modelo por pendiente, no agua medida. Puede usar lluvia pronosticada y reportes recibidos, o un escenario con lluvia supuesta y 20 % de rejillas tapadas. Para ver incidentes usa Reportes.${textoPronostico ? ` ${textoPronostico}` : ""}`} muestra="agua" />
       <CapaCheck {...controles("calor")} titulo="Concentración de prioridad" sub="Agrupa puntajes de limpieza, no mide probabilidad de inundación. Sin halo puede significar que no hay ranking en esa zona." muestra="calor" />
       <CapaCheck {...controles("cadenas")} titulo="Flujo entre rejillas" sub="Muestra hacia qué rejilla escurre el agua calle abajo, según la pendiente estimada. Si una se tapa, revisa las que reciben su agua" muestra="cadena" />
       <CapaCheck {...controles("criticos")} titulo="Inundaciones registradas (Las Condes)" sub="Lugares que la Municipalidad de Las Condes registró como inundados o en riesgo de inundación durante la temporada de lluvias de 2026. Contexto histórico, no inundaciones activas." muestra="critico" />
@@ -1049,6 +1050,8 @@ function SalaInterior({ children }: { children: ReactNode }) {
   const aguaEnMapa = simulando || ((vista === "antes" || vista === "durante") && capas.agua);
   const aguaReal = !simulando && modoAgua === "real";
   const flujoRef = useRef<Flujo | null>(null);
+  const pronostico = pronosticoEscurrimiento(sala.clima);
+  const aguaVisible = aguaEnMapa && (demoActivo || !aguaReal || pronostico.mmh != null);
   // Agua simulada en Antes/Durante: supuesto fijo de 1 de cada 5 rejillas tapadas (siempre las mismas), para ver dónde no cabe
   const [supuestas, setSupuestas] = useState<Record<string, EstadoRejilla>>(SIN_ESTADOS);
   const flujo = useFlujo({
@@ -1056,7 +1059,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
     puntos: puntosFlujo,
     estados: demoActivo ? SIN_ESTADOS : simulando ? estados : aguaReal ? SIN_ESTADOS : supuestas,
     fuente: demoActivo ? fuenteSimulada : aguaReal ? fuenteReportes : fuenteSimulada,
-    visible: aguaEnMapa,
+    visible: aguaVisible,
     soloAgua: !simulando,
     activo: aguaEnMapa,
     onClickRejilla: (id) => {
@@ -1073,15 +1076,14 @@ function SalaInterior({ children }: { children: ReactNode }) {
     setSupuestas(Object.fromEntries(flujo.rejillas().map((r) => [r.id, (quintoDe(r.id) ? "tapada" : "limpia") as EstadoRejilla])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flujo.ui.cargado, nRejillas]);
-  // El agua corre sola cuando está a la vista. Con datos reales, la lluvia es la del pronóstico de Open-Meteo (mm/h);
-  // simulada, la del escenario de la demo.
-  const mmhReal = (sala.clima.datos?.lluvia_pronosticada_prox_24h_mm ?? 0) / 24;
+  // Sin pronóstico, el motor recibe cero como entrada neutra y el escurrimiento real queda oculto y en pausa.
+  const mmhReal = pronostico.mmh ?? 0;
   useEffect(() => {
     if (!flujo.ui.cargado) return;
-    if (aguaEnMapa && !flujo.ui.corriendo) flujo.reproducir();
-    if (!aguaEnMapa && flujo.ui.corriendo) flujo.alternar();
+    if (aguaVisible && !flujo.ui.corriendo) flujo.reproducir();
+    if (!aguaVisible && flujo.ui.corriendo) flujo.alternar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aguaEnMapa, flujo.ui.cargado]);
+  }, [aguaVisible, flujo.ui.cargado]);
   useEffect(() => {
     if (!flujo.ui.cargado || simulando) return;
     flujo.setLluvia(demoActivo ? datosDemo(demoPaso).hora.lluvia_mm : aguaReal ? Math.round(mmhReal * 10) / 10 : picoEscenario("base"));
@@ -1147,7 +1149,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
     <div className={`${s.sala} ${presentacion ? s.presentacion : ""}`} data-vista={vista}>
       <Barra vista={vista} />
       <main className={s.escena}>
-        <Mapa filas={filas} vista={vista} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} servicio={servicio} foco={foco} onListo={listo} flujo={flujo} capas={capas} setCapas={setCapas} modoAgua={modoAgua} setModoAgua={setModoAgua} sinLluvia={mmhReal < 0.1} />
+        <Mapa filas={filas} vista={vista} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} servicio={servicio} foco={foco} onListo={listo} flujo={flujo} capas={capas} setCapas={setCapas} modoAgua={modoAgua} setModoAgua={setModoAgua} textoPronostico={demoActivo ? undefined : pronostico.texto} />
         {conMapa(vista) && <EsqueletoMapa key={`esq-${vista}`} listo={mapaListo && (!simulando || flujo.ui.cargado || flujo.ui.error)} />}
         <Inicio activo={vista === "inicio"} mapaListo={mapaListo} />
         {(vista === "validacion" || vista === "san-carlos") && <div className={s.pagina}>{children}</div>}
