@@ -327,7 +327,7 @@ def reproducir(args):
         "salidas": [archivo(ruta_resultado), archivo(ruta_tabla)],
     }
     ruta_meta.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"{evento['nombre']}: {len(puntos)} lugares, {len(entradas)} rejillas, {len(horas)} horas → {ruta_resultado}")
+    print(f"{evento['nombre']}: {len(puntos)} lugares, {len(entradas)} rejillas, {len(horas)} horas -> {ruta_resultado}")
 
 
 def main():

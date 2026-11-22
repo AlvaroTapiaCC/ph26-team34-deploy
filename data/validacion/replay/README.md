@@ -31,7 +31,7 @@ python pipeline/10_replay.py \
   --prediccion data/validacion/prediccion_replay.csv \
   --cadenas data/street_chains_replay.json \
   --clima data/escenarios/2026-10-13.json \
-  --anegados data/validacion/anegados_2026-10-13.geojson \
+  --anegados data/validacion/anegados_20261013.geojson \
   --tipo-evidencia evento \
   --motivo "Sector y criterio que cumplió al seleccionar la evidencia"
 ```
