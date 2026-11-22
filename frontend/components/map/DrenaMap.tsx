@@ -69,6 +69,7 @@ export interface DrenaMapProps {
   foco?: LngLat | null; // centra el mapa en este punto (sin cambiar el zoom) al elegirlo en una lista
   ruta?: LngLat[][] | null; // ruta propuesta de una cuadrilla (color de acción, no de agua)
   puntos?: MapPunto[] | null; // rejillas como puntos GL, coloreados por prioridad
+  puntosVisibles?: boolean; // oculta los símbolos sin quitar los datos del mapa de calor; por defecto, sí
   onClickPunto?: (id: string) => void;
   /** Capas interactivas que toman el clic y el hover antes que las rejillas subyacentes. */
   capasSobrePuntos?: readonly string[];
@@ -641,6 +642,18 @@ export default function DrenaMap(props: DrenaMapProps) {
     raiz?.querySelectorAll(".pin.is-resaltado").forEach((e) => e.classList.remove("is-resaltado"));
     if (id) raiz?.querySelector(`.pin[data-id="${CSS.escape(id)}"]`)?.classList.add("is-resaltado");
   }, [ready, props.resaltado, props.pins]);
+
+  // Los símbolos de prioridad y el calor comparten datos, pero se filtran por separado.
+  useEffect(() => {
+    if (!ready) return;
+    const map = mapRef.current;
+    const visible = props.puntosVisibles !== false;
+    for (const id of ["puntos", "puntos-brillo", "puntos-sel", "puntos-hover"]) map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
+    if (!visible) {
+      hoverRef.current?.(null);
+      map.getCanvas().style.cursor = "";
+    }
+  }, [ready, props.puntosVisibles]);
 
   // Visibilidad de las capas de datos reales
   useEffect(() => {

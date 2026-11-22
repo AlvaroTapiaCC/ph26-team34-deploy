@@ -2,7 +2,7 @@ import { CATASTRO, useSala } from "@/lib/sala";
 import { horaSantiago } from "@/lib/transporte";
 import s from "./sala.module.css";
 
-export type CapasMapa = { agua: boolean; calor: boolean; cadenas: boolean; transporte: boolean; limites: boolean; catastro: boolean; infra: boolean; colectores: boolean; criticos: boolean; reportes: boolean };
+export type CapasMapa = { agua: boolean; calor: boolean; cadenas: boolean; transporte: boolean; limites: boolean; catastro: boolean; infra: boolean; colectores: boolean; criticos: boolean; reportes: boolean; ruta: boolean };
 
 export default function LeyendaMapa({ capas, durante, nReportes, modoAgua }: { capas: CapasMapa; durante: boolean; nReportes: number; modoAgua: "real" | "simulada" }) {
   const { antes, durante: rankingDurante, clima, observaciones, transporte, ruta, cuadrilla } = useSala();
@@ -11,13 +11,14 @@ export default function LeyendaMapa({ capas, durante, nReportes, modoAgua }: { c
     <details className={s.lecturaMapa} aria-label="Cómo leer el mapa">
       <summary className={s.lecturaResumen}>
         Guía
-        <span className={s.lecturaEscala}>
+        {(capas.catastro || capas.calor) && <span className={s.lecturaEscala}>
           <span><i className={s.lgAlta} />Alta</span>
           <span><i className={s.lgMedia} />Media</span>
           <span><i className={s.lgBaja} />Baja</span>
-        </span>
+        </span>}
       </summary>
       <div className={s.lecturaContenido}>
+      {(capas.catastro || capas.calor) && <>
       <h2>Prioridad de limpieza</h2>
       <p>{ranking.estado === "cargando" ? "Consultando prioridades…" : `${ranking.filas.filter((p) => p.prioridad != null).length} rejillas priorizadas · ${ranking.estado === "error" ? "sin actualizar" : "zona MUT"}`}</p>
       <ul className={s.clavesMapa}>
@@ -26,9 +27,10 @@ export default function LeyendaMapa({ capas, durante, nReportes, modoAgua }: { c
         <li><i className={s.lgBaja} />Baja</li>
       </ul>
       <p className={s.claveNota}>El color ordena la limpieza; no mide agua ni obstrucción.</p>
+      </>}
       <ul className={s.clavesDetalle}>
         {capas.reportes && <li><i className={s.lgReporte} /><span>{observaciones.estado === "cargando" ? "Consultando reportes…" : `${nReportes} ${nReportes === 1 ? "lugar con reporte" : "lugares con reportes"}${observaciones.estado === "error" ? " · sin actualizar" : nReportes === 1 ? " reciente" : " recientes"}`} <small>≋ Agua · ⊠ Obstrucción · ✓ Despejada<br />! Por verificar · S Simulado<br />Toca un símbolo para ver fuente y hora.</small></span></li>}
-        {!!ruta?.geojson && <li><i className={s.lgRuta} /><span>Ruta de la cuadrilla{cuadrilla?.is_simulated ? " simulada" : ""}</span></li>}
+        {capas.ruta && !!ruta?.geojson && <li><i className={s.lgRuta} /><span>Ruta de la cuadrilla{cuadrilla?.is_simulated ? " simulada" : ""}</span></li>}
         {capas.transporte && <>
           <li><b className={s.lgBus}>BUS ≋</b><span>Agua observada cerca</span></li>
           <li><b className={s.lgBus}>BUS !</b><span>Prioridad alta cerca, no agua confirmada</span></li>
