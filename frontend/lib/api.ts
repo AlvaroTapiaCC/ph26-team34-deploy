@@ -15,6 +15,7 @@ export class ApiError extends Error {
 export interface GetOpts {
   timeoutMs?: number;
   reintentos?: number;
+  cache?: RequestCache;
   /** Se llama una vez si la respuesta tarda más de `lentoMs`: el servidor probablemente está despertando. */
   onLento?: () => void;
   lentoMs?: number;
@@ -23,13 +24,13 @@ export interface GetOpts {
 const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function apiGet<T>(ruta: string, o: GetOpts = {}): Promise<T> {
-  const { timeoutMs = 70_000, reintentos = 2, onLento, lentoMs = 5_000 } = o;
+  const { timeoutMs = 70_000, reintentos = 2, cache, onLento, lentoMs = 5_000 } = o;
   let ultimo: unknown;
   const aviso = onLento ? setTimeout(onLento, lentoMs) : null;
   try {
     for (let i = 0; i <= reintentos; i++) {
       try {
-        const r = await fetch(`${API_URL}${ruta}`, { signal: AbortSignal.timeout(timeoutMs) });
+        const r = await fetch(`${API_URL}${ruta}`, { cache, signal: AbortSignal.timeout(timeoutMs) });
         if (r.ok) return (await r.json()) as T;
         // 4xx (salvo 408/429) no mejora reintentando
         if (r.status >= 400 && r.status < 500 && r.status !== 408 && r.status !== 429) throw new ApiError(`El servidor respondió ${r.status}`, r.status);

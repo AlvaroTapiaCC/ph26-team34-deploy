@@ -35,7 +35,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-SCRIPT_VERSION = "1.1.0"
+SCRIPT_VERSION = "1.1.1"
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "backend"))
 
@@ -155,7 +155,8 @@ def main():
     meta = {
         "generado_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "git_head_al_generar": git_head(),
-        "regla": "Predicción hecha antes de fotografiar. Después de este commit no se cambian pesos ni datos.",
+        "regla": ("Predicción hecha antes de fotografiar. Después de este commit no se cambian pesos ni datos."
+                  if a.sufijo == "mut" else "Ranking base del sector con la configuración congelada, sin clima."),
         f"zona_{a.sufijo}": {**meta_ter["zona"], "rejillas_en_zona": int(ter[col_zona].sum()),
                      "rejillas_rankeadas": n, "fuera_de_red_excluidas": fuera},
         "formula": {
