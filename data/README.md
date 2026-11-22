@@ -62,6 +62,12 @@ python pipeline/11_clima_historico.py --lat … --lon …     # si #86 elige otr
   Un dato faltante deja `clima` nulo y el modo en `sin_dato`, nunca un 0.
 - `<evento>.meta.json` registra las URLs de consulta, la celda de la grilla usada, la fecha de descarga y el sha256 de la salida, de la config y del script.
 
+## Anegamientos viales documentados (#73)
+
+El [registro del 13 de octubre de 2026](validacion/anegados_20261013.geojson) documenta 9 ubicaciones.
+En el sector más concentrado caben 4 en un radio de 1,5 km. La [auditoría](validacion/anegados_20261013.md) explica las fuentes,
+las horas de aviso o publicación y el corte que lleva al evento de julio para el replay (#86).
+
 ## Obsoleto
 
 `data/sumideros_nunoa.geojson` y `pipeline/01_sumideros.py` quedan solo como referencia: no los usa nadie.
