@@ -95,6 +95,8 @@ El script registra lo aplicado en `schema_migrations`, así que se puede correr 
 
 Seguridad: todas las tablas tienen RLS. El navegador (publishable key) solo puede **leer**; las escrituras pasan por el backend.
 
+La [verificación de producción de la demo](verificacion-produccion-demo.md) registra la revisión observada, los pasos de publicación y la prueba con dos celulares.
+
 ## Correr en local
 
 ### Backend (FastAPI · http://localhost:8000/docs)
