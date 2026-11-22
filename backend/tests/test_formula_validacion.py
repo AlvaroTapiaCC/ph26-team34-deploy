@@ -30,7 +30,9 @@ def test_mismos_pesos_que_la_completa():
 
 def test_resto_identico():
     # Solo cambian p_pred y la lista de features simuladas; todo lo demás debe ser igual.
-    ignorar = {"p_pred", "features_simuladas"}
+    # `confianza` (#88) pondera observaciones, que la predicción congelada no tiene: su config
+    # queda sin cambios para conservar el hash registrado en prediccion_congelada.meta.json.
+    ignorar = {"p_pred", "features_simuladas", "confianza"}
     assert {k: v for k, v in VALIDACION.items() if k not in ignorar} == {
         k: v for k, v in COMPLETA.items() if k not in ignorar
     }

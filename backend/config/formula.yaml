@@ -36,6 +36,14 @@ observado:
   limpia: 0.05
   vigencia_horas: 72          # una foto deja de "mandar" después de este tiempo
 
+# Confianza que Claude asigna a la foto de rejilla. Acerca P al valor observado:
+# P = P_pred + factor · (P_obs − P_pred). Alta = la foto manda por completo.
+# Texto y cámara todavía no usan este factor (#88, seguimiento).
+confianza:
+  alta: 1.0
+  media: 0.7
+  baja: 0.4
+
 # Reportes de texto sin foto suben P, pero pesan menos que una foto.
 reportes_texto:
   factor: 0.5                 # un texto vale la mitad que una foto

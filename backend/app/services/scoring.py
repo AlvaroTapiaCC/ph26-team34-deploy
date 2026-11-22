@@ -84,10 +84,11 @@ def cargar_entradas(
 
     # Última foto de rejilla evaluable y vigente (lo confirmado manda)
     fotos = {
-        r["sumidero_id"]: r["rejilla"]
+        r["sumidero_id"]: (r["rejilla"], r["confianza"])
         for r in conn.execute(
             f"""
-            select distinct on (o.sumidero_id) o.sumidero_id, c.resultado->>'rejilla' as rejilla
+            select distinct on (o.sumidero_id) o.sumidero_id, c.resultado->>'rejilla' as rejilla,
+                   c.resultado->>'confianza' as confianza
               from observations o {_ULTIMA_CLASIFICACION}
              where o.tipo = 'foto_rejilla' and o.sumidero_id is not null
                and (c.resultado->>'evaluable')::boolean
@@ -163,11 +164,13 @@ def cargar_entradas(
             d = _dias_norm(r["ultima_limpieza"], hoy, norm.get("dias_sin_limpieza_max", 90))
             if d is not None:
                 f["dias_sin_limpieza"] = d
+        rejilla, confianza = fotos.get(r["id"], (None, None))
         entradas.append(
             SumideroInput(
                 id=r["id"],
                 features=f,
-                rejilla_observada=fotos.get(r["id"]),
+                rejilla_observada=rejilla,
+                confianza_foto=confianza,
                 reportes_texto=textos.get(r["id"], 0),
                 nivel_agua=agua.get(r["id"]),
                 urgente=r["id"] in urgentes,
