@@ -121,22 +121,20 @@ export interface Scenario {
   label: string;
   short: string;
   ranking: [string, number][]; // [puntoId, puntaje]
-  aguaExterna: number;
-  criticosTop30: number;
   real?: boolean; // escenario del backend: su ranking sale de GET /scenarios/{id}/ranking
 }
 
 export const SCENARIOS: Scenario[] = [
   {
-    id: "13oct", label: "Temporal de octubre", short: "Octubre", aguaExterna: 38, criticosTop30: 11,
+    id: "13oct", label: "Temporal de octubre", short: "Octubre",
     ranking: [["p1", 0.92], ["p2", 0.88], ["p3", 0.81], ["p4", 0.76], ["p5", 0.69], ["p6", 0.63], ["p7", 0.58], ["p8", 0.51], ["p9", 0.44], ["p10", 0.39], ["p11", 0.33]],
   },
   {
-    id: "poniente", label: "Celda sobre el poniente", short: "Poniente", aguaExterna: 21, criticosTop30: 9,
+    id: "poniente", label: "Celda sobre el poniente", short: "Poniente",
     ranking: [["p6", 0.94], ["p10", 0.87], ["p1", 0.8], ["p3", 0.71], ["p2", 0.62], ["p8", 0.55], ["p4", 0.49], ["p5", 0.41], ["p7", 0.36], ["p11", 0.31], ["p9", 0.27]],
   },
   {
-    id: "pareja", label: "Lluvia pareja", short: "Pareja", aguaExterna: 33, criticosTop30: 12,
+    id: "pareja", label: "Lluvia pareja", short: "Pareja",
     ranking: [["p4", 0.79], ["p1", 0.77], ["p3", 0.72], ["p2", 0.7], ["p8", 0.61], ["p5", 0.57], ["p6", 0.52], ["p10", 0.47], ["p7", 0.4], ["p11", 0.35], ["p9", 0.3]],
   },
 ];
@@ -161,6 +159,7 @@ export function prioFromRank(rank: number): Prioridad {
 
 export function rankingFor(sc: ScenarioId): RankedPunto[] {
   const s = SCENARIOS.find((x) => x.id === sc) ?? SCENARIOS[0]; // ids reales (p. ej. "base") no existen en los datos de ejemplo
+  // El orden lo mueve la evidencia (fotos y reportes), no la lluvia supuesta del flujo estimado. El puntaje no se muestra.
   return s.ranking.map(([id, score], i) => ({ ...PUNTOS[id], rank: i + 1, score, prio: prioFromRank(i + 1) }));
 }
 
@@ -180,17 +179,19 @@ export function motivo(p: Punto) {
 
 /** Las tres cifras del héroe y la ficha: de ejemplo (agua externa, área) o reales (sumideros, P, puntaje). */
 export function statsPunto(p: RankedPunto): { value: string; label: string }[] {
+  // Vista sin puntaje: el puntaje ordena por dentro; se muestra la prioridad en palabras y la posición.
   if (p.real) {
     return [
       { value: String(p.real.sumideros.length), label: p.real.sumideros.length === 1 ? "sumidero en la esquina" : "sumideros en la esquina" },
-      { value: punt01(p.real.pEf ?? p.real.p), label: "puntaje de obstrucción (0 a 1)" },
-      { value: fmt(p.score, 3), label: "puntaje (P × C)" },
+      { value: PRIO_LABEL[p.prio], label: "prioridad" },
+      { value: `#${p.rank}`, label: "en el ranking del escenario" },
     ];
   }
+  const cerca = cercaResumen(p);
   return [
     { value: `${p.pctExterno} %`, label: `del agua viene de ${p.origen ?? p.comuna}` },
     { value: `${fmt(p.area)} km²`, label: "área de aporte" },
-    { value: fmt(p.score), label: "puntaje" },
+    { value: cerca.valor, label: cerca.etiqueta },
   ];
 }
 
@@ -202,6 +203,22 @@ export function cita(p: Punto) {
 export function instruccion(p: RankedPunto) {
   if (p.real) return p.real.explicacion ?? `Prioridad ${p.rank}. Revisar ${nSum(p)} de la esquina y despejar las rejillas antes de la lluvia.`;
   return `Prioridad ${p.rank}. Recibe el agua de ${fmt(p.area)} km², el ${p.pctExterno} % desde ${p.origen ?? p.comuna}, ${p.cerca.toLowerCase().startsWith("metro a") ? `a ${p.cerca.slice(8)} de la estación de metro` : p.cerca.toLowerCase()}. Limpiar los sumideros de la esquina antes de las 14:00.`;
+}
+
+// "Qué hay cerca" para el héroe: la infraestructura más crítica de `criticidad` ("Ⓜ Metro X · 80 m", "Colegio · 140 m").
+export function cercaResumen(p: Punto): { valor: string; etiqueta: string } {
+  const orden = ["metro", "paso bajo nivel", "hospital", "colegio"];
+  const items = p.criticidad.map((c) => {
+    const [nombre, dist] = c.replace(/^Ⓜ\s*/, "").split(" · ");
+    const tipo = orden.find((t) => nombre.toLowerCase().startsWith(t)) ?? nombre.toLowerCase();
+    return { tipo, nombre, dist };
+  });
+  items.sort((a, b) => (orden.indexOf(a.tipo) + 1 || 9) - (orden.indexOf(b.tipo) + 1 || 9));
+  const it = items[0];
+  if (!it) return { valor: "Nada", etiqueta: "crítico a menos de 200 m" };
+  const valor = it.tipo.charAt(0).toUpperCase() + it.tipo.slice(1);
+  const resto = it.nombre.slice(it.tipo.length).trim();
+  return { valor, etiqueta: [it.dist ? `a ${it.dist}` : null, resto || null].filter(Boolean).join(" · ") };
 }
 
 export const PRIO_LABEL: Record<Prioridad, string> = { alta: "▲ Alta", media: "◆ Media", baja: "● Baja" };
@@ -318,16 +335,6 @@ export const CELDA: LngLat[] = [
 export const RAYOS: LngLat[] = [
   [-70.5555, -33.4085], [-70.5445, -33.4065], [-70.5385, -33.4105], [-70.5525, -33.4145], [-70.5475, -33.4095],
   [-70.5375, -33.4175], [-70.5525, -33.4205], [-70.5395, -33.4215], [-70.5445, -33.4185], [-70.5575, -33.4225],
-];
-
-// Validación histórica: posiciones de reportes ilustrativas
-export const ANEGAMIENTOS_REALES: { coord: LngLat; conTop: boolean }[] = [
-  { coord: [-70.6013, -33.418], conTop: true },
-  { coord: [-70.6085, -33.4388], conTop: true },
-  { coord: [-70.604, -33.4545], conTop: true },
-  { coord: [-70.579, -33.4658], conTop: true },
-  { coord: [-70.6265, -33.4245], conTop: false },
-  { coord: [-70.5585, -33.4485], conTop: false },
 ];
 
 // 175 puntos críticos GORE (muestra ilustrativa)

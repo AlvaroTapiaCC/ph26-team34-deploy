@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { areaAporte, ESCURRIMIENTO, fmt, instruccion, LIMITES, MAP_BOUNDS, pad2, statsPunto, type LngLat } from "@/lib/data";
+import { areaAporte, ESCURRIMIENTO, fmt, instruccion, LIMITES, MAP_BOUNDS, pad2, PRIO_LABEL, statsPunto, type LngLat } from "@/lib/data";
 import { NOMBRE_VARIABLE } from "@/lib/real";
 import { useStore } from "@/lib/store";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
@@ -17,12 +17,12 @@ export function CriticidadPill({ text }: { text: string }) {
   );
 }
 
-/** Variables de la fórmula de un punto real (GET /sumideros/{id}): qué pesa en el puntaje. */
+/** Variables de la fórmula de un punto real (GET /sumideros/{id}): qué pesa en la prioridad. */
 export function VariablesReales() {
   const { fichaReal, fichaEstado } = useStore();
   return (
     <div>
-      <Kicker>Qué pesa en el puntaje</Kicker>
+      <Kicker>Qué pesa en la prioridad</Kicker>
       {fichaEstado === "cargando" && <p className="downstream">Cargando variables…</p>}
       {fichaEstado === "error" && <p className="downstream">No se pudo cargar el detalle de este punto.</p>}
       {fichaReal && fichaReal.variables.length === 0 && <p className="downstream">Sin variables cargadas para este sumidero todavía.</p>}
@@ -60,7 +60,7 @@ export default function Ficha() {
         faded: x.id !== p.id,
         onClick: () => set({ ficha: x.id }),
       })),
-    [ranking, p.id, set],
+    [ranking, p, set],
   );
   const areaCallout: LngLat = useMemo(() => {
     if (area.length === 0) return p.coord;
@@ -109,11 +109,11 @@ export default function Ficha() {
           </div>
           <div className="stats3">
             {real ? (
-              statsPunto(p).map((st, i) => <Stat key={st.label} inset="soft" value={st.value} label={st.label} accent={i === 2} />)
+              statsPunto(p).map((st, i) => <Stat key={st.label} inset="soft" value={st.value} label={st.label} accent={i === 1} />)
             ) : (
               <>
                 <Stat inset="soft" value={`${fmt(p.area)} km²`} label="área de aporte" />
-                <Stat inset="soft" value={fmt(p.score)} label="puntaje" accent />
+                <Stat inset="soft" value={PRIO_LABEL[p.prio]} label="prioridad" accent />
                 <Stat inset="soft" value={`#${p.rank}`} label={`de ${totalPuntos.toLocaleString("es-CL")}`} />
               </>
             )}

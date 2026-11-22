@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { PRIO_LABEL, type Prioridad } from "@/lib/data";
 
 export function Drop({ size = 27 }: { size?: number }) {
@@ -56,54 +56,138 @@ export function Segmented<T extends string>({
   );
 }
 
-export function useOutside(cb: () => void) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const h = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && cb();
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [cb]);
-  return ref;
+/** Chevron hacia abajo (SVG), gira cuando el menú está abierto. */
+export function Chevron({ open = false }: { open?: boolean }) {
+  return (
+    <svg className={`chev ${open ? "is-open" : ""}`} width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+      <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
-export function Selector<T extends string | number>({
+/** Control base de la barra superior: 44 px de alto, mismo radio, borde y tipografía (Geist 14 px). El activo va en accent. */
+export const BarButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { on?: boolean }>(function BarButton(
+  { on = false, className = "", ...rest },
+  ref,
+) {
+  return <button ref={ref} type="button" className={`barbtn ${on ? "is-on" : ""} ${className}`} {...rest} />;
+});
+
+/** Opciones excluyentes con el mismo control base (p. ej. el escenario). */
+export function BarSegment<T extends string>({ options, value, onChange, label }: { options: { id: T; label: string }[]; value: T; onChange: (v: T) => void; label: string }) {
+  return (
+    <div className="bargroup" role="radiogroup" aria-label={label}>
+      {options.map((o) => (
+        <BarButton key={o.id} role="radio" aria-checked={o.id === value} on={o.id === value} onClick={() => onChange(o.id)}>
+          {o.label}
+        </BarButton>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Menú desplegable accesible: se abre bajo el botón, sobre el mapa; flechas, Inicio/Fin, Enter o Espacio para elegir,
+ * Esc o clic afuera para cerrar. Se cierra al elegir y devuelve el foco al botón.
+ */
+export function Dropdown<T extends string | number>({
   label,
   value,
   options,
   onChange,
-  active,
   footer,
 }: {
   label: string;
   value: T;
   options: { id: T; label: string; meta?: string }[];
   onChange: (v: T) => void;
-  active?: boolean;
   footer?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useOutside(() => setOpen(false));
+  const [activo, setActivo] = useState(0);
+  const wrap = useRef<HTMLDivElement>(null);
+  const boton = useRef<HTMLButtonElement>(null);
+  const items = useRef<(HTMLDivElement | null)[]>([]);
+  const menuId = useId();
+
+  const abrir = (i = Math.max(0, options.findIndex((o) => o.id === value))) => {
+    setActivo(i);
+    setOpen(true);
+  };
+  const cerrar = (foco = true) => {
+    setOpen(false);
+    if (foco) boton.current?.focus();
+  };
+  const elegir = (i: number) => {
+    onChange(options[i].id);
+    cerrar();
+  };
+
+  useEffect(() => {
+    if (open) items.current[activo]?.focus();
+  }, [open, activo]);
+
+  useEffect(() => {
+    if (!open) return;
+    const fuera = (e: PointerEvent) => wrap.current && !wrap.current.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("pointerdown", fuera);
+    return () => document.removeEventListener("pointerdown", fuera);
+  }, [open]);
+
+  const teclaMenu = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const n = options.length;
+    if (e.key === "ArrowDown") setActivo((activo + 1) % n);
+    else if (e.key === "ArrowUp") setActivo((activo - 1 + n) % n);
+    else if (e.key === "Home") setActivo(0);
+    else if (e.key === "End") setActivo(n - 1);
+    else if (e.key === "Enter" || e.key === " ") elegir(activo);
+    else if (e.key === "Escape") cerrar();
+    else if (e.key === "Tab") cerrar(false);
+    else return;
+    e.preventDefault();
+  };
+
   return (
-    <div className="selector-wrap" ref={ref}>
-      <button className={`selector ${active || open ? "is-active" : ""}`} onClick={() => setOpen(!open)}>
+    <div className="dropdown" ref={wrap}>
+      <BarButton
+        ref={boton}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
+        onClick={() => (open ? cerrar() : abrir())}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            abrir();
+          }
+        }}
+      >
         <span>{label}</span>
-        <span className="selector__chev">⌄</span>
-      </button>
+        <Chevron open={open} />
+      </BarButton>
       {open && (
-        <div className="menu">
-          {options.map((o) => (
-            <button
+        <div className="menu" id={menuId} role="listbox" aria-label={label} onKeyDown={teclaMenu}>
+          {options.map((o, i) => (
+            <div
               key={String(o.id)}
-              className={`menu__item ${o.id === value ? "is-on" : ""}`}
-              onClick={() => {
-                onChange(o.id);
-                setOpen(false);
+              ref={(el) => {
+                items.current[i] = el;
               }}
+              role="option"
+              aria-selected={o.id === value}
+              tabIndex={i === activo ? 0 : -1}
+              className={`menu__item ${o.id === value ? "is-on" : ""}`}
+              onClick={() => elegir(i)}
+              onMouseEnter={() => setActivo(i)}
             >
               <span className="menu__label">{o.label}</span>
               {o.meta && <span className="menu__meta">{o.meta}</span>}
-              {o.id === value && <span className="menu__check">✓</span>}
-            </button>
+              {o.id === value && (
+                <svg className="menu__check" width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+                  <path d="M3 7.5l2.5 2.5L11 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
           ))}
           {footer && <div className="menu__foot">{footer}</div>}
         </div>
