@@ -11,6 +11,7 @@ import type { Prioridad } from "./data";
 import { prioDe } from "./real";
 import { useExpuestos, type EstadoConsulta, type Expuestos } from "./transporte";
 import { datosDemo, PASOS_DEMO } from "./demo";
+import { cargarTransporteDemo, type CargaTransporteDemo } from "./transporteDemo";
 
 export type Fila = ApiRankingItem & { puesto: number; prio: Prioridad };
 
@@ -33,7 +34,7 @@ interface Sala {
   elegirCuadrilla: (id: string) => void;
   ruta: RutaCuadrilla | null;
   estadoRuta: EstadoConsulta;
-  transporte: { datos: Expuestos | null; calculadoAt: string | null; estado: EstadoConsulta };
+  transporte: { datos: Expuestos | null; calculadoAt: string | null; estado: EstadoConsulta; reintentar?: () => void };
   clima: { datos: ApiClima | null; estado: EstadoConsulta };
 }
 
@@ -42,20 +43,24 @@ const Ctx = createContext<Sala | null>(null);
 export function SalaProvider({ children }: { children: ReactNode }) {
   const [activo, setActivo] = useState(false);
   const [paso, setPaso] = useState(0);
-  const iniciar = useCallback(() => { setPaso(0); setActivo(true); }, []);
+  const [intentoTransporte, setIntentoTransporte] = useState(0);
+  const [transporteDemo, setTransporteDemo] = useState<CargaTransporteDemo>({ datos: null, estado: "cargando" });
+  const reintentarTransporte = useCallback(() => {
+    setTransporteDemo({ datos: null, estado: "cargando" });
+    setIntentoTransporte((i) => i + 1);
+  }, []);
+  const iniciar = useCallback(() => { setPaso(0); setActivo(true); reintentarTransporte(); }, [reintentarTransporte]);
   const anterior = useCallback(() => setPaso((p) => Math.max(0, p - 1)), []);
   const siguiente = useCallback(() => setPaso((p) => Math.min(PASOS_DEMO.length - 1, p + 1)), []);
   const salir = useCallback(() => { setActivo(false); setPaso(0); }, []);
   const demo = useMemo(() => ({ activo, paso, iniciar, anterior, siguiente, salir }), [activo, paso, iniciar, anterior, siguiente, salir]);
-  const [transporteDemo, setTransporteDemo] = useState<Expuestos | null>(null);
   useEffect(() => {
     if (!activo) return;
     let vigente = true;
-    fetch("/data/demo-san-carlos-transporte.json").then((r) => r.ok ? r.json() : null)
-      .then((datos: Expuestos | null) => { if (vigente) setTransporteDemo(datos); }).catch(() => {});
+    void cargarTransporteDemo((carga) => { if (vigente) setTransporteDemo(carga); });
     return () => { vigente = false; };
-  }, [activo]);
-  const simulado = useMemo(() => datosDemo(paso, transporteDemo), [paso, transporteDemo]);
+  }, [activo, intentoTransporte]);
+  const simulado = useMemo(() => datosDemo(paso, transporteDemo.datos), [paso, transporteDemo.datos]);
   const simAntes = useMemo(() => aFilas(simulado.inicial), [simulado.inicial]);
   const simDurante = useMemo(() => aFilas(simulado.durante), [simulado.durante]);
   const rAntes = useConsultaPeriodica(activo ? null : getRankingInicial, "ranking");
@@ -87,7 +92,7 @@ export function SalaProvider({ children }: { children: ReactNode }) {
       observaciones: { datos: simulado.observaciones, estado: "ok" },
       cuadrillas: [simulado.cuadrilla], estadoCuadrillas: "ok", cuadrilla: simulado.cuadrilla,
       elegirCuadrilla: () => {}, ruta: simulado.ruta, estadoRuta: "ok",
-      transporte: { datos: simulado.transporte, calculadoAt: simulado.transporte.calculado_at, estado: "ok" },
+      transporte: { datos: transporteDemo.estado === "ok" ? simulado.transporte : null, calculadoAt: transporteDemo.estado === "ok" ? simulado.transporte.calculado_at : null, estado: transporteDemo.estado, reintentar: reintentarTransporte },
       clima: { datos: {
         modo: simulado.hora.modo as ApiClima["modo"], plazo: null,
         inicio_lluvia_pronosticado_utc: simulado.hora.inicio_lluvia_pronosticado_utc,
@@ -112,7 +117,7 @@ export function SalaProvider({ children }: { children: ReactNode }) {
       transporte: tp,
       clima: { datos: clima.datos, estado: clima.estado },
     }),
-    [activo, demo, simulado, simAntes, simDurante, paso, filasAntes, rAntes.estado, filasDurante, esInicial, rDurante.estado, obs.datos, obs.estado, equipos, crews.estado, cuadrilla, ruta, estadoRuta, tp, clima.datos, clima.estado],
+    [activo, demo, simulado, simAntes, simDurante, paso, filasAntes, rAntes.estado, filasDurante, esInicial, rDurante.estado, obs.datos, obs.estado, equipos, crews.estado, cuadrilla, ruta, estadoRuta, tp, clima.datos, clima.estado, transporteDemo.estado, reintentarTransporte],
   );
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
 }

@@ -136,6 +136,7 @@ export default function Transporte({
   datos,
   calculadoAt,
   estado,
+  reintentar,
   activo,
   onSelect,
   servicioActivo,
@@ -145,6 +146,7 @@ export default function Transporte({
   datos: Expuestos | null;
   calculadoAt: string | null;
   estado: EstadoConsulta;
+  reintentar?: () => void;
   activo: string | null;
   onSelect: (id: string | null) => void;
   /** Variante del contenedor: la Central la usa para quitar el alto máximo del tablero de escritorio. */
@@ -156,18 +158,19 @@ export default function Transporte({
     return `Fuente: ${f.nombre}${f.fecha_descarga ? ` (descargado el ${f.fecha_descarga.split("-").reverse().join("-")})` : ""}`;
   }, [datos?.fuente]);
   const toggle = (id: string) => onSelect(activo === id ? null : id);
-  const vacio = datos && !datos.expuestos.length && !datos.en_riesgo.length;
+  const vacio = estado === "ok" && datos && !datos.expuestos.length && !datos.en_riesgo.length;
 
   return (
     <section className={`card tp ${datos?.expuestos.length ? "is-active" : ""} ${className ?? ""}`} aria-live="polite">
       <div className="tp__top">
         <Kicker tone={datos?.expuestos.length ? "danger" : undefined}>Paraderos de buses expuestos</Kicker>
         <span className="tp__ts">
-          {datos?.scenario_id === "demo-local" ? "Escenario simulado · sin actualizaciones en vivo" : estado === "error" ? "Sin conexión · reintentando" : datos ? `Calculado ${horaSantiago(calculadoAt, true)} · cada ${INTERVALO_MS / 1000} s` : "Consultando…"}
+          {datos?.scenario_id === "demo-local" ? "Escenario simulado · sin actualizaciones en vivo" : estado === "error" ? (reintentar ? "Sin conexión" : "Sin conexión · reintentando") : datos ? `Calculado ${horaSantiago(calculadoAt, true)} · cada ${INTERVALO_MS / 1000} s` : "Consultando…"}
         </span>
       </div>
 
-      {!datos && estado === "error" && <p className="tp__aviso">No se pudo consultar la exposición del transporte.</p>}
+      {!datos && estado === "cargando" && <p className="tp__aviso">Cargando transporte</p>}
+      {!datos && estado === "error" && <p className="tp__aviso">No se pudo consultar la exposición del transporte. {reintentar && <button type="button" onClick={reintentar}>Reintentar</button>}</p>}
       {datos?.aviso && <p className="tp__aviso">{datos.aviso}</p>}
 
       {vacio && (
