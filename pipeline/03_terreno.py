@@ -5,11 +5,18 @@ Uso (desde la raíz del repo, con data/rejillas.geojson ya generado por 02_rejil
     pip install -r pipeline/requirements.txt
     python pipeline/03_terreno.py                 # zona de terreno: 700 m alrededor del MUT
     python pipeline/03_terreno.py --buffer 3000   # red de calles más amplia aguas arriba
+    # Otro sector (replay, issue #87): centro lon,lat, radio de la zona y sufijo de las salidas
+    python pipeline/03_terreno.py --centro=-70.6,-33.45 --radio 700 --sufijo replay --nota "..."
 
-Salidas (en data/):
-    terreno_mut.csv            una fila por rejilla de la red: elevación, pendiente, área de aporte
-    street_chains_mut.json     cadenas de rejillas calle abajo (formato de la tabla street_chains)
-    terreno_mut.meta.json      fuentes, parámetros, conteos y sha256 de entradas, salidas y script
+Salidas (en data/, <sufijo> = mut por defecto):
+    terreno_<sufijo>.csv          una fila por rejilla de la red: elevación, pendiente, área de aporte
+    street_chains_<sufijo>.json   cadenas de rejillas calle abajo (formato de la tabla street_chains)
+    terreno_<sufijo>.meta.json    fuentes, parámetros, conteos y sha256 de entradas, salidas y script
+
+Sin argumentos calcula la zona MUT y sus salidas no cambian. En otro sector, la columna que marca
+la zona se llama en_zona_<sufijo>: 07_cargar.py solo etiqueta como zona_mut la columna en_zona_mut.
+La tesela del DEM se elige según el centro; si la red cruza el borde de la tesela, los nodos de
+fuera quedan sin elevación y el script lo avisa.
 
 Qué hace (issue #10, plan B de docs/plan-desarrollo.md):
   1. Baja la red de calles "drive" de OSM en un radio --buffer alrededor del centro. Es más
@@ -47,7 +54,7 @@ from pathlib import Path
 
 import requests
 
-SCRIPT_VERSION = "0.3.0"
+SCRIPT_VERSION = "0.4.0"
 
 # MUT, Av. Apoquindo 2730, Las Condes (lon, lat). Confirmado con el pin el 21-11-2026.
 CENTRO = (-70.601433, -33.417741)
@@ -55,11 +62,21 @@ CENTRO_NOTA = "confirmado con el pin (Av. Apoquindo 2730, Las Condes) el 21-11-2
 RADIO_ZONA_M = 700
 UTM = 32719
 
-DEM_TILE = "Copernicus_DSM_COG_10_S34_00_W071_00_DEM"
-DEM_URL = f"https://copernicus-dem-30m.s3.amazonaws.com/{DEM_TILE}/{DEM_TILE}.tif"
+
+
+def dem_tile(lon, lat):
+    """Tesela Copernicus GLO-30 de 1°×1° que contiene el punto (se nombra por su esquina SO)."""
+    la, lo = math.floor(lat), math.floor(lon)
+    return (f"Copernicus_DSM_COG_10_{'S' if la < 0 else 'N'}{abs(la):02d}_00_"
+            f"{'W' if lo < 0 else 'E'}{abs(lo):03d}_00_DEM")
+
+
+def dem_url(tile):
+    return f"https://copernicus-dem-30m.s3.amazonaws.com/{tile}/{tile}.tif"
+
 
 ANCHO_APORTE_M = 20.0     # ancho de calle + veredas que escurre hacia la calzada (proxy)
-PENDIENTE_PERCENTIL = 90  # pendiente >= p90 de la zona MUT = 1 en la variable "pendiente"
+PENDIENTE_PERCENTIL = 90  # pendiente >= p90 de la zona = 1 en la variable "pendiente"
 SNAP_MAX_M = 30.0         # rejillas más lejos que esto de una calle "drive" quedan fuera
 CADENA_MAX_M = 3000.0     # largo máximo de una cadena calle abajo
 
@@ -68,14 +85,14 @@ def sha256(ruta):
     return hashlib.sha256(Path(ruta).read_bytes()).hexdigest()
 
 
-def bajar_dem(destino):
+def bajar_dem(destino, tile):
     destino = Path(destino)
     if destino.exists():
         return destino
     destino.parent.mkdir(parents=True, exist_ok=True)
-    print(f"Descargando DEM {DEM_TILE} (~40 MB)...")
+    print(f"Descargando DEM {tile} (~40 MB)...")
     tmp = destino.with_suffix(".part")
-    with requests.get(DEM_URL, stream=True, timeout=120) as r:
+    with requests.get(dem_url(tile), stream=True, timeout=120) as r:
         r.raise_for_status()
         with open(tmp, "wb") as fh:
             for trozo in r.iter_content(1 << 20):
@@ -111,16 +128,45 @@ def elevaciones_nodos(G, ruta_dem):
     return z
 
 
+def parse_centro(texto):
+    try:
+        lon, lat = (float(v) for v in texto.split(","))
+    except ValueError:
+        raise argparse.ArgumentTypeError("se espera lon,lat (por ejemplo -70.6,-33.45)")
+    if not (-180 <= lon <= 180 and -90 <= lat <= 90):
+        raise argparse.ArgumentTypeError("lon,lat fuera de rango (¿invertidos?)")
+    return (lon, lat)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rejillas", default="data/rejillas.geojson")
+    ap.add_argument("--centro", type=parse_centro, default=CENTRO,
+                    help="centro de la zona como lon,lat (por defecto el MUT); con '=' si empieza con '-'")
+    ap.add_argument("--radio", type=float, default=RADIO_ZONA_M, help="radio de la zona (m)")
+    ap.add_argument("--sufijo", default="mut", help="sufijo de las salidas y de la columna en_zona_<sufijo>")
+    ap.add_argument("--nota", default=None, help="de dónde sale el centro (queda en la metadata)")
     ap.add_argument("--buffer", type=float, default=2500.0, help="radio de la red de calles (m)")
-    ap.add_argument("--dem", default="cache/dem/" + DEM_TILE + ".tif")
-    ap.add_argument("--salida", default="data/terreno_mut.csv")
+    ap.add_argument("--dem", default=None, help="GeoTIFF del DEM (por defecto la tesela del centro en cache/dem/)")
+    ap.add_argument("--salida", default=None, help="CSV de salida (por defecto data/terreno_<sufijo>.csv)")
     ap.add_argument("--refrescar-red", action="store_true", help="vuelve a bajar la red de OSM")
     ap.add_argument("--overpass", default="https://maps.mail.ru/osm/tools/overpass/api",
                     help="servidor Overpass (overpass-api.de a veces rechaza conexiones)")
     a = ap.parse_args()
+    if not a.sufijo.isidentifier():
+        ap.error("--sufijo debe ser letras, números o _ (se usa en nombres de archivo y de columna)")
+    if a.buffer - 200 < a.radio:
+        ap.error("--buffer debe ser al menos --radio + 200 m para que la zona no quede en el borde de la red")
+    CENTRO_Z = tuple(a.centro)
+    es_mut = CENTRO_Z == CENTRO and a.radio == RADIO_ZONA_M
+    nota = a.nota or (CENTRO_NOTA if CENTRO_Z == CENTRO else None)
+    col_zona = f"en_zona_{a.sufijo}"
+    radio_meta = int(a.radio) if float(a.radio).is_integer() else a.radio
+    tile = dem_tile(*CENTRO_Z)
+    a.dem = a.dem or f"cache/dem/{tile}.tif"
+    a.salida = a.salida or f"data/terreno_{a.sufijo}.csv"
+    if a.sufijo == "mut" and not es_mut:
+        ap.error("el sufijo 'mut' es de la zona MUT: usa otro --sufijo para otro centro o radio")
 
     import geopandas as gpd
     import networkx as nx
@@ -134,14 +180,14 @@ def main():
     # 1. Red de calles
     # La red se guarda en cache/ la primera vez y después se reutiliza: OSM cambia con el tiempo,
     # así que la metadata registra el sha256 y la fecha de descarga de la red usada.
-    ruta_red = Path(f"cache/osm/red_drive_{CENTRO[1]:.6f}_{CENTRO[0]:.6f}_{a.buffer:.0f}m.graphml")
+    ruta_red = Path(f"cache/osm/red_drive_{CENTRO_Z[1]:.6f}_{CENTRO_Z[0]:.6f}_{a.buffer:.0f}m.graphml")
     if ruta_red.exists() and not a.refrescar_red:
         print(f"Usando la red guardada {ruta_red}")
         G = ox.load_graphml(ruta_red)
     else:
         ox.settings.overpass_url = a.overpass
         print(f"Bajando red de calles 'drive' a {a.buffer:.0f} m del centro desde {a.overpass}...")
-        G = ox.graph_from_point((CENTRO[1], CENTRO[0]), dist=a.buffer, network_type="drive", simplify=True)
+        G = ox.graph_from_point((CENTRO_Z[1], CENTRO_Z[0]), dist=a.buffer, network_type="drive", simplify=True)
         ruta_red.parent.mkdir(parents=True, exist_ok=True)
         ox.save_graphml(G, ruta_red)
     red_descargada = datetime.fromtimestamp(ruta_red.stat().st_mtime, timezone.utc).isoformat(timespec="seconds")
@@ -149,7 +195,7 @@ def main():
     print(f"  nodos: {Gu.number_of_nodes()}, tramos: {Gu.number_of_edges()}")
 
     # 2. Elevación por nodo
-    ruta_dem = bajar_dem(a.dem)
+    ruta_dem = bajar_dem(a.dem, tile)
     z = elevaciones_nodos(Gu, ruta_dem)
     sin_z = [n for n, v in z.items() if math.isnan(v)]
     if sin_z:
@@ -178,7 +224,7 @@ def main():
     import heapq
 
     EPS = 0.001
-    cx, cy = gpd.GeoSeries([Point(CENTRO)], crs=4326).to_crs(UTM).iloc[0].coords[0]
+    cx, cy = gpd.GeoSeries([Point(CENTRO_Z)], crs=4326).to_crs(UTM).iloc[0].coords[0]
     d_centro = {n: math.hypot(Gp.nodes[n]["x"] - cx, Gp.nodes[n]["y"] - cy) for n in Gp.nodes}
     validos = [n for n in Gu.nodes if not math.isnan(z[n])]
     borde = [n for n in validos if d_centro[n] >= a.buffer - 150]
@@ -235,11 +281,11 @@ def main():
 
     # Rejillas: las que caen dentro del radio de la red, proyectadas a UTM
     rej = gpd.read_file(a.rejillas).to_crs(UTM)
-    centro_utm = gpd.GeoSeries([Point(CENTRO)], crs=4326).to_crs(UTM).iloc[0]
+    centro_utm = gpd.GeoSeries([Point(CENTRO_Z)], crs=4326).to_crs(UTM).iloc[0]
     dist_centro = rej.distance(centro_utm)
     rej = rej[dist_centro <= a.buffer - 200].copy()  # margen para no quedar en el borde de la red
     rej["dist_centro_m"] = rej.distance(centro_utm).round(1)
-    print(f"Rejillas dentro de la red: {len(rej)} (zona MUT: {(rej['dist_centro_m'] <= RADIO_ZONA_M).sum()})")
+    print(f"Rejillas dentro de la red: {len(rej)} (zona {a.sufijo}: {(rej['dist_centro_m'] <= a.radio).sum()})")
 
     # Tramo más cercano a cada rejilla
     ids_tramos = list(tramos)
@@ -332,23 +378,23 @@ def main():
             principal.setdefault(sid, (c["street_id"], i))
 
     df = pd.DataFrame(filas).merge(rej[["ID_IDE", "dist_centro_m", "comuna"]], on="ID_IDE", how="left")
-    df["en_zona_mut"] = df["dist_centro_m"] <= RADIO_ZONA_M
+    df[col_zona] = df["dist_centro_m"] <= a.radio
     df["street_id"] = df["ID_IDE"].map(lambda s: principal.get(s, (None, None))[0])
     df["orden_en_calle"] = df["ID_IDE"].map(lambda s: principal.get(s, (None, None))[1])
     for col in ("nodo_alto", "nodo_bajo", "orden_en_calle"):
         df[col] = df[col].astype("Int64")
     import numpy as np
 
-    pend_zona = df.loc[df["en_zona_mut"] & ~df["fuera_de_red"], "pendiente_tramo"].astype(float)
+    pend_zona = df.loc[df[col_zona] & ~df["fuera_de_red"], "pendiente_tramo"].astype(float)
     pendiente_ref = float(np.percentile(pend_zona, PENDIENTE_PERCENTIL))
     df["pendiente"] = (df["pendiente_tramo"].astype(float) / pendiente_ref).clip(0, 1).round(4)
-    print(f"Pendiente de referencia (p{PENDIENTE_PERCENTIL} de {len(pend_zona)} rejillas MUT): {pendiente_ref:.4f}")
-    df = df.sort_values(["en_zona_mut", "ID_IDE"], ascending=[False, True])
+    print(f"Pendiente de referencia (p{PENDIENTE_PERCENTIL} de {len(pend_zona)} rejillas de la zona {a.sufijo}): {pendiente_ref:.4f}")
+    df = df.sort_values([col_zona, "ID_IDE"], ascending=[False, True])
     df.to_csv(salida, index=False)
-    ruta_cad = salida.with_name("street_chains_mut.json")
+    ruta_cad = salida.with_name(f"street_chains_{a.sufijo}.json")
     ruta_cad.write_text(json.dumps(cadenas, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
-    zona = df[df["en_zona_mut"]]
+    zona = df[df[col_zona]]
     conteos = {
         "nodos": Gu.number_of_nodes(),
         "tramos": len(tramos),
@@ -358,7 +404,7 @@ def main():
         "nodos_sin_elevacion": len(sin_z),
         "rejillas_en_red": int((~df["fuera_de_red"]).sum()),
         "rejillas_fuera_de_red": int(df["fuera_de_red"].sum()),
-        "zona_mut": {
+        f"zona_{a.sufijo}": {
             "rejillas": len(zona),
             "fuera_de_red": int(zona["fuera_de_red"].sum()),
             "en_alguna_cadena": int(zona["street_id"].notna().sum()),
@@ -371,21 +417,21 @@ def main():
     meta = {
         "generado_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "metodo": "plan B: elevación por nodo (OSMnx) y flujo por el grafo de calles",
-        "zona": {"centro_lonlat": list(CENTRO), "radio_m": RADIO_ZONA_M, "centro_confirmado": True,
-                 "nota": CENTRO_NOTA},
+        "zona": {"sufijo": a.sufijo, "centro_lonlat": list(CENTRO_Z), "radio_m": radio_meta,
+                 "centro_confirmado": CENTRO_Z == CENTRO, "nota": nota, "columna": col_zona},
         "red_calles": {"fuente": "OpenStreetMap vía OSMnx", "network_type": "drive", "radio_m": a.buffer,
                        "osmnx": ox.__version__, "overpass": a.overpass, "graphml": str(ruta_red), "sha256": sha256(ruta_red),
                        "descargada_utc": red_descargada},
-        "dem": {"fuente": DEM_URL, "sha256": sha256(ruta_dem), "muestreo": "mínimo de 3×3 píxeles por nodo"},
+        "dem": {"fuente": dem_url(tile), "tesela": tile, "sha256": sha256(ruta_dem), "muestreo": "mínimo de 3×3 píxeles por nodo"},
         "parametros": {"ancho_aporte_m": ANCHO_APORTE_M, "pendiente_ref": round(pendiente_ref, 6),
-                       "pendiente_ref_regla": f"percentil {PENDIENTE_PERCENTIL} de pendiente_tramo de las rejillas en_zona_mut",
+                       "pendiente_ref_regla": f"percentil {PENDIENTE_PERCENTIL} de pendiente_tramo de las rejillas {col_zona}",
                        "snap_max_m": SNAP_MAX_M, "cadena_max_m": CADENA_MAX_M},
         "entradas": {"rejillas": {"ruta": a.rejillas, "sha256": sha256(a.rejillas)}},
         "salidas": {salida.name: sha256(salida), ruta_cad.name: sha256(ruta_cad)},
         "conteos": conteos,
         "script": {"ruta": "pipeline/03_terreno.py", "version": SCRIPT_VERSION, "sha256": sha256(__file__)},
     }
-    ruta_meta = salida.with_name("terreno_mut.meta.json")
+    ruta_meta = salida.with_name(f"terreno_{a.sufijo}.meta.json")
     ruta_meta.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"\nGuardado {salida}, {ruta_cad} y {ruta_meta}")
 

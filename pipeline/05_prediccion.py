@@ -3,11 +3,13 @@ Predicción congelada de la prueba de campo (issue #22, docs/plan-desarrollo.md 
 
 Uso (desde la raíz del repo, después de 03_terreno.py y 04_variables.py):
     pip install -r pipeline/requirements.txt
-    python pipeline/05_prediccion.py
+    python pipeline/05_prediccion.py                  # zona MUT (la predicción congelada)
+    python pipeline/05_prediccion.py --sufijo replay  # sector del replay (issue #87)
 
 Salidas (en data/validacion/):
     prediccion_congelada.csv        ranking de las rejillas de la zona MUT
     prediccion_congelada.meta.json  pesos usados, parámetros, centro del MUT y sha256 de todo
+    prediccion_<sufijo>.csv/.meta.json  lo mismo para otra zona (--sufijo distinto de mut)
 
 Cómo calcula:
   - Usa backend/config/formula_validacion.yaml (sin días desde la limpieza ni cámara) y la
@@ -15,7 +17,7 @@ Cómo calcula:
   - Una variable con peso en la configuración pero sin dato en las entradas queda con peso 0.
     Los pesos restantes se reescalan para que sigan sumando 1, y la metadata anota cuáles
     faltaron y los pesos efectivos.
-  - Solo entran las rejillas de la zona MUT. Las cadenas calle abajo se recortan a esas rejillas
+  - Solo entran las rejillas de la zona (columna en_zona_<sufijo> del terreno). Las cadenas calle abajo se recortan a esas rejillas
     (las de fuera de la zona no tienen variables), conservando las distancias reales.
   - No hay fotos: todo es predicción ("lo confirmado manda" no aplica todavía).
 
@@ -33,7 +35,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-SCRIPT_VERSION = "1.0.0"
+SCRIPT_VERSION = "1.1.0"
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "backend"))
 
@@ -53,27 +55,35 @@ def git_head():
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--sufijo", default="mut", help="zona calculada por 03 y 04 con el mismo --sufijo")
     ap.add_argument("--config", default="backend/config/formula_validacion.yaml")
-    ap.add_argument("--terreno", default="data/terreno_mut.csv")
-    ap.add_argument("--variables", default="data/variables_mut.csv")
-    ap.add_argument("--cadenas", default="data/street_chains_mut.json")
+    ap.add_argument("--terreno", default=None, help="por defecto data/terreno_<sufijo>.csv")
+    ap.add_argument("--variables", default=None, help="por defecto data/variables_<sufijo>.csv")
+    ap.add_argument("--cadenas", default=None, help="por defecto data/street_chains_<sufijo>.json")
     ap.add_argument("--rejillas", default="data/rejillas.geojson")
-    ap.add_argument("--salida", default="data/validacion/prediccion_congelada.csv")
+    ap.add_argument("--salida", default=None,
+                    help="por defecto data/validacion/prediccion_congelada.csv (mut) o prediccion_<sufijo>.csv")
     a = ap.parse_args()
+    a.terreno = a.terreno or f"data/terreno_{a.sufijo}.csv"
+    a.variables = a.variables or f"data/variables_{a.sufijo}.csv"
+    a.cadenas = a.cadenas or f"data/street_chains_{a.sufijo}.json"
+    a.salida = a.salida or ("data/validacion/prediccion_congelada.csv" if a.sufijo == "mut"
+                            else f"data/validacion/prediccion_{a.sufijo}.csv")
 
     cfg = yaml.safe_load(Path(a.config).read_text(encoding="utf-8"))
     ter = pd.read_csv(a.terreno)
     var = pd.read_csv(a.variables)
-    meta_ter = json.loads(Path(a.terreno).with_name("terreno_mut.meta.json").read_text(encoding="utf-8"))
-    meta_var = json.loads(Path(a.variables).with_name("variables_mut.meta.json").read_text(encoding="utf-8"))
+    meta_ter = json.loads(Path(a.terreno).with_name(f"terreno_{a.sufijo}.meta.json").read_text(encoding="utf-8"))
+    meta_var = json.loads(Path(a.variables).with_name(f"variables_{a.sufijo}.meta.json").read_text(encoding="utf-8"))
     if meta_ter["zona"] != meta_var["zona"]:
         raise SystemExit("Terreno y variables se calcularon con zonas distintas.")
+    col_zona = meta_ter["zona"].get("columna", "en_zona_mut")
 
-    zona = ter[ter["en_zona_mut"] & ~ter["fuera_de_red"]].merge(var, on="ID_IDE", how="left", validate="1:1")
+    zona = ter[ter[col_zona] & ~ter["fuera_de_red"]].merge(var, on="ID_IDE", how="left", validate="1:1")
     sin_var = zona[zona["arboles"].isna()]["ID_IDE"].tolist()
     if sin_var:
         raise SystemExit(f"Rejillas sin variables: {sin_var}")
-    fuera = ter[ter["en_zona_mut"] & ter["fuera_de_red"]]["ID_IDE"].tolist()
+    fuera = ter[ter[col_zona] & ter["fuera_de_red"]]["ID_IDE"].tolist()
 
     # Variables disponibles y pesos efectivos
     columnas = set(zona.columns) | {"area_aporte"}  # area_aporte viene como area_aporte_m2
@@ -146,7 +156,7 @@ def main():
         "generado_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "git_head_al_generar": git_head(),
         "regla": "Predicción hecha antes de fotografiar. Después de este commit no se cambian pesos ni datos.",
-        "zona_mut": {**meta_ter["zona"], "rejillas_en_zona": int(ter["en_zona_mut"].sum()),
+        f"zona_{a.sufijo}": {**meta_ter["zona"], "rejillas_en_zona": int(ter[col_zona].sum()),
                      "rejillas_rankeadas": n, "fuera_de_red_excluidas": fuera},
         "formula": {
             "config": a.config, "sha256_config": sha256(a.config),
@@ -166,7 +176,7 @@ def main():
         "salida": {"archivo": salida.name, "sha256": sha256(salida)},
         "script": {"ruta": "pipeline/05_prediccion.py", "version": SCRIPT_VERSION, "sha256": sha256(__file__)},
     }
-    ruta_meta = salida.with_name("prediccion_congelada.meta.json")
+    ruta_meta = salida.with_name(salida.stem + ".meta.json")
     ruta_meta.write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(pd.DataFrame(filas)[["rank", "ID_IDE", "calle", "p_ef", "c", "prioridad"]].head(10).to_string(index=False))
     print(f"Guardado {salida} y {ruta_meta}")

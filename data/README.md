@@ -22,6 +22,28 @@ python pipeline/publicar_front.py # copia liviana para el mapa (frontend/public/
 - `data/rejillas.meta.json` registra fecha de descarga, servicio, conteos (incluido el de 700 m del MUT),
   sha256 del GeoJSON y versión y sha256 del script. Si se vuelve a correr el script, cambian la fecha y el hash.
 
+## Variables de otro sector (replay, #87)
+
+`03_terreno.py`, `04_variables.py` y `05_prediccion.py` usan por defecto la zona MUT, con 700 m alrededor de
+Av. Apoquindo 2730. Sin argumentos, sus salidas no cambian. Para otro sector se agregan un centro, un radio y un sufijo:
+
+```bash
+python pipeline/03_terreno.py --centro=-70.5975,-33.4565 --radio 700 --sufijo replay --nota "de dónde sale el centro"
+python pipeline/04_variables.py --sufijo replay
+python pipeline/05_prediccion.py --sufijo replay
+```
+
+- El `=` de `--centro` es necesario porque el valor empieza con `-`.
+- Las salidas son `terreno_<sufijo>.csv`, `street_chains_<sufijo>.json`, `variables_<sufijo>.csv`,
+  `osm_<sufijo>.geojson` y `validacion/prediccion_<sufijo>.csv`, cada una con su `.meta.json`.
+  La metadata registra centro, radio, nota, tesela del DEM, hashes y versión de cada script.
+- La columna de zona se llama `en_zona_<sufijo>`. `07_cargar.py` solo etiqueta como `zona_mut` la columna
+  `en_zona_mut`, así que cargar un sector del replay no lo mezcla con la demo.
+- `PENDIENTE_REF` se recalcula como el p90 de las rejillas del sector. Queda en `parametros.pendiente_ref`.
+- 04 y 05 toman el centro y el radio de `terreno_<sufijo>.meta.json`, para que terreno y variables usen la
+  misma zona. La tesela del DEM y la de WorldCover se eligen según el centro.
+- La primera vez, la red de calles de OSM tarda varios minutos en bajar. Conviene lanzarla apenas se decida el sector.
+
 ## Lluvia y viento del replay (`data/escenarios/`)
 
 Serie horaria real de Open-Meteo para cada evento candidato del replay (#86), desde un día antes
