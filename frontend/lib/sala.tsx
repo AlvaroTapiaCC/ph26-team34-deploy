@@ -3,13 +3,14 @@
 // Datos compartidos de la sala (inicio + central Antes/Durante). Viven en el layout del grupo (sala):
 // al pasar del inicio al mapa, o de Antes a Durante, nada se vuelve a pedir ni a montar.
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getClima, type ApiClima, type ApiRankingItem } from "./api";
 import { ESCENARIO_CENTRAL, getObservaciones, getRankingDurante, getRankingInicial, useConsultaPeriodica, type ObservacionPublica } from "./central";
 import { getCuadrillas, getRuta, type Cuadrilla, type RutaCuadrilla } from "./cuadrilla";
 import type { Prioridad } from "./data";
 import { prioDe } from "./real";
 import { useExpuestos, type EstadoConsulta, type Expuestos } from "./transporte";
+import { datosDemo, DURACION_DEMO, PASOS_DEMO, pasoDemo } from "./demo";
 
 export type Fila = ApiRankingItem & { puesto: number; prio: Prioridad };
 
@@ -22,6 +23,7 @@ function aFilas(items: ApiRankingItem[] | undefined): Fila[] {
 const getClimaSala = () => getClima({ reintentos: 0 });
 
 interface Sala {
+  demo: { activo: boolean; corriendo: boolean; segundo: number; paso: number; iniciar: () => void; pausar: () => void; siguiente: () => void; salir: () => void };
   antes: { filas: Fila[]; estado: EstadoConsulta };
   durante: { filas: Fila[]; estado: EstadoConsulta; esInicial: boolean };
   observaciones: { datos: ObservacionPublica[]; estado: EstadoConsulta };
@@ -38,19 +40,43 @@ interface Sala {
 const Ctx = createContext<Sala | null>(null);
 
 export function SalaProvider({ children }: { children: ReactNode }) {
-  const rAntes = useConsultaPeriodica(getRankingInicial, "ranking");
-  const rDurante = useConsultaPeriodica(getRankingDurante, "ranking");
-  const obs = useConsultaPeriodica(getObservaciones, "reportes");
-  const crews = useConsultaPeriodica(getCuadrillas, "cuadrillas");
-  const clima = useConsultaPeriodica(getClimaSala);
-  const tp = useExpuestos(ESCENARIO_CENTRAL, true);
+  const [activo, setActivo] = useState(false);
+  const [corriendo, setCorriendo] = useState(false);
+  const [segundo, setSegundo] = useState(0);
+  const paso = pasoDemo(segundo);
+  useEffect(() => {
+    if (!activo || !corriendo) return;
+    let anterior = performance.now();
+    const t = setInterval(() => {
+      const ahora = performance.now();
+      const delta = (ahora - anterior) / 1000;
+      anterior = ahora;
+      setSegundo((s) => Math.min(DURACION_DEMO, s + delta));
+    }, 250);
+    return () => clearInterval(t);
+  }, [activo, corriendo]);
+  useEffect(() => { if (segundo >= DURACION_DEMO) setCorriendo(false); }, [segundo]);
+  const iniciar = useCallback(() => { setSegundo(0); setActivo(true); setCorriendo(true); }, []);
+  const pausar = useCallback(() => setCorriendo((c) => !c), []);
+  const siguiente = useCallback(() => setSegundo((s) => PASOS_DEMO.find((p) => p.segundo > s)?.segundo ?? DURACION_DEMO), []);
+  const salir = useCallback(() => { setActivo(false); setCorriendo(false); setSegundo(0); }, []);
+  const demo = useMemo(() => ({ activo, corriendo, segundo, paso, iniciar, pausar, siguiente, salir }), [activo, corriendo, segundo, paso, iniciar, pausar, siguiente, salir]);
+  const simulado = useMemo(() => datosDemo(paso), [paso]);
+  const simAntes = useMemo(() => aFilas(simulado.inicial), [simulado.inicial]);
+  const simDurante = useMemo(() => aFilas(simulado.durante), [simulado.durante]);
+  const rAntes = useConsultaPeriodica(activo ? null : getRankingInicial, "ranking");
+  const rDurante = useConsultaPeriodica(activo ? null : getRankingDurante, "ranking");
+  const obs = useConsultaPeriodica(activo ? null : getObservaciones, "reportes");
+  const crews = useConsultaPeriodica(activo ? null : getCuadrillas, "cuadrillas");
+  const clima = useConsultaPeriodica(activo ? null : getClimaSala);
+  const tp = useExpuestos(ESCENARIO_CENTRAL, !activo);
   const [eleccion, setEleccion] = useState("");
   const equipos = useMemo(() => crews.datos ?? [], [crews.datos]);
   // Por defecto, la cuadrilla simulada de la zona MUT (la de la demo); si no, la primera simulada
   const cuadrilla = equipos.find((c) => c.id === eleccion) ?? equipos.find((c) => c.id === "sim-c4") ?? equipos.find((c) => c.is_simulated) ?? equipos[0] ?? null;
   const idCuadrilla = cuadrilla?.id;
   const consultarRuta = useCallback(() => getRuta(idCuadrilla ?? ""), [idCuadrilla]);
-  const cRuta = useConsultaPeriodica(cuadrilla ? consultarRuta : null, "ruta");
+  const cRuta = useConsultaPeriodica(!activo && cuadrilla ? consultarRuta : null, "ruta");
   const ruta = cRuta.datos?.crew_id === idCuadrilla ? cRuta.datos : null;
   const estadoRuta: EstadoConsulta = cRuta.datos && !ruta && cRuta.estado !== "error" ? "cargando" : cRuta.estado;
 
@@ -60,7 +86,17 @@ export function SalaProvider({ children }: { children: ReactNode }) {
   const filasDurante = useMemo(() => (esInicial ? filasAntes : aFilas(durItems)), [esInicial, filasAntes, durItems]);
 
   const valor = useMemo<Sala>(
-    () => ({
+    () => activo ? {
+      demo,
+      antes: { filas: simAntes, estado: "ok" },
+      durante: { filas: simDurante, estado: "ok", esInicial: paso === 0 },
+      observaciones: { datos: simulado.observaciones, estado: "ok" },
+      cuadrillas: [simulado.cuadrilla], estadoCuadrillas: "ok", cuadrilla: simulado.cuadrilla,
+      elegirCuadrilla: () => {}, ruta: simulado.ruta, estadoRuta: "ok",
+      transporte: { datos: simulado.transporte, calculadoAt: simulado.transporte.calculado_at, estado: "ok" },
+      clima: { datos: null, estado: "ok" },
+    } : ({
+      demo,
       antes: { filas: filasAntes, estado: rAntes.estado },
       durante: { filas: filasDurante, estado: esInicial ? rAntes.estado : rDurante.estado, esInicial },
       observaciones: { datos: obs.datos ?? [], estado: obs.estado },
@@ -73,7 +109,7 @@ export function SalaProvider({ children }: { children: ReactNode }) {
       transporte: tp,
       clima: { datos: clima.datos, estado: clima.estado },
     }),
-    [filasAntes, rAntes.estado, filasDurante, esInicial, rDurante.estado, obs.datos, obs.estado, equipos, crews.estado, cuadrilla, ruta, estadoRuta, tp, clima.datos, clima.estado],
+    [activo, demo, simulado, simAntes, simDurante, paso, filasAntes, rAntes.estado, filasDurante, esInicial, rDurante.estado, obs.datos, obs.estado, equipos, crews.estado, cuadrilla, ruta, estadoRuta, tp, clima.datos, clima.estado],
   );
   return <Ctx.Provider value={valor}>{children}</Ctx.Provider>;
 }
