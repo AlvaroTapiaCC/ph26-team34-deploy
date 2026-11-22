@@ -104,7 +104,8 @@ def close_mission(mission_id: UUID, foto: UploadFile = File(...)):
     try:
         storage.subir(jpeg, ruta, "image/jpeg")
     except storage.StorageError as e:
-        raise HTTPException(503, f"No se pudo guardar la foto: {e}") from None
+        log.warning("No se guardó la foto de cierre de %s: %s", mission_id, e)
+        raise HTTPException(503, "No se pudo guardar la foto en el servidor") from None
 
     obs_id = None
     try:
