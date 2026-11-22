@@ -806,7 +806,7 @@ const Mapa = memo(function Mapa({
                 Agua: datos reales
               </button>
               <button type="button" role="radio" aria-checked={modoAgua === "simulada"} className={modoAgua === "simulada" ? s.segOn : ""} onClick={() => setModoAgua("simulada")}>
-                Simulada
+                Simulada (1 de 5 tapadas)
               </button>
             </span>
           )}
@@ -1116,7 +1116,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
   const [nuevo, setNuevo] = useState(false);
   const [capas, setCapas] = useState<Capas>(CAPAS_ANTES);
   const [estados, setEstados] = useState<Record<string, EstadoRejilla>>({});
-  const [modoAgua, setModoAgua] = useState<ModoAgua>("simulada");
+  const [modoAgua, setModoAgua] = useState<ModoAgua>("real");
 
   // Las capas por defecto cambian con la fase (Durante muestra transporte); el usuario puede ajustarlas después
   useEffect(() => {
