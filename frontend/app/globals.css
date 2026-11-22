@@ -679,8 +679,7 @@ p {
   align-items: center;
   gap: 16px;
   padding: 0 24px;
-  background: var(--bg); /* mismo color que la franja del clima y el fondo de la página */
-  border-bottom: 1px solid var(--line);
+  background: var(--bg); /* mismo color que la franja del clima y el fondo de la página, sin bordes */
   position: relative;
   z-index: 20;
 }
@@ -701,16 +700,17 @@ p {
   align-items: center;
   gap: 16px;
   padding: 6px 24px;
-  background: var(--bg); /* mismo color que la barra superior y el fondo de la página */
-  border-bottom: 1px solid var(--line);
+  background: var(--bg); /* mismo color que la barra superior y el fondo de la página, sin bordes */
   font-size: 13px;
   color: var(--text-2);
 }
 .banda-clima strong {
   color: var(--text);
 }
-.banda-clima--alerta {
-  background: var(--acento-dim);
+/* La alerta no cambia el fondo (el color no se interrumpe): se marca con el texto en el acento */
+.banda-clima--alerta,
+.banda-clima--alerta strong {
+  color: var(--acento);
 }
 .banda-clima__esc {
   font-family: var(--font-mono);
