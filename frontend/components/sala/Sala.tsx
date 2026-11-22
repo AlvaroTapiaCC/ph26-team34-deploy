@@ -696,20 +696,7 @@ const Mapa = memo(function Mapa({
               <button type="button" className={`${s.chipMapa} ${menu ? s.chipMapaOn : ""}`} onClick={() => setMenu(!menu)} aria-expanded={menu}>
                 Filtros <small>{Object.values(capas).filter(Boolean).length} de {Object.keys(capas).length}</small>
               </button>
-              {menu && (
-                <div className={s.capasMenu} role="group" aria-label="Filtros del mapa">
-                  <p className={s.capasGrupo}>Agua</p>
-                  <CapaCheck on={capas.agua} onClick={() => alternar("agua")} titulo="Agua en las calles" sub="Agua corriendo por las calles según la pendiente y la lluvia, con columnas donde no cabe. Con datos reales usa la lluvia de Open-Meteo y las rejillas que Claude vio tapadas; simulada supone un 20 % de rejillas tapadas" muestra="agua" />
-                  <CapaCheck on={capas.calor} onClick={() => alternar("calor")} titulo="Mapa de calor de riesgo" sub="Zonas donde se concentra el puntaje de prioridad; donde el riesgo es bajo el mapa queda gris" muestra="calor" />
-                  <CapaCheck on={capas.cadenas} onClick={() => alternar("cadenas")} titulo="Cadenas calle abajo" sub="Qué rejillas reciben el agua de cuál, según la pendiente (estimado). Si una se tapa, revisa las de abajo" muestra="cadena" />
-                  <CapaCheck on={capas.criticos} onClick={() => alternar("criticos")} titulo="Anegamientos registrados" sub="Lugares donde la Municipalidad de Las Condes registró anegamientos o riesgo en la temporada de lluvias 2026. Es el único registro público de este tipo que conseguimos; sirve de referencia de dónde ya se ha inundado" muestra="critico" />
-                  <p className={s.capasGrupo}>Ciudad</p>
-                  <CapaCheck on={capas.infra} onClick={() => alternar("infra")} titulo="Infraestructura crítica" sub="Metro, pasos bajo nivel, hospital y colegios (OSM): suben la consecuencia" muestra="infra" />
-                  <CapaCheck on={capas.transporte} onClick={() => alternar("transporte")} titulo="Transporte público" sub="Recorridos de la zona (tenues), los afectados resaltados, paraderos expuestos y caminata al alternativo (GTFS DTPM)" muestra="bus" />
-                  <CapaCheck on={capas.limites} onClick={() => alternar("limites")} titulo="Límites comunales" sub="Providencia, Ñuñoa y Las Condes" muestra="limite" />
-                  <CapaCheck on={capas.catastro} onClick={() => alternar("catastro")} titulo="Catastro completo" sub="3.002 rejillas DOH; el ranking existe solo en la zona MUT" muestra="catastro" />
-                </div>
-              )}
+              {menu && <FiltrosMapa capas={capas} alternar={alternar} />}
             </span>
           )}
           {!simulacion && capas.agua && (
@@ -774,9 +761,33 @@ const Mapa = memo(function Mapa({
   );
 });
 
+function FiltrosMapa({ capas, alternar }: { capas: Capas; alternar: (capa: keyof Capas) => void }) {
+  const [capaInfo, setCapaInfo] = useState<keyof Capas | null>(null);
+  const controles = (capa: keyof Capas) => ({
+    on: capas[capa],
+    onClick: () => alternar(capa),
+    info: capaInfo === capa,
+    onInfo: () => setCapaInfo((actual) => actual === capa ? null : capa),
+  });
+
+  return (
+    <div className={s.capasMenu} role="group" aria-label="Filtros del mapa">
+      <p className={s.capasGrupo}>Agua</p>
+      <CapaCheck {...controles("agua")} titulo="Agua en las calles" sub="Agua corriendo por las calles según la pendiente y la lluvia, con columnas donde no cabe. Con datos reales usa la lluvia de Open-Meteo y las rejillas que Claude vio tapadas; simulada supone un 20 % de rejillas tapadas" />
+      <CapaCheck {...controles("calor")} titulo="Mapa de calor de riesgo" sub="Zonas donde se concentra el puntaje de prioridad; donde el riesgo es bajo el mapa queda gris" />
+      <CapaCheck {...controles("cadenas")} titulo="Flujo entre rejillas" sub="Muestra hacia qué rejilla escurre el agua calle abajo, según la pendiente estimada. Si una se tapa, revisa las que reciben su agua" />
+      <CapaCheck {...controles("criticos")} titulo="Inundaciones registradas (Las Condes)" sub="Lugares que la Municipalidad de Las Condes registró como inundados o en riesgo de inundación durante la temporada de lluvias de 2026" />
+      <p className={s.capasGrupo}>Ciudad</p>
+      <CapaCheck {...controles("infra")} titulo="Infraestructura crítica" sub="Metro, pasos bajo nivel, hospital y colegios (OSM): suben la consecuencia" />
+      <CapaCheck {...controles("transporte")} titulo="Transporte público" sub="Recorridos de la zona (tenues), los afectados resaltados, paraderos expuestos y caminata al alternativo (GTFS DTPM)" />
+      <CapaCheck {...controles("limites")} titulo="Límites comunales" sub="Providencia, Ñuñoa y Las Condes" />
+      <CapaCheck {...controles("catastro")} titulo="Catastro completo" sub="3.002 rejillas DOH; el ranking existe solo en la zona MUT" />
+    </div>
+  );
+}
+
 /** Un filtro del mapa: casilla para mostrarlo u ocultarlo y una «i» que despliega qué muestra. */
-function CapaCheck({ on, onClick, titulo, sub }: { on: boolean; onClick: () => void; titulo: string; sub: string; muestra?: string }) {
-  const [info, setInfo] = useState(false);
+function CapaCheck({ on, onClick, titulo, sub, info, onInfo }: { on: boolean; onClick: () => void; titulo: string; sub: string; info: boolean; onInfo: () => void }) {
   return (
     <div className={s.filtro}>
       <label className={`${s.capa} ${on ? s.capaOn : ""}`}>
@@ -784,7 +795,7 @@ function CapaCheck({ on, onClick, titulo, sub }: { on: boolean; onClick: () => v
         <span className={s.filtroCaja} aria-hidden />
         <b>{titulo}</b>
       </label>
-      <button type="button" className={`${s.filtroInfo} ${info ? s.filtroInfoOn : ""}`} onClick={() => setInfo(!info)} aria-expanded={info} aria-label={`Qué muestra: ${titulo}`}>
+      <button type="button" className={`${s.filtroInfo} ${info ? s.filtroInfoOn : ""}`} onClick={onInfo} aria-expanded={info} aria-label={`Qué muestra: ${titulo}`}>
         i
       </button>
       {info && <p className={s.filtroTexto}>{sub}</p>}
