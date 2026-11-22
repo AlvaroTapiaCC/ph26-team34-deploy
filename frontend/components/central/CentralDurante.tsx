@@ -18,7 +18,7 @@ import { horaSantiago, NIVEL_AGUA, useExpuestos, type EstadoConsulta, type Evide
 import Transporte from "../desktop/Transporte";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Logo } from "../ui";
-import { COLORES_CADENAS, useCapaCadenas } from "./capaCadenas";
+import { useCapaCadenas } from "./capaCadenas";
 import styles from "./central.module.css";
 
 const ESTADO_REJILLA: Record<string, string> = {
@@ -206,11 +206,11 @@ const MapaCentral = memo(function MapaCentral({ ranking, observaciones, evidenci
             <>
               <p className={styles.hint}>Escurrimiento estimado a partir de la pendiente y la ubicación de las rejillas. Las flechas orientan la revisión en terreno.</p>
               <ul className={styles.leyendaCadenas} aria-label="Leyenda de cadenas">
-                <li><i style={{ borderColor: COLORES_CADENAS.prioridad }} />Prioridad calculada</li>
-                <li><i className={styles.puntoCadena} style={{ borderColor: COLORES_CADENAS.prioridad }} />Obstrucción observada</li>
-                <li><i className={styles.trazoCadena} style={{ borderColor: COLORES_CADENAS.prioridad }} />Revisar aguas abajo</li>
-                <li><i className={styles.puntoCadena} style={{ borderColor: COLORES_CADENAS.agua }} />Agua observada</li>
-                <li><i className={styles.trazoCadena} style={{ borderColor: COLORES_CADENAS.agua }} />Posible exposición aguas abajo</li>
+                <li><i style={{ borderColor: "var(--prio-alta)" }} />Prioridad calculada</li>
+                <li><i className={styles.puntoCadena} style={{ borderColor: "var(--prio-alta)" }} />Obstrucción observada</li>
+                <li><i className={styles.trazoCadena} style={{ borderColor: "var(--prio-alta)" }} />Revisar aguas abajo</li>
+                <li><i className={styles.puntoCadena} style={{ borderColor: "var(--agua)" }} />Agua observada</li>
+                <li><i className={styles.trazoCadena} style={{ borderColor: "var(--agua)" }} />Posible exposición aguas abajo</li>
               </ul>
               {cadenas.haySimulados && <p className={styles.hint}>Incluye observaciones simuladas.</p>}
             </>

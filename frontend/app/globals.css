@@ -1,30 +1,45 @@
 /* Drena · tokens (colección Figma "Drena Naranja") */
 :root {
-  --bg: #ededeb;
-  --surface: #ffffff;
-  --surface-2: #f3f3f1;
-  --surface-3: #dcdcd9;
-  --line: #e2e2df;
-  --text: #1b1b1b;
-  --text-2: #5a5a57;
-  --text-3: #7c7c78;
-  --lime: #ff3d0a; /* acento */
-  --agua: #2f6fde; /* agua circulando, poco caudal */
-  --agua-hondo: #0b3d91; /* agua circulando, mucho caudal */
-  --lime-ink: #ffffff;
-  --lime-dim: #ffd6ca;
-  --prio-alta: #ff3d0a;
-  --prio-media: #1b1b1b;
-  --prio-baja: #767672;
-  --danger: #b3261e;
-  --map-bg: #e8e8e6;
+  /* paleta:inicio — generado por scripts/paleta.mjs desde lib/paleta.json (#131). No editar a mano. */
+  /* Editables (?paleta=1) */
+  --principal: #368786; /* Principal */
+  --secundario: #ece9f4; /* Texto */
+  --fondo: #2a2930; /* Fondo */
+  /* Derivados de los editables */
+  --surface: color-mix(in srgb, var(--fondo) 92%, var(--secundario)); /* Tarjeta */
+  --surface-2: color-mix(in srgb, var(--fondo) 86%, var(--secundario)); /* Tarjeta secundaria */
+  --surface-3: color-mix(in srgb, var(--fondo) 76%, var(--secundario)); /* Relieve */
+  --line: color-mix(in srgb, var(--fondo) 82%, var(--secundario)); /* Línea */
+  --map-bg: color-mix(in srgb, var(--fondo) 95%, var(--secundario)); /* Fondo del mapa */
+  --text-2: color-mix(in srgb, var(--secundario) 70%, var(--fondo)); /* Texto secundario */
+  --text-3: color-mix(in srgb, var(--secundario) 54%, var(--fondo)); /* Texto tenue */
+  --contexto: color-mix(in srgb, var(--secundario) 45%, var(--fondo)); /* Capas de contexto del mapa */
+  --texto-inv: var(--fondo); /* Texto sobre el color de texto */
+  --sobre-principal: var(--sobre-color); /* Texto sobre el principal */
+  --principal-suave: color-mix(in srgb, var(--principal) 21%, var(--surface)); /* Principal suave */
+  --prio-alta: var(--principal); /* Prioridad alta */
+  --prio-media: var(--secundario); /* Prioridad media */
+  --prio-baja: color-mix(in srgb, var(--secundario) 57%, var(--fondo)); /* Prioridad baja */
+  --agua-suave: color-mix(in srgb, var(--agua) 12%, var(--surface)); /* Agua suave */
+  /* Fijos: tienen significado propio (peligro, correcto, advertencia, transporte) */
+  --sobre-color: #ffffff; /* Texto sobre color fuerte */
+  --danger: #b3261e; /* Peligro */
+  --ok: #2e7d32; /* Correcto */
+  --aviso: #b26a00; /* Advertencia */
+  --agua: #2f6fde; /* Agua (poco caudal) */
+  --agua-hondo: #0b3d91; /* Agua (mucho caudal) */
+  --agua-brillo: #8fb4f5; /* Brillo del agua */
+  --bus: #1f5fbf; /* Transporte */
+  --bus-dim: #dce7f7; /* Transporte suave */
+  --metro: #1e5fd8; /* Metro */
+  /* paleta:fin */
 
   --r-10: 10px;
   --r-16: 16px;
   --r-24: 24px;
 
   --sh-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --sh-accent: 0 6px 14px rgba(255, 61, 10, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  --sh-accent: 0 6px 14px color-mix(in srgb, var(--principal) 28%, transparent), inset 0 1px 1px rgba(255, 255, 255, 0.3);
   --sh-inset-deep: inset 3px 3px 8px rgba(0, 0, 0, 0.8), inset -2px -2px 6px rgba(255, 255, 255, 0.06);
   --sh-inset-soft: inset 0 1px 3px rgba(0, 0, 0, 0.07);
   --sh-seg-on: 0 1px 2px rgba(0, 0, 0, 0.18);
@@ -44,8 +59,8 @@ body {
   height: 100%;
 }
 body {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--fondo);
+  color: var(--secundario);
   font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.3;
@@ -85,7 +100,7 @@ p {
   color: var(--text-3);
 }
 .kicker--accent {
-  color: var(--lime);
+  color: var(--principal);
 }
 .kicker--danger {
   color: var(--danger);
@@ -94,7 +109,7 @@ p {
   color: var(--prio-media);
 }
 .kicker--light {
-  color: var(--lime-ink);
+  color: var(--sobre-principal);
 }
 
 /* ---------- Logo ---------- */
@@ -106,7 +121,7 @@ p {
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
-  color: var(--text);
+  color: var(--secundario);
 }
 
 /* ---------- Botones ---------- */
@@ -128,8 +143,8 @@ p {
   transform: translateY(1px);
 }
 .btn--primary {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
   box-shadow: var(--sh-accent);
 }
 .btn--primary:hover {
@@ -137,11 +152,11 @@ p {
 }
 .btn--secondary {
   background: var(--surface-2);
-  color: var(--text);
+  color: var(--secundario);
   box-shadow: var(--sh-soft);
 }
 .btn--secondary:hover {
-  background: #ececea;
+  background: color-mix(in srgb, var(--surface-2) 70%, var(--surface-3));
 }
 .btn--danger {
   background: var(--surface-2);
@@ -183,8 +198,8 @@ p {
   white-space: nowrap;
 }
 .seg__item.is-on {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
   box-shadow: var(--sh-seg-on);
 }
 .seg--lg {
@@ -219,7 +234,7 @@ p {
   font-weight: 500;
   font-size: 14px;
   line-height: 20px;
-  color: var(--text);
+  color: var(--secundario);
   white-space: nowrap;
   transition: background 0.15s, box-shadow 0.15s, color 0.15s;
 }
@@ -228,13 +243,13 @@ p {
 }
 .barbtn:focus-visible,
 .menu__item:focus-visible {
-  outline: 2px solid var(--lime);
+  outline: 2px solid var(--principal);
   outline-offset: 2px;
 }
 .barbtn.is-on {
-  background: var(--lime);
-  color: var(--lime-ink);
-  box-shadow: inset 0 0 0 1px var(--lime);
+  background: var(--principal);
+  color: var(--sobre-principal);
+  box-shadow: inset 0 0 0 1px var(--principal);
 }
 .barbtn[aria-expanded="true"] {
   box-shadow: inset 0 0 0 1px var(--text-3);
@@ -288,7 +303,7 @@ p {
 }
 .menu__item.is-on {
   background: var(--surface-2);
-  color: var(--lime);
+  color: var(--principal);
   font-weight: 600;
 }
 .menu__label {
@@ -302,7 +317,7 @@ p {
 }
 .menu__check {
   flex: none;
-  color: var(--lime);
+  color: var(--principal);
 }
 .menu__foot {
   font-size: 11px;
@@ -319,7 +334,7 @@ p {
   font-weight: 700;
   font-size: 13px;
   line-height: 17px;
-  color: var(--lime-ink);
+  color: var(--sobre-principal);
   white-space: nowrap;
   flex: none;
 }
@@ -328,9 +343,11 @@ p {
 }
 .chip--media {
   background: var(--prio-media);
+  color: var(--texto-inv);
 }
 .chip--baja {
   background: var(--prio-baja);
+  color: var(--texto-inv);
 }
 .chip--faded {
   opacity: 0.6;
@@ -352,7 +369,7 @@ p {
   color: var(--danger);
 }
 .echip--enruta {
-  color: var(--lime);
+  color: var(--principal);
 }
 
 /* ---------- Stat ---------- */
@@ -376,11 +393,11 @@ p {
   font-weight: 700;
   font-size: 28px;
   line-height: 36px;
-  color: var(--text);
+  color: var(--secundario);
   white-space: pre-line;
 }
 .stat__v.is-accent {
-  color: var(--lime);
+  color: var(--principal);
 }
 .stat__l {
   font-size: 12px;
@@ -400,7 +417,7 @@ p {
   text-align: left;
 }
 .check.is-on {
-  color: var(--text);
+  color: var(--secundario);
 }
 .check__box {
   width: 20px;
@@ -414,8 +431,8 @@ p {
   box-shadow: inset 0 0 0 1.5px var(--text-3);
 }
 .check.is-on .check__box {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
   box-shadow: none;
 }
 
@@ -431,7 +448,7 @@ p {
   gap: 12px;
   padding: 14px 18px;
   border-radius: 16px;
-  background: var(--text);
+  background: var(--secundario);
   color: var(--surface);
   font-weight: 500;
   font-size: 15px;
@@ -444,7 +461,7 @@ p {
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background: var(--lime);
+  background: var(--principal);
   flex: none;
 }
 @keyframes toast-in {
@@ -459,7 +476,7 @@ p {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(27, 27, 27, 0.5);
+  background: color-mix(in srgb, var(--secundario) 50%, transparent);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -553,7 +570,12 @@ p {
   font-weight: 700;
   font-size: 15px;
   line-height: 20px;
-  color: var(--lime-ink);
+  color: var(--sobre-principal);
+}
+/* Pines de prioridad media y baja: el número va en el color de fondo (contraste con --secundario) */
+.pin--media .pin__n,
+.pin--baja .pin__n {
+  color: var(--texto-inv);
 }
 .pin--faded > * {
   opacity: 0.3;
@@ -570,12 +592,12 @@ p {
   gap: 2px;
   padding: 6px 10px;
   border-radius: 8px;
-  background: var(--bg);
-  box-shadow: inset 0 0 0 1.5px var(--lime);
+  background: var(--fondo);
+  box-shadow: inset 0 0 0 1.5px var(--principal);
   font-weight: 600;
   font-size: 13px;
   line-height: 17px;
-  color: var(--text);
+  color: var(--secundario);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -583,20 +605,20 @@ p {
   box-shadow: inset 0 0 0 1.5px var(--danger);
 }
 .map-label--dark {
-  box-shadow: inset 0 0 0 1.5px var(--text);
+  box-shadow: inset 0 0 0 1.5px var(--secundario);
 }
 .map-label--pill {
   padding: 4px 10px;
   border-radius: 999px;
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
   font-weight: 700;
   box-shadow: none;
 }
 .map-label--area {
   padding: 8px 12px;
   border-radius: 10px;
-  color: var(--lime);
+  color: var(--principal);
   font-size: 14px;
   line-height: 18px;
 }
@@ -641,8 +663,7 @@ p {
   align-items: center;
   gap: 8px 16px;
   padding: 12px 24px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
+  background: var(--fondo); /* mismo color que la franja del clima y el fondo de la página, sin bordes */
   position: relative;
   z-index: 40;
 }
@@ -668,16 +689,17 @@ p {
   align-items: center;
   gap: 16px;
   padding: 6px 24px;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--line);
+  background: var(--fondo); /* mismo color que la barra superior y el fondo de la página, sin bordes */
   font-size: 13px;
   color: var(--text-2);
 }
 .banda-clima strong {
-  color: var(--text);
+  color: var(--secundario);
 }
-.banda-clima--alerta {
-  background: var(--lime-dim);
+/* La alerta no cambia el fondo (el color no se interrumpe): se marca con el texto en el principal */
+.banda-clima--alerta,
+.banda-clima--alerta strong {
+  color: var(--principal);
 }
 .banda-clima__esc {
   font-family: var(--font-mono);
@@ -686,7 +708,7 @@ p {
   letter-spacing: 0.04em;
   padding: 2px 8px;
   border-radius: var(--r-10);
-  background: var(--text);
+  background: var(--secundario);
   color: var(--surface);
 }
 .banda-clima__dato {
@@ -731,7 +753,7 @@ p {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--principal);
   flex: none;
 }
 .hero__head {
@@ -746,12 +768,12 @@ p {
   flex: none;
   display: grid;
   place-items: center;
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 30px;
-  box-shadow: 0 6px 14px rgba(255, 61, 10, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--principal) 28%, transparent), inset 0 1px 1px rgba(255, 255, 255, 0.3);
 }
 .hero__txt {
   display: flex;
@@ -834,7 +856,7 @@ p {
   flex: none;
 }
 .rrow:hover {
-  background: #fafaf9;
+  background: color-mix(in srgb, var(--surface) 50%, var(--surface-2));
 }
 .rrow__rank {
   width: 40px;
@@ -848,7 +870,7 @@ p {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 16px;
-  color: var(--lime);
+  color: var(--principal);
 }
 .rrow__txt {
   flex: 1;
@@ -882,7 +904,7 @@ p {
   line-height: 21px;
 }
 .rrow__num b.is-accent {
-  color: var(--lime);
+  color: var(--principal);
 }
 .rrow__num small {
   font-size: 11px;
@@ -902,7 +924,7 @@ p {
   font-family: var(--font-mono);
   font-weight: 500;
   font-size: 12px;
-  color: var(--lime);
+  color: var(--principal);
   white-space: nowrap;
   flex: none;
 }
@@ -911,7 +933,7 @@ p {
   content: "";
   flex: 1;
   height: 2px;
-  background: var(--lime);
+  background: var(--principal);
 }
 
 /* Tarjetas inferiores: título arriba; la cifra y su texto en la misma línea base */
@@ -967,8 +989,8 @@ p {
   flex: none;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
   font-weight: 600;
   font-size: 11px;
   line-height: 16px;
@@ -980,7 +1002,7 @@ p {
   line-height: 16px;
 }
 .tile__p .is-accent {
-  color: var(--lime);
+  color: var(--principal);
 }
 .tile__btn {
   flex: none;
@@ -990,11 +1012,11 @@ p {
   white-space: nowrap;
 }
 .tile--accent {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
 }
 .tile--dark {
-  background: var(--text);
+  background: var(--secundario);
   color: var(--surface);
 }
 .tile--dark .tile__p {
@@ -1042,7 +1064,7 @@ p {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), inset 0 0 0 1px var(--line);
   font-weight: 600;
   font-size: 13px;
-  color: var(--text);
+  color: var(--secundario);
 }
 .mapbtn:hover {
   background: var(--surface-2);
@@ -1052,7 +1074,7 @@ p {
   outline-offset: 2px;
 }
 .mapbtn.is-on {
-  background: var(--text);
+  background: var(--secundario);
   color: var(--surface);
 }
 .mapbtn--icono {
@@ -1138,7 +1160,7 @@ p {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--principal);
   overflow-y: auto;
 }
 .ficha__head {
@@ -1153,12 +1175,12 @@ p {
   flex: none;
   display: grid;
   place-items: center;
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 22px;
-  box-shadow: 0 6px 14px rgba(255, 61, 10, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--principal) 28%, transparent), inset 0 1px 1px rgba(255, 255, 255, 0.3);
 }
 .ficha__title {
   font-family: var(--font-display);
@@ -1176,7 +1198,7 @@ p {
   position: relative;
   border-radius: 16px;
   overflow: hidden;
-  background: #6b6b68 center / cover no-repeat;
+  background: color-mix(in srgb, var(--text-2), var(--text-3)) center / cover no-repeat;
   flex: none;
 }
 .photo__tag {
@@ -1185,7 +1207,7 @@ p {
   bottom: 12px;
   padding: 4px 10px;
   border-radius: 8px;
-  background: var(--bg);
+  background: var(--fondo);
   font-size: 11px;
   line-height: 14px;
   color: var(--text-2);
@@ -1199,7 +1221,7 @@ p {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 13px;
-  color: var(--lime);
+  color: var(--principal);
 }
 .origin__bar {
   height: 14px;
@@ -1210,7 +1232,7 @@ p {
   margin: 8px 0;
 }
 .origin__bar span {
-  background: var(--lime);
+  background: var(--principal);
 }
 .origin__legend {
   display: flex;
@@ -1220,7 +1242,7 @@ p {
   color: var(--text-2);
 }
 .origin__legend .is-accent {
-  color: var(--lime);
+  color: var(--principal);
 }
 .pills {
   display: flex;
@@ -1246,8 +1268,8 @@ p {
   height: 14px;
   margin-right: 4px;
   border-radius: 50%;
-  background: #1e5fd8;
-  color: #fff;
+  background: var(--metro);
+  color: var(--sobre-color);
   font-size: 9px;
   font-weight: 700;
 }
@@ -1320,8 +1342,8 @@ p {
   font-size: 14px;
 }
 .ruta__n.is-first {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
 }
 .ruta__name {
   flex: 1;
@@ -1409,8 +1431,8 @@ p {
   height: 56px;
   border-radius: 50%;
   border: 6px solid var(--surface-3);
-  border-right-color: var(--lime);
-  border-bottom-color: var(--lime);
+  border-right-color: var(--principal);
+  border-bottom-color: var(--principal);
   animation: spin 0.9s linear infinite;
 }
 @keyframes spin {
@@ -1446,7 +1468,7 @@ p {
   height: 72px;
   border-radius: 36px;
   background: var(--danger);
-  color: var(--lime-ink);
+  color: var(--sobre-principal);
   display: grid;
   place-items: center;
   font-family: var(--font-display);
@@ -1506,7 +1528,7 @@ p {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: var(--fondo);
   overflow: hidden;
 }
 .mob__body {
@@ -1544,10 +1566,10 @@ p {
   border-radius: 2px;
 }
 .mob__tab.is-on {
-  color: var(--lime);
+  color: var(--principal);
 }
 .mob__tab.is-on::before {
-  background: var(--lime);
+  background: var(--principal);
 }
 .mob__head {
   display: flex;
@@ -1591,7 +1613,7 @@ p {
 }
 .mrow.is-first {
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--principal);
   min-height: 72px;
 }
 .mrow__rank {
@@ -1607,8 +1629,8 @@ p {
   font-size: 16px;
 }
 .mrow.is-first .mrow__rank {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
 }
 .mrow > div:nth-child(2) {
   flex: 1;
@@ -1709,8 +1731,8 @@ p {
   flex: none;
   display: grid;
   place-items: center;
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 20px;
@@ -1738,7 +1760,7 @@ p {
   position: absolute;
   inset: 0;
   z-index: 30;
-  background: rgba(27, 27, 27, 0.45);
+  background: color-mix(in srgb, var(--secundario) 45%, transparent);
   display: flex;
   align-items: flex-end;
 }
@@ -1771,8 +1793,8 @@ p {
   font-size: 15px;
 }
 .fchip.is-on {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
   box-shadow: none;
 }
 .stepper {
@@ -1820,7 +1842,7 @@ p {
   width: 48px;
   height: 48px;
   border-radius: 24px;
-  background: var(--bg);
+  background: var(--fondo);
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -1848,7 +1870,7 @@ p {
 .mficha__sub {
   font-weight: 600;
   font-size: 14px;
-  color: var(--lime);
+  color: var(--principal);
 }
 .mstats {
   display: grid;
@@ -1913,7 +1935,7 @@ p {
 .progress__bar span {
   display: block;
   height: 100%;
-  background: var(--lime);
+  background: var(--principal);
 }
 .progress small {
   font-family: var(--font-mono);
@@ -1937,7 +1959,7 @@ p {
 }
 .stop.is-next {
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--principal);
 }
 .stop__n {
   width: 48px;
@@ -1954,13 +1976,13 @@ p {
 .stop.is-done .stop__n {
   background: var(--surface-3);
   box-shadow: none;
-  color: var(--lime);
+  color: var(--principal);
   font-family: var(--font-body);
   font-size: 20px;
 }
 .stop.is-next .stop__n {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
   box-shadow: var(--sh-accent);
 }
 .stop > div:nth-child(2) {
@@ -1970,7 +1992,7 @@ p {
   gap: 2px;
 }
 .stop.is-next .mrow__meta {
-  color: var(--lime);
+  color: var(--principal);
 }
 .share {
   margin: 8px 16px;
@@ -2041,7 +2063,7 @@ p {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s;
-  text-shadow: 0 0 3px var(--bg), 0 0 3px var(--bg), 0 0 6px var(--bg);
+  text-shadow: 0 0 3px var(--fondo), 0 0 3px var(--fondo), 0 0 6px var(--fondo);
 }
 .comuna-label--proy {
   color: var(--text-2);
@@ -2097,7 +2119,7 @@ p {
   height: 40px;
   border-radius: 10px;
   background: var(--agua);
-  color: #ffffff;
+  color: var(--sobre-color);
 }
 .sim__play:disabled,
 .sim__btn:disabled {
@@ -2115,7 +2137,7 @@ p {
   font-size: 13px;
 }
 .sim__vel .seg__item.is-on {
-  background: var(--text);
+  background: var(--secundario);
   color: var(--surface);
   box-shadow: none;
 }
@@ -2133,7 +2155,7 @@ p {
 }
 .sim__lluvia b {
   font-family: var(--font-mono);
-  color: var(--text);
+  color: var(--secundario);
 }
 .sim__lluvia input {
   width: 100%;
@@ -2160,10 +2182,10 @@ p {
   flex: none;
   font-family: var(--font-mono);
   font-size: 15px;
-  color: var(--text);
+  color: var(--secundario);
 }
 .sim__lec b.is-accent {
-  color: var(--lime);
+  color: var(--principal);
 }
 .sim__acc {
   display: flex;
@@ -2178,10 +2200,10 @@ p {
   box-shadow: inset 0 0 0 1px var(--line);
   font-weight: 600;
   font-size: 12px;
-  color: var(--text);
+  color: var(--secundario);
 }
 .sim__btn:hover:not(:disabled) {
-  background: #e9e9e6;
+  background: color-mix(in srgb, var(--surface-2) 75%, var(--surface-3));
 }
 .sim__graf {
   display: flex;
@@ -2198,7 +2220,7 @@ p {
   color: var(--text-2);
 }
 .sim__graf-t b {
-  color: var(--text);
+  color: var(--secundario);
 }
 .sim__graf small {
   font-size: 12px;
@@ -2253,7 +2275,7 @@ p {
   max-width: min(400px, calc(100% - 370px));
   padding: 10px 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.94);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1), inset 0 0 0 1px var(--line);
   font-size: 12px;
   line-height: 16px;
@@ -2268,7 +2290,7 @@ p {
   flex: none;
 }
 .leyenda__fila b {
-  color: var(--text);
+  color: var(--secundario);
 }
 .leyenda__aviso {
   margin-top: 4px;
@@ -2289,7 +2311,7 @@ p {
   gap: 8px;
   padding: 16px 18px;
   border-radius: 16px;
-  background: var(--text);
+  background: var(--secundario);
   color: var(--surface);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
   animation: recorrido-entra 0.25s ease-out;
@@ -2320,10 +2342,10 @@ p {
   width: 18px;
   height: 3px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.25);
+  background: color-mix(in srgb, var(--surface) 25%, transparent);
 }
 .recorrido__puntos i.is-on {
-  background: var(--lime);
+  background: var(--principal);
 }
 .recorrido__t {
   font-family: var(--font-display);
@@ -2351,14 +2373,14 @@ p {
   color: var(--surface-3);
 }
 .recorrido__saltar:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--surface) 8%, transparent);
 }
 .recorrido__sig {
   height: 36px;
   padding: 0 16px;
   border-radius: 10px;
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--principal);
+  color: var(--sobre-principal);
   font-weight: 600;
   font-size: 14px;
 }
@@ -2435,7 +2457,7 @@ p {
 }
 .vars__row b {
   text-align: right;
-  color: var(--text);
+  color: var(--secundario);
   font-family: var(--font-mono);
 }
 .vars__bar {
@@ -2448,17 +2470,14 @@ p {
 .vars__bar span {
   display: block;
   height: 100%;
-  background: var(--lime);
+  background: var(--principal);
 }
 
 /* ==========================================================
    TRANSPORTE · paraderos expuestos (#92)
    Azul de transporte fuera de la paleta de prioridad: un paradero no es una rejilla.
    ========================================================== */
-:root {
-  --bus: #1f5fbf;
-  --bus-dim: #dce7f7;
-}
+/* --bus y --bus-dim están en la paleta (:root, arriba) */
 .tp {
   flex: 0 1 auto;
   min-height: 120px;
@@ -2543,7 +2562,7 @@ p {
 }
 .tp__badge--expuesto {
   background: var(--bus);
-  color: #fff;
+  color: var(--sobre-color);
 }
 .tp__badge--riesgo {
   background: transparent;
@@ -2566,7 +2585,7 @@ p {
   background: var(--surface-3);
   font-size: 11px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--secundario);
 }
 .tp__servicios {
   margin: 0;
@@ -2628,7 +2647,7 @@ p {
 }
 .paradero--expuesto {
   background: var(--bus);
-  color: #fff;
+  color: var(--sobre-color);
 }
 .paradero--alternativo {
   background: var(--bus-dim);
@@ -2661,7 +2680,7 @@ p {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 22px;
-  color: var(--text);
+  color: var(--secundario);
   pointer-events: none;
 }
 .map-toast {
@@ -2677,7 +2696,7 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: var(--text);
+  background: var(--secundario);
   flex: none;
 }
 .sensor__top {
@@ -2696,7 +2715,7 @@ p {
   flex: none;
 }
 .sensor__dot.is-live {
-  background: var(--lime);
+  background: var(--principal);
   animation: pulse 1.6s infinite;
 }
 .sensor__dot.is-danger {
@@ -2729,7 +2748,7 @@ p {
   box-shadow: inset 0 0 0 2px var(--danger);
 }
 .sensor--down .sensor__title {
-  color: var(--text);
+  color: var(--secundario);
 }
 .sensor--down .sensor__body {
   color: var(--text-2);
@@ -2738,7 +2757,7 @@ p {
   color: var(--text-3);
 }
 .sensor.is-marking {
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--principal);
 }
 .feed {
   padding: 20px;
@@ -2794,7 +2813,7 @@ p {
   color: var(--text-2);
 }
 .chain.is-active {
-  box-shadow: inset 0 0 0 1.5px var(--lime);
+  box-shadow: inset 0 0 0 1.5px var(--principal);
 }
 .crow {
   display: flex;
@@ -2817,11 +2836,11 @@ p {
   flex: none;
   display: grid;
   place-items: center;
-  box-shadow: inset 0 0 0 2.5px var(--lime);
+  box-shadow: inset 0 0 0 2.5px var(--principal);
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 15px;
-  color: var(--lime);
+  color: var(--principal);
 }
 .crow__name {
   font-weight: 600;
@@ -2900,7 +2919,7 @@ p {
 .radio.is-on {
   height: 50px;
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--principal);
 }
 .radio__dot {
   width: 22px;
@@ -2912,14 +2931,14 @@ p {
   place-items: center;
 }
 .radio.is-on .radio__dot {
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--principal);
 }
 .radio.is-on .radio__dot::after {
   content: "";
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background: var(--lime);
+  background: var(--principal);
 }
 .radio__name {
   flex: 1;

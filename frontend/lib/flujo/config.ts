@@ -3,6 +3,7 @@
 // Flujo estimado por las calles según la pendiente (método racional + pendiente de un DEM de 30 m). No es una
 // simulación hidráulica ni una medición. La lluvia y el estado de las rejillas son SUPUESTOS de la demo.
 import type { LngLat, ScenarioId } from "../data";
+import { colorDe } from "../paleta";
 
 export type EstadoRejilla = "limpia" | "parcial" | "tapada";
 export type NivelAgua = "sin_agua" | "cuneta" | "hasta_vereda" | "sobre_vereda" | "no_evaluable";
@@ -57,12 +58,13 @@ export const FLUJO_CONFIG = {
   caudalMinimoLs: 30,
   /** Caudal (L/s) con el que el trazo llega a su grosor y azul máximos (escala logarítmica). */
   caudalGrosorMaxLs: 2000,
+  /** Colores desde la paleta (lib/paleta.json): getters, así siguen lo editado con ?paleta=1. */
   colores: {
-    agua: "#2F6FDE", // agua circulando, poco caudal
-    aguaHondo: "#0B3D91", // agua circulando, mucho caudal
-    brillo: "#8FB4F5", // brillo suave del trazo animado
-    desborde: "#FF3D0A", // accent: solo donde el agua no cabe en la calle
-    gris: "#8A8A86", // capas de contexto (catastro, GORE)
+    get agua() { return colorDe("agua"); }, // agua circulando, poco caudal
+    get aguaHondo() { return colorDe("agua-hondo"); }, // agua circulando, mucho caudal
+    get brillo() { return colorDe("agua-brillo"); }, // brillo suave del trazo animado
+    get desborde() { return colorDe("principal"); }, // solo donde el agua no cabe en la calle
+    get gris() { return colorDe("contexto"); }, // capas de contexto (catastro, GORE)
   },
   /** Velocidad del trazo animado (pasos del patrón por segundo) para calles lentas, medias y rápidas. */
   trazoPasosPorS: [5, 9, 15],

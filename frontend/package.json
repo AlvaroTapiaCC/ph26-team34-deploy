@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/paleta.mjs",
     "build": "next build",
+    "paleta": "node scripts/paleta.mjs",
     "lint": "next lint",
     "start": "next start",
     "test": "node --experimental-strip-types --test lib/*.test.ts"

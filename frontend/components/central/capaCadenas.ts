@@ -4,55 +4,76 @@ import type { ObservacionPublica } from "@/lib/central";
 import type { Prioridad } from "@/lib/data";
 import type { EvidenciaAgua } from "@/lib/transporte";
 import type { MapLibre } from "../map/maplibre";
+import { colorDe, EVENTO_PALETA } from "@/lib/paleta";
 
+/** Colores desde la paleta (lib/paleta.json): getters, así siguen lo editado con ?paleta=1. */
 export const COLORES_CADENAS = {
-  prioridad: "#6538a0",
-  media: "#9677bb",
-  red: "#6c737b",
-  agua: "#11629e",
-} as const;
+  get prioridad() { return colorDe("prio-alta"); },
+  get media() { return colorDe("prio-media"); },
+  get red() { return colorDe("contexto"); },
+  get agua() { return colorDe("agua"); },
+};
 const FUENTE = "cadenas-mut";
 const FLECHA = "cadenas-sentido";
 const VACIA = { type: "FeatureCollection", features: [] };
 
-function instalarCapas(mapa: MapLibre) {
-  const { prioridad, media, red, agua } = COLORES_CADENAS;
+/** Flecha de sentido de la cadena, con los colores vigentes de la paleta. */
+function flechaImagen(): ImageData | null {
   const lienzo = document.createElement("canvas");
   lienzo.width = lienzo.height = 24;
   const ctx = lienzo.getContext("2d");
-  if (ctx) {
-    ctx.beginPath();
-    ctx.moveTo(6, 4);
-    ctx.lineTo(20, 12);
-    ctx.lineTo(6, 20);
-    ctx.closePath();
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.fillStyle = "#3f3b48";
-    ctx.fill();
-    mapa.addImage(FLECHA, ctx.getImageData(0, 0, 24, 24), { pixelRatio: 2 });
-  }
+  if (!ctx) return null;
+  ctx.beginPath();
+  ctx.moveTo(6, 4);
+  ctx.lineTo(20, 12);
+  ctx.lineTo(6, 20);
+  ctx.closePath();
+  ctx.strokeStyle = colorDe("surface");
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = colorDe("secundario");
+  ctx.fill();
+  return ctx.getImageData(0, 0, 24, 24);
+}
+
+/**
+ * Colores de las capas de cadenas desde la paleta. Se llama al instalarlas y cada vez que cambia la
+ * paleta (EVENTO_PALETA), así líneas, observaciones y flecha cambian sin recargar.
+ */
+function pintarCadenas(mapa: MapLibre) {
+  const { prioridad, media, red, agua } = COLORES_CADENAS;
+  const set = (id: string, prop: string, valor: unknown) => mapa.getLayer(id) && mapa.setPaintProperty(id, prop, valor);
+  set("cadenas-prioridad", "line-color", ["match", ["get", "tipo"], "alta", prioridad, "media", media, red]);
+  set("cadenas-revisar", "line-color", prioridad);
+  set("cadenas-exposicion", "line-color", agua);
+  set("cadenas-observaciones", "circle-color", ["match", ["get", "tipo"], "agua_observada", agua, prioridad]);
+  set("cadenas-observaciones", "circle-stroke-color", ["match", ["get", "tipo"], "agua_observada", agua, prioridad]);
+  const flecha = flechaImagen();
+  if (flecha && mapa.hasImage(FLECHA)) mapa.updateImage(FLECHA, flecha);
+}
+
+function instalarCapas(mapa: MapLibre) {
+  const flecha = flechaImagen();
+  if (flecha) mapa.addImage(FLECHA, flecha, { pixelRatio: 2 });
   mapa.addSource(FUENTE, { type: "geojson", data: VACIA });
   const antesDeRuta = mapa.getLayer("esc-halo") ? "esc-halo" : undefined;
   const base = ["in", ["get", "tipo"], ["literal", ["alta", "media", "baja", "sin_prioridad"]]];
   mapa.addLayer({
     id: "cadenas-prioridad", type: "line", source: FUENTE, filter: base,
     paint: {
-      "line-color": ["match", ["get", "tipo"], "alta", prioridad, "media", media, red],
       "line-width": ["match", ["get", "tipo"], "alta", 4, "media", 3, 2],
     },
   }, antesDeRuta);
-  for (const [id, tipo, color, ancho, desplazamiento] of [
-    ["cadenas-revisar", "obstruccion_abajo", prioridad, 4, -2],
-    ["cadenas-exposicion", "agua_abajo", agua, 5, 2],
+  for (const [id, tipo, ancho, desplazamiento] of [
+    ["cadenas-revisar", "obstruccion_abajo", 4, -2],
+    ["cadenas-exposicion", "agua_abajo", 5, 2],
   ] as const) {
     mapa.addLayer({
       id, type: "line", source: FUENTE, filter: ["==", ["get", "tipo"], tipo],
-      paint: { "line-color": color, "line-width": ancho, "line-offset": desplazamiento, "line-dasharray": [1, 1.4] },
+      paint: { "line-width": ancho, "line-offset": desplazamiento, "line-dasharray": [1, 1.4] },
     }, antesDeRuta);
   }
-  if (ctx) {
+  if (flecha) {
     mapa.addLayer({
       id: "cadenas-flechas", type: "symbol", source: FUENTE, filter: base,
       layout: {
@@ -69,12 +90,11 @@ function instalarCapas(mapa: MapLibre) {
     filter: ["==", ["geometry-type"], "Point"],
     paint: {
       "circle-radius": ["match", ["get", "tipo"], "agua_observada", 17, 14],
-      "circle-color": ["match", ["get", "tipo"], "agua_observada", agua, prioridad],
       "circle-opacity": 0.35,
-      "circle-stroke-color": ["match", ["get", "tipo"], "agua_observada", agua, prioridad],
       "circle-stroke-width": 2.5,
     },
   });
+  pintarCadenas(mapa);
 }
 
 export function useCapaCadenas(
@@ -126,6 +146,14 @@ export function useCapaCadenas(
   useEffect(() => {
     mapa?.getSource(FUENTE)?.setData(datos?.geojson ?? VACIA);
   }, [mapa, datos]);
+
+  // Paleta editable (#131): repinta las cadenas sin recrear las capas
+  useEffect(() => {
+    if (!mapa) return;
+    const repintar = () => pintarCadenas(mapa);
+    window.addEventListener(EVENTO_PALETA, repintar);
+    return () => window.removeEventListener(EVENTO_PALETA, repintar);
+  }, [mapa]);
 
   return { estado, onMapReady, haySimulados: datos?.haySimulados ?? false };
 }

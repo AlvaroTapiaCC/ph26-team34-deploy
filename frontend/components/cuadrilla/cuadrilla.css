@@ -5,10 +5,10 @@
 .cq-crew span { font-size: 13px; color: var(--text-2); }
 .cq-crewbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
 .cq-tag { background: var(--surface-3); color: var(--text-2); padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-.cq-live { margin-left: auto; font-size: 12px; font-weight: 600; color: #2e7d32; }
+.cq-live { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--ok); }
 .cq-live::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
 .cq-live.is-off { color: var(--danger); }
-.cq-aviso { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: var(--r-10); background: var(--text); color: #fff; animation: cq-entra 0.3s ease-out; }
+.cq-aviso { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: var(--r-10); background: var(--secundario); color: var(--texto-inv); animation: cq-entra 0.3s ease-out; }
 .cq-aviso div { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .cq-aviso b { font-size: 16px; }
 .cq-aviso span { font-size: 14px; opacity: 0.85; }
@@ -20,5 +20,5 @@
 .cq-list li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--r-10); background: var(--surface); font-size: 15px; }
 .cq-list__n { width: 26px; height: 26px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--surface-3); font-weight: 700; font-size: 13px; }
 .cq-res { padding-top: 32px; }
-.cq-res--verificado .rp-h1 { color: #2e7d32; }
+.cq-res--verificado .rp-h1 { color: var(--ok); }
 .cq-res--rechazado .rp-h1 { color: var(--danger); }

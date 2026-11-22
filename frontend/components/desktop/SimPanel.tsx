@@ -128,16 +128,16 @@ export function Leyenda() {
       </div>
       <div className="leyenda__fila">
         <svg width="34" height="12" aria-hidden>
-          <path d="M2 6 L32 6" stroke="var(--lime)" strokeWidth="4" strokeLinecap="round" />
+          <path d="M2 6 L32 6" stroke="var(--principal)" strokeWidth="4" strokeLinecap="round" />
         </svg>
         <span>
-          <b>Naranjo:</b> el agua no cabe en la calle (estimado)
+          <b>Color principal:</b> el agua no cabe en la calle (estimado)
         </span>
       </div>
       <div className="leyenda__fila">
         <svg width="34" height="12" aria-hidden>
-          <circle cx="9" cy="6" r="4" fill="#fff" stroke="var(--agua)" strokeWidth="1.5" />
-          <circle cx="25" cy="6" r="4" fill="var(--lime)" stroke="#fff" strokeWidth="1.5" />
+          <circle cx="9" cy="6" r="4" fill="var(--surface)" stroke="var(--agua)" strokeWidth="1.5" />
+          <circle cx="25" cy="6" r="4" fill="var(--principal)" stroke="var(--surface)" strokeWidth="1.5" />
         </svg>
         <span>
           <b>Círculo:</b> rejilla (rellena: tapada)

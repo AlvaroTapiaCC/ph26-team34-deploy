@@ -88,7 +88,7 @@ export default function Recorrido({ flujo, cerca, onTresD, onFin }: { flujo: Flu
     { t: "Esta rejilla está tapada", d: "Tapada, traga casi nada: el agua que le llega sigue de largo por la calle." },
     {
       t: `El agua no cabe en la calle y llega a ${cand?.calle ?? "la calle de abajo"}`,
-      d: "En naranjo, el agua que ya no cabe (estimado). La columna marca dónde se acumula (estimado) y la flecha muestra hacia dónde se va. Por eso esta rejilla se limpia primero.",
+      d: "En el color principal, el agua que ya no cabe (estimado). La columna marca dónde se acumula (estimado) y la flecha muestra hacia dónde se va. Por eso esta rejilla se limpia primero.",
     },
   ];
   const p = pasos[paso];

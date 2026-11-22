@@ -6,7 +6,7 @@ import { PRIO_LABEL, type Prioridad } from "@/lib/data";
 export function Drop({ size = 27 }: { size?: number }) {
   return (
     <svg width={(size * 20) / 27} height={size} viewBox="0 0 20 27" aria-hidden>
-      <path d="M10 0.5C10 0.5 0 11.6 0 17.2C0 22.6 4.5 27 10 27C15.5 27 20 22.6 20 17.2C20 11.6 10 0.5 10 0.5Z" fill="var(--lime)" />
+      <path d="M10 0.5C10 0.5 0 11.6 0 17.2C0 22.6 4.5 27 10 27C15.5 27 20 22.6 20 17.2C20 11.6 10 0.5 10 0.5Z" fill="var(--principal)" />
     </svg>
   );
 }
@@ -293,7 +293,7 @@ export function FakeQR({ size = 200 }: { size?: number }) {
         const y = Math.floor(i / n);
         const f = finder(x, y);
         const fill = f === -1 ? on : f === 1;
-        return fill ? <rect key={i} x={m + x * c} y={m + y * c} width={c + 0.3} height={c + 0.3} fill="var(--text)" /> : null;
+        return fill ? <rect key={i} x={m + x * c} y={m + y * c} width={c + 0.3} height={c + 0.3} fill="var(--secundario)" /> : null;
       })}
     </svg>
   );

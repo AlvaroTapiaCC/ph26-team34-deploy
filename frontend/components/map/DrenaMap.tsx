@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { LngLat, Prioridad } from "@/lib/data";
 import { FLUJO_CONFIG } from "@/lib/flujo/config";
 import { BASE_STYLE, loadMapLibre, type MapLibre } from "./maplibre";
+import { colorDe, EVENTO_PALETA } from "@/lib/paleta";
 
 export interface MapPin {
   id: string;
@@ -71,14 +72,14 @@ const COLORS: Record<string, string> = {
 
 function pinEl(p: MapPin, size: number): HTMLElement {
   const el = document.createElement("div");
-  el.className = "pin" + (p.faded ? " pin--faded" : "") + (p.onClick ? " pin--click" : "") + (p.prio === "alta" ? " pin--tri" : "");
+  el.className = "pin" + (p.faded ? " pin--faded" : "") + (p.onClick ? " pin--click" : "") + (p.prio === "alta" ? " pin--tri" : "") + ` pin--${p.prio}`;
   el.style.width = el.style.height = `${size}px`;
   const fill = COLORS[p.prio];
   let shape = "";
-  if (p.prio === "alta") shape = `<path d="${TRIANGULO}" fill="${fill}" stroke="var(--bg)" stroke-width="3" stroke-linejoin="round"/>`;
+  if (p.prio === "alta") shape = `<path d="${TRIANGULO}" fill="${fill}" stroke="var(--fondo)" stroke-width="3" stroke-linejoin="round"/>`;
   else if (p.prio === "media")
-    shape = `<rect x="7" y="7" width="26" height="26" rx="4" transform="rotate(45 20 20)" fill="${fill}" stroke="var(--bg)" stroke-width="3"/>`;
-  else shape = `<circle cx="20" cy="20" r="17" fill="${fill}" stroke="var(--bg)" stroke-width="3"/>`;
+    shape = `<rect x="7" y="7" width="26" height="26" rx="4" transform="rotate(45 20 20)" fill="${fill}" stroke="var(--fondo)" stroke-width="3"/>`;
+  else shape = `<circle cx="20" cy="20" r="17" fill="${fill}" stroke="var(--fondo)" stroke-width="3"/>`;
   const txt = p.prio === "anegado" ? "≋" : String(p.rank);
   el.innerHTML = `<svg viewBox="0 0 40 40" width="${size}" height="${size}">${shape}</svg><span class="pin__n">${txt}</span>`;
   if (p.ring === "flood") {
@@ -125,9 +126,39 @@ function labelEl(l: MapLabel): HTMLElement {
 
 // Colores de los tokens de globals.css. MapLibre no lee variables CSS: se resuelven al crear el mapa y cada vez
 // que cambia el esquema de color, así las capas siguen al tema (claro u oscuro) sin repetir los hex aquí.
-function token(name: string, fallback: string): string {
-  if (typeof window === "undefined") return fallback;
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+// Colores de las capas propias, desde la paleta (lib/paleta.json). MapLibre no lee variables CSS:
+// se leen con colorDe() al crear el mapa, al cambiar la paleta (EVENTO_PALETA) o el tema del sistema.
+const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
+  ["bg", "background-color", "map-bg"],
+  ["relieve", "hillshade-shadow-color", "text-2"],
+  ["relieve", "hillshade-highlight-color", "surface"],
+  ["relieve", "hillshade-accent-color", "contexto"],
+  ["edificios", "fill-extrusion-color", "surface-2"],
+  ["area-fill", "fill-color", "agua"],
+  ["area-line", "line-color", "agua"],
+  ["celda-fill", "fill-color", "secundario"],
+  ["celda-line", "line-color", "secundario"],
+  ["celda-link", "line-color", "secundario"],
+  ["lim", "line-color", "text-2"],
+  ["rm-fill", "fill-color", "text-3"],
+  ["rm-line", "line-color", "text-3"],
+  ["rm-line-proy", "line-color", "text-3"],
+  ["rej-cluster", "circle-color", "contexto"],
+  ["rej-cluster", "circle-stroke-color", "contexto"],
+  ["rej-point", "circle-color", "contexto"],
+  ["rej-point", "circle-stroke-color", "surface"],
+  ["esc-halo", "line-color", "agua"],
+  ["esc-line", "line-color", "agua"],
+  ["gore", "circle-color", "contexto"],
+  ["gore", "circle-stroke-color", "surface"],
+  ["rec-line", "line-color", "bus"],
+  ["caminata", "line-color", "bus"],
+  ["chain-halo", "line-color", "principal"],
+  ["chain-line", "line-color", "principal"],
+];
+
+function pintarMapa(map: MapLibre) {
+  for (const [capa, prop, color] of COLORES_CAPAS) if (map.getLayer(capa)) map.setPaintProperty(capa, prop, colorDe(color));
 }
 
 interface ComunaRm {
@@ -199,7 +230,6 @@ export default function DrenaMap(props: DrenaMapProps) {
           ["esc", "chain", "lim", "area", "celda", "celda-link", "gore", "rec", "caminata"].forEach(add);
           map.addSource("comunas-rm", { type: "geojson", data: "/data/comunas_rm.geojson" });
           map.addSource("rejillas", { type: "geojson", data: "/data/rejillas.geojson", cluster: true, clusterMaxZoom: 16, clusterRadius: 30 });
-          const { agua, gris } = FLUJO_CONFIG.colores;
           if (props.relieve) {
             const ter = FLUJO_CONFIG.terreno;
             // Dos fuentes del mismo DEM: una para el terreno 3D y otra para el sombreado (MapLibre recomienda separarlas)
@@ -211,7 +241,7 @@ export default function DrenaMap(props: DrenaMapProps) {
                 id: "relieve",
                 type: "hillshade",
                 source: "dem-sombra",
-                paint: { "hillshade-exaggeration": 0.35, "hillshade-shadow-color": "#5E5E5A", "hillshade-highlight-color": "#FFFFFF", "hillshade-accent-color": "#8A8A86" },
+                paint: { "hillshade-exaggeration": 0.35 },
               },
               "ref",
             );
@@ -225,31 +255,29 @@ export default function DrenaMap(props: DrenaMapProps) {
               layout: { visibility: "none" },
               filter: ["!=", ["get", "hide_3d"], true],
               paint: {
-                "fill-extrusion-color": "#F1F1EF",
                 "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
                 "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
                 "fill-extrusion-opacity": 0.55,
               },
             });
           }
-          map.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-color": agua, "fill-opacity": 0.12 } });
-          map.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-color": agua, "line-width": 2, "line-opacity": 0.8 } });
+          map.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-opacity": 0.12 } });
+          map.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-width": 2, "line-opacity": 0.8 } });
           // Durante: celda convectiva ilustrativa (gris oscuro, no es agua ni alerta)
-          map.addLayer({ id: "celda-fill", type: "fill", source: "celda", paint: { "fill-color": "#1B1B1B", "fill-opacity": 0.14 } });
-          map.addLayer({ id: "celda-line", type: "line", source: "celda", paint: { "line-color": "#1B1B1B", "line-width": 2, "line-dasharray": [3, 2] } });
-          map.addLayer({ id: "celda-link", type: "line", source: "celda-link", paint: { "line-color": "#1B1B1B", "line-width": 3, "line-opacity": 0.8, "line-dasharray": [1.5, 1.5] } });
-          map.addLayer({ id: "lim", type: "line", source: "lim", paint: { "line-color": "#5A5A57", "line-width": 2, "line-opacity": 0.8, "line-dasharray": [4, 3] } });
+          map.addLayer({ id: "celda-fill", type: "fill", source: "celda", paint: { "fill-opacity": 0.14 } });
+          map.addLayer({ id: "celda-line", type: "line", source: "celda", paint: { "line-width": 2, "line-dasharray": [3, 2] } });
+          map.addLayer({ id: "celda-link", type: "line", source: "celda-link", paint: { "line-width": 3, "line-opacity": 0.8, "line-dasharray": [1.5, 1.5] } });
+          map.addLayer({ id: "lim", type: "line", source: "lim", paint: { "line-width": 2, "line-opacity": 0.8, "line-dasharray": [4, 3] } });
           const hidden = { visibility: "none" };
           // Límites de todas las comunas: línea fina punteada en --text-3, relleno casi invisible; las 3 del proyecto, algo más marcadas.
-          const t3 = token("--text-3", "#7C7C78");
-          map.addLayer({ id: "rm-fill", type: "fill", source: "comunas-rm", paint: { "fill-color": t3, "fill-opacity": 0.035 } });
-          map.addLayer({ id: "rm-line", type: "line", source: "comunas-rm", paint: { "line-color": t3, "line-width": 0.9, "line-opacity": 0.85, "line-dasharray": [2, 2] } });
+          map.addLayer({ id: "rm-fill", type: "fill", source: "comunas-rm", paint: { "fill-opacity": 0.035 } });
+          map.addLayer({ id: "rm-line", type: "line", source: "comunas-rm", paint: { "line-width": 0.9, "line-opacity": 0.85, "line-dasharray": [2, 2] } });
           map.addLayer({
             id: "rm-line-proy",
             type: "line",
             source: "comunas-rm",
             filter: ["==", ["get", "en_proyecto"], true],
-            paint: { "line-color": t3, "line-width": 1.8, "line-opacity": 1, "line-dasharray": [3, 2] },
+            paint: { "line-width": 1.8, "line-opacity": 1, "line-dasharray": [3, 2] },
           });
           // Capas de contexto (catastro completo y GORE): pequeñas, en gris y solo de cerca, para no competir con el agua
           const zc = FLUJO_CONFIG.zoomContexto;
@@ -260,7 +288,7 @@ export default function DrenaMap(props: DrenaMapProps) {
             minzoom: zc,
             filter: ["has", "point_count"],
             layout: hidden,
-            paint: { "circle-color": gris, "circle-opacity": 0.18, "circle-stroke-color": gris, "circle-stroke-width": 1, "circle-radius": ["step", ["get", "point_count"], 6, 10, 8, 50, 10] },
+            paint: { "circle-opacity": 0.18, "circle-stroke-width": 1, "circle-radius": ["step", ["get", "point_count"], 6, 10, 8, 50, 10] },
           });
           map.addLayer({
             id: "rej-point",
@@ -269,24 +297,21 @@ export default function DrenaMap(props: DrenaMapProps) {
             minzoom: zc,
             filter: ["!", ["has", "point_count"]],
             layout: hidden,
-            paint: { "circle-radius": 2, "circle-color": gris, "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 0.5 },
+            paint: { "circle-radius": 2, "circle-stroke-width": 0.5 },
           });
           // Líneas de escurrimiento de ejemplo (ficha y móvil): agua, en azul
-          map.addLayer({ id: "esc-halo", type: "line", source: "esc", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": agua, "line-width": 8, "line-opacity": 0.12 } });
-          map.addLayer({ id: "esc-line", type: "line", source: "esc", layout: { "line-cap": "round" }, paint: { "line-color": agua, "line-width": 2, "line-opacity": 0.8 } });
-          map.addLayer({ id: "gore", type: "circle", source: "gore", minzoom: zc, paint: { "circle-radius": 2.5, "circle-color": gris, "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 0.75 } });
+          map.addLayer({ id: "esc-halo", type: "line", source: "esc", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 8, "line-opacity": 0.12 } });
+          map.addLayer({ id: "esc-line", type: "line", source: "esc", layout: { "line-cap": "round" }, paint: { "line-width": 2, "line-opacity": 0.8 } });
+          map.addLayer({ id: "gore", type: "circle", source: "gore", minzoom: zc, paint: { "circle-radius": 2.5, "circle-stroke-width": 0.75 } });
           // Durante: cadena aguas abajo del punto anegado en accent (alerta).
           // Transporte: azul fuera de la paleta de prioridad para no confundir un recorrido con escurrimiento.
-          map.addLayer({ id: "rec-line", type: "line", source: "rec", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#1F5FBF", "line-width": 3, "line-opacity": 0.55 } });
-          map.addLayer({ id: "caminata", type: "line", source: "caminata", layout: { "line-cap": "round" }, paint: { "line-color": "#1F5FBF", "line-width": 2.5, "line-dasharray": [0.5, 2] } });
-          map.addLayer({ id: "chain-halo", type: "line", source: "chain", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#FF3D0A", "line-width": 14, "line-opacity": 0.2 } });
-          map.addLayer({ id: "chain-line", type: "line", source: "chain", paint: { "line-color": "#FF3D0A", "line-width": 3, "line-dasharray": [1.5, 1.5] } });
-          // Si cambia el esquema de color del sistema, se vuelven a leer los tokens
-          const repintar = () => {
-            const c = token("--text-3", "#7C7C78");
-            ["rm-fill"].forEach((id) => map.setPaintProperty(id, "fill-color", c));
-            ["rm-line", "rm-line-proy"].forEach((id) => map.setPaintProperty(id, "line-color", c));
-          };
+          map.addLayer({ id: "rec-line", type: "line", source: "rec", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 3, "line-opacity": 0.55 } });
+          map.addLayer({ id: "caminata", type: "line", source: "caminata", layout: { "line-cap": "round" }, paint: { "line-width": 2.5, "line-dasharray": [0.5, 2] } });
+          map.addLayer({ id: "chain-halo", type: "line", source: "chain", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 14, "line-opacity": 0.2 } });
+          map.addLayer({ id: "chain-line", type: "line", source: "chain", paint: { "line-width": 3, "line-dasharray": [1.5, 1.5] } });
+          pintarMapa(map);
+          // Si cambia el esquema de color del sistema, se vuelven a leer los colores
+          const repintar = () => pintarMapa(map);
           const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
           mq?.addEventListener?.("change", repintar);
           unsubTema.current = () => mq?.removeEventListener?.("change", repintar);
@@ -315,6 +340,14 @@ export default function DrenaMap(props: DrenaMapProps) {
     map.setTerrain(props.tresD ? { source: "dem-terreno", exaggeration: FLUJO_CONFIG.terreno.exageracion } : null);
     if (map.getLayer("edificios")) map.setLayoutProperty("edificios", "visibility", props.tresD ? "visible" : "none");
   }, [ready, props.relieve, props.tresD]);
+
+  // Paleta editable (#131): repinta las capas sin recrear el mapa
+  useEffect(() => {
+    if (!ready) return;
+    const repintar = () => mapRef.current && pintarMapa(mapRef.current);
+    window.addEventListener(EVENTO_PALETA, repintar);
+    return () => window.removeEventListener(EVENTO_PALETA, repintar);
+  }, [ready]);
 
   // Encuadre (en 3D, con la inclinación y el rumbo de la vista)
   useEffect(() => {
