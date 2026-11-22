@@ -78,6 +78,8 @@ Variables (Project Settings → Environment Variables):
 
 Las variables `NEXT_PUBLIC_*` se fijan al momento del build: después de cambiarlas hay que redeployar (*Deployments* → … → *Redeploy*).
 
+Con las dos variables públicas de Supabase configuradas, el ranking usa Realtime para detectar inserciones y cambios en `scores` del escenario abierto y vuelve a consultar la API. La suscripción usa la publicación y los permisos de lectura existentes. Para verificarla, dejar el ranking abierto en un entorno de pruebas, ejecutar un recálculo autorizado y comprobar que los puntajes actualizados aparecen sin recargar.
+
 ## Base de datos (Supabase)
 
 Las migraciones están en `backend/db/migrations/` y se aplican con:
