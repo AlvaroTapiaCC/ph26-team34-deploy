@@ -49,8 +49,6 @@ export const FLUJO_CONFIG = {
   velocidades: [1, 10, 60] as const,
   /** Paso máximo de cálculo por cuadro (s): evita saltos bruscos a 60×. */
   pasoMaxSimS: 20,
-  /** Puntos que guarda el gráfico de caudal de la rejilla elegida. */
-  serieMax: 120,
   /** Tope del slider de lluvia (mm/h). */
   lluviaMaxMmH: 80,
 

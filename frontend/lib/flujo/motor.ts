@@ -19,14 +19,11 @@ import type { ObservacionPunto } from "./fuentes";
 export const NIVELES: NivelAgua[] = ["sin_agua", "cuneta", "hasta_vereda", "sobre_vereda"];
 const rango = (n: NivelAgua) => Math.max(0, NIVELES.indexOf(n));
 
+/** Lecturas para la interfaz: solo cualitativas (el caudal se usa por dentro para dibujar, no se muestra). */
 export interface Lecturas {
-  /** Lluvia que escurre ahora por las calles de la red: Σ C · i · A (L/s). */
-  caudalTransito: number;
   /** Puntos con agua (estimado): rejillas donde lo que no traga ya no cabe en la calzada. */
   desbordados: number;
   desbordadosPorComuna: Record<string, number>;
-  /** Metros de calle con más agua de la que cabe en la cuneta. */
-  metrosSobreCuneta: number;
 }
 
 export class MotorFlujo {
@@ -252,24 +249,14 @@ export class MotorFlujo {
 
   // ---- Resumen para la interfaz ----
   lecturas(): Lecturas {
-    const { tramos, sumideros } = this.grafo;
-    const coef = this.cfg.coefEscorrentia / 3600;
-    let caudalTransito = 0;
-    let metrosSobreCuneta = 0;
-    for (const t of tramos) {
-      caudalTransito += t.ap * coef * this.lluviaMmH(t.mid);
-      if (this.q[t.id] > t.capCuneta) metrosSobreCuneta += t.L;
-    }
     let desbordados = 0;
     const desbordadosPorComuna: Record<string, number> = {};
-    sumideros.forEach((s, i) => {
-      if (s.tramo === null) caudalTransito += s.ap * coef * this.lluviaMmH(s.coord);
-      if (this.desborda(i)) {
-        desbordados++;
-        if (s.comuna) desbordadosPorComuna[s.comuna] = (desbordadosPorComuna[s.comuna] ?? 0) + 1;
-      }
+    this.grafo.sumideros.forEach((s, i) => {
+      if (!this.desborda(i)) return;
+      desbordados++;
+      if (s.comuna) desbordadosPorComuna[s.comuna] = (desbordadosPorComuna[s.comuna] ?? 0) + 1;
     });
-    return { caudalTransito, desbordados, desbordadosPorComuna, metrosSobreCuneta };
+    return { desbordados, desbordadosPorComuna };
   }
 
   /**

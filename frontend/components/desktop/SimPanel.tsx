@@ -1,75 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AVISO_MODELO, AVISO_NO_HACE, FLUJO_CONFIG, type EstadoRejilla } from "@/lib/flujo/config";
 import type { Flujo, UiFlujo, Velocidad } from "@/lib/flujo/useFlujo";
 import { useStore } from "@/lib/store";
 import { Chevron, Segmented } from "../ui";
 
-/** Caudal abreviado en palabras simples: "93 mil L/s". */
-export function caudalCorto(ls: number): string {
-  if (ls >= 1_000_000) return `${(ls / 1_000_000).toLocaleString("es-CL", { maximumFractionDigits: 1 })} millones de L/s`;
-  if (ls >= 10_000) return `${Math.round(ls / 1000).toLocaleString("es-CL")} mil L/s`;
-  if (ls >= 1000) return `${(ls / 1000).toLocaleString("es-CL", { maximumFractionDigits: 1 })} mil L/s`;
-  return `${Math.round(ls)} L/s`;
-}
-const km = (m: number) => `${(m / 1000).toLocaleString("es-CL", { maximumFractionDigits: 1 })} km`;
 const ESTADO_TXT: Record<EstadoRejilla, string> = { limpia: "limpia", parcial: "parcialmente tapada", tapada: "tapada" };
-
-/** Redondea hacia arriba a 1, 2 o 5 × 10^n, para el eje. */
-function tope(x: number) {
-  const e = Math.pow(10, Math.floor(Math.log10(Math.max(x, 1))));
-  return [1, 2, 5, 10].map((k) => k * e).find((v) => v >= x) ?? x;
-}
-
-/** Caudal que llega a la rejilla elegida, en el tiempo, con eje y unidades legibles. */
-function Grafico({ serie }: { serie: [number, number][] }) {
-  const W = 288;
-  const H = 96;
-  const m = { l: 40, r: 8, t: 8, b: 20 };
-  const g = useMemo(() => {
-    if (serie.length < 2) return null;
-    const t0 = serie[0][0];
-    const t1 = Math.max(serie[serie.length - 1][0], t0 + 1);
-    const yMax = tope(Math.max(...serie.map((p) => p[1])));
-    const x = (t: number) => m.l + ((t - t0) / (t1 - t0)) * (W - m.l - m.r);
-    const y = (q: number) => H - m.b - (q / yMax) * (H - m.t - m.b);
-    const d = serie.map((p, i) => `${i ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
-    return { d, area: `${d}L${x(t1)},${y(0)}L${x(t0)},${y(0)}Z`, yMax, t0, t1, y };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serie]);
-  return (
-    <svg className="sim__chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Caudal que llega a la rejilla, en el tiempo">
-      {g ? (
-        <>
-          <line x1={m.l} x2={W - m.r} y1={g.y(g.yMax)} y2={g.y(g.yMax)} className="sim__grid" />
-          <line x1={m.l} x2={W - m.r} y1={g.y(0)} y2={g.y(0)} className="sim__eje" />
-          <text x={m.l - 6} y={g.y(g.yMax) + 4} textAnchor="end" className="sim__tick">
-            {g.yMax.toLocaleString("es-CL")}
-          </text>
-          <text x={m.l - 6} y={g.y(0) + 4} textAnchor="end" className="sim__tick">
-            0
-          </text>
-          <text x={4} y={(H - m.b) / 2 + 4} className="sim__tick">
-            L/s
-          </text>
-          <text x={m.l} y={H - 4} className="sim__tick">
-            {Math.floor(g.t0)} min
-          </text>
-          <text x={W - m.r} y={H - 4} textAnchor="end" className="sim__tick">
-            {Math.floor(g.t1)} min
-          </text>
-          <path d={g.area} fill="var(--agua)" opacity="0.14" />
-          <path d={g.d} fill="none" stroke="var(--agua)" strokeWidth="2" strokeLinejoin="round" />
-        </>
-      ) : (
-        <text x={W / 2} y={H / 2 + 4} textAnchor="middle" className="sim__tick">
-          Dale ▶ para ver cómo cambia el caudal
-        </text>
-      )}
-    </svg>
-  );
-}
 
 function Lectura({ v, l, accent }: { v: string; l: string; accent?: boolean }) {
   return (
@@ -150,26 +87,25 @@ export default function SimPanel({ flujo }: { flujo: Flujo }) {
             <input type="range" min={0} max={FLUJO_CONFIG.lluviaMaxMmH} step={1} value={ui.lluviaMmH} onChange={(e) => flujo.setLluvia(Number(e.target.value))} aria-label="Lluvia supuesta (mm/h)" />
           </label>
           <div className="sim__lecs">
-            <Lectura l="Agua en las calles" v={caudalCorto(l.caudalTransito)} />
             <Lectura l="Puntos con agua (estimado)" v={String(l.desbordados)} accent={l.desbordados > 0} />
-            <Lectura l="Calles con agua sobre la cuneta" v={km(l.metrosSobreCuneta)} />
+            <Lectura l="Rejillas tapadas" v={`${ui.tapadas.Todas ?? 0} de ${(ui.total.Todas ?? 0).toLocaleString("es-CL")}`} />
           </div>
           <AccionesRejillas flujo={flujo} />
-          {ui.grafico && (
+          {ui.elegida ? (
             <div className="sim__graf">
               <div className="sim__graf-t">
                 <span>
-                  Rejilla {ESTADO_TXT[ui.grafico.estado]} · <b>{ui.grafico.nombre}</b>
+                  Rejilla {ESTADO_TXT[ui.elegida.estado]} · <b>{ui.elegida.nombre}</b>
                 </span>
                 <button className="sim__cerrar" onClick={() => flujo.seleccionar(null)} aria-label="Quitar la rejilla elegida">
                   ✕
                 </button>
               </div>
-              <small>Agua que le llega: {caudalCorto(ui.grafico.caudal)}</small>
-              <Grafico serie={ui.grafico.serie} />
+              <small className={ui.elegida.conAgua ? "is-accent" : ""}>{ui.elegida.conAgua ? "Acumula agua (estimado)" : "Sin agua acumulada (estimado)"}</small>
             </div>
+          ) : (
+            <p className="sim__hint">Haz clic en una rejilla del mapa para taparla o limpiarla.</p>
           )}
-          {!ui.grafico && <p className="sim__hint">Haz clic en una rejilla del mapa para taparla o limpiarla y ver su caudal.</p>}
           {ui.error && <p className="sim__error">No se pudo leer flujo.geojson</p>}
         </>
       )}
@@ -187,7 +123,7 @@ export function Leyenda() {
           <path d="M19 6 L32 6" stroke="var(--agua-hondo)" strokeWidth="5" strokeLinecap="round" />
         </svg>
         <span>
-          <b>Azul:</b> agua por la calle (más grueso, más caudal)
+          <b>Azul:</b> agua por la calle (más grueso, más agua; estimado)
         </span>
       </div>
       <div className="leyenda__fila">

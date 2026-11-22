@@ -23,8 +23,8 @@ export interface UiFlujo {
   /** Lluvia supuesta (mm/h), la del slider. */
   lluviaMmH: number;
   lecturas: Lecturas;
-  /** Rejilla elegida en el mapa y su caudal en el tiempo ([minutos, L/s]); null si no hay ninguna elegida. */
-  grafico: { id: string; nombre: string; estado: EstadoRejilla; caudal: number; serie: [number, number][] } | null;
+  /** Rejilla elegida en el mapa: su estado y si acumula agua (estimado); null si no hay ninguna elegida. */
+  elegida: { id: string; nombre: string; estado: EstadoRejilla; conAgua: boolean } | null;
   /** Rejillas tapadas (estado efectivo) y total, por comuna ("Todas" incluida). */
   tapadas: Record<string, number>;
   total: Record<string, number>;
@@ -47,7 +47,7 @@ function cargarGrafo(): Promise<Grafo> {
   return grafoPromesa;
 }
 
-const LECTURAS0: Lecturas = { caudalTransito: 0, desbordados: 0, desbordadosPorComuna: {}, metrosSobreCuneta: 0 };
+const LECTURAS0: Lecturas = { desbordados: 0, desbordadosPorComuna: {} };
 
 export interface PuntoNombrado {
   id: string;
@@ -79,7 +79,7 @@ export function useFlujo(opts: {
     t: 0,
     lluviaMmH: picoEscenario(scenario),
     lecturas: LECTURAS0,
-    grafico: null,
+    elegida: null,
     tapadas: {},
     total: {},
     caja: null,
@@ -99,7 +99,6 @@ export function useFlujo(opts: {
   const [seleccion, setSeleccion] = useState<string | null>(null);
   const seleccionRef = useRef(seleccion);
   seleccionRef.current = seleccion;
-  const serie = useRef<{ id: string | null; puntos: [number, number][] }>({ id: null, puntos: [] });
 
   const parche = useCallback((p: Partial<UiFlujo>) => setUi((u) => ({ ...u, ...p })), []);
 
@@ -139,17 +138,9 @@ export function useFlujo(opts: {
       });
       const sel = seleccionRef.current;
       const i = sel !== null ? m.idx.get(sel) : undefined;
-      let grafico: UiFlujo["grafico"] = null;
-      if (i !== undefined) {
-        const id = m.grafo.sumideros[i].id;
-        if (serie.current.id !== id) serie.current = { id, puntos: [] };
-        const pts = serie.current.puntos;
-        const min = m.t / 60;
-        if (!pts.length || min > pts[pts.length - 1][0]) pts.push([min, m.llega[i]]);
-        if (pts.length > FLUJO_CONFIG.serieMax) pts.splice(0, pts.length - FLUJO_CONFIG.serieMax);
-        grafico = { id, nombre: nombreRejilla(i), estado: m.estadoRejilla(i), caudal: m.llega[i], serie: [...pts] };
-      }
-      setUi((x) => ({ ...x, t: m.t, lluviaMmH: m.intensidadMmH, lecturas: lect, grafico, tapadas, total, ...extra }));
+      const elegida: UiFlujo["elegida"] =
+        i !== undefined ? { id: m.grafo.sumideros[i].id, nombre: nombreRejilla(i), estado: m.estadoRejilla(i), conAgua: m.desborda(i) } : null;
+      setUi((x) => ({ ...x, t: m.t, lluviaMmH: m.intensidadMmH, lecturas: lect, elegida, tapadas, total, ...extra }));
     },
     [nombreRejilla],
   );
@@ -173,7 +164,6 @@ export function useFlujo(opts: {
 
   useEffect(() => {
     capa.current?.setSeleccion(seleccion);
-    serie.current = { id: null, puntos: [] };
     leerMotor();
   }, [seleccion, leerMotor]);
 
@@ -207,7 +197,6 @@ export function useFlujo(opts: {
     m.asociarPuntos(JSON.parse(puntosKey).map(([id, coord]: [string, LngLat]) => ({ id, coord })));
     m.setEscenario(scenario);
     m.intensidadMmH = picoEscenario(scenario);
-    serie.current = { id: null, puntos: [] };
     capa.current?.actualizarEstado();
     leerMotor();
   }, [scenario, puntosKey, ui.cargado, leerMotor]);
@@ -294,7 +283,6 @@ export function useFlujo(opts: {
 
   const reiniciar = useCallback(() => {
     motor.current?.reiniciar();
-    serie.current = { id: null, puntos: [] };
     capa.current?.actualizarEstado();
     leerMotor();
   }, [leerMotor]);

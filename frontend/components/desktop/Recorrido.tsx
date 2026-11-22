@@ -88,7 +88,7 @@ export default function Recorrido({ flujo, cerca, onTresD, onFin }: { flujo: Flu
     { t: "Esta rejilla está tapada", d: "Tapada, traga casi nada: el agua que le llega sigue de largo por la calle." },
     {
       t: `El agua no cabe en la calle y llega a ${cand?.calle ?? "la calle de abajo"}`,
-      d: "En naranjo, el agua que ya no cabe (estimado). La columna crece con ese volumen y la flecha muestra hacia dónde se va. Por eso esta rejilla se limpia primero.",
+      d: "En naranjo, el agua que ya no cabe (estimado). La columna marca dónde se acumula (estimado) y la flecha muestra hacia dónde se va. Por eso esta rejilla se limpia primero.",
     },
   ];
   const p = pasos[paso];
@@ -107,7 +107,7 @@ export default function Recorrido({ flujo, cerca, onTresD, onFin }: { flujo: Flu
       </div>
       <h3 className="recorrido__t">{p.t}</h3>
       <p className="recorrido__d">{p.d}</p>
-      {paso === 2 && !cand && <p className="recorrido__d">No encontré una rejilla que se desborde al taparla con esta lluvia.</p>}
+      {paso === 2 && !cand && <p className="recorrido__d">No encontré una rejilla que acumule agua (estimado) al taparla con esta lluvia.</p>}
       <div className="recorrido__btns">
         <button className="recorrido__saltar" onClick={terminar}>
           Saltar
