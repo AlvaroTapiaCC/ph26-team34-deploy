@@ -26,15 +26,15 @@ function Lluvia({ horas }: { horas: Caso["horas"] }) {
   return <>
     <div className={c.chartScroll} tabIndex={0} role="region" aria-label="Lluvia horaria y modos; desplazar para ver los tres días">
       <svg className={c.chart} viewBox="0 0 950 310" role="img" aria-labelledby="lluvia-titulo lluvia-desc">
-        <title id="lluvia-titulo">Lluvia del 6 al 8 de octubre, hora de Santiago</title>
-        <desc id="lluvia-desc">Barras de lluvia observada, línea discontinua del pronóstico emitido un día antes y banda de modo. El aluvión está marcado el 8 a las 17:00. Escala de cero a {num(max)} milímetros por hora.</desc>
-        {[0, max / 2, max].map((v) => <g key={v}><line x1="48" x2="918" y1={y(v)} y2={y(v)} stroke="currentColor" opacity=".15" /><text x="42" y={y(v) + 4} textAnchor="end">{num(v)}</text></g>)}
+        <title id="lluvia-titulo">{`Lluvia del 6 al 8 de octubre, hora de Santiago`}</title>
+        <desc id="lluvia-desc">{`Barras de lluvia observada, línea discontinua del pronóstico emitido un día antes y banda de modo. El aluvión está marcado el 8 a las 17:00. Escala de cero a ${num(max)} milímetros por hora.`}</desc>
+        {[0, max / 2, max].map((v) => <g key={v}><line x1="48" x2="918" y1={y(v)} y2={y(v)} stroke="currentColor" opacity=".15" /><text x="42" y={y(v) + 4} textAnchor="end">{`${num(v)}`}</text></g>)}
         <text x="16" y="35">mm/h</text>
         {horas.map((h, i) => <g key={h.hora_utc}>
-          <title>{fecha(h.hora_utc)}: {num(h.lluvia_mm)} mm; pronóstico {num(h.lluvia_pronosticada_mm)} mm; {MODOS[h.modo].nombre}</title>
+          <title>{`${fecha(h.hora_utc)}: ${num(h.lluvia_mm)} mm; pronóstico ${num(h.lluvia_pronosticada_mm)} mm; ${MODOS[h.modo].nombre}`}</title>
           <rect x={x(i)} y="251" width="12" height="14" fill={MODOS[h.modo].color} />
           <rect x={x(i) + 2} y={y(h.lluvia_mm)} width="8" height={238 - y(h.lluvia_mm)} fill="var(--agua)" />
-          {i % 12 === 0 && <text x={x(i)} y="289">{h.hora_santiago.slice(8, 10)} oct · {h.hora_santiago.slice(11, 16)}</text>}
+          {i % 12 === 0 && <text x={x(i)} y="289">{`${h.hora_santiago.slice(8, 10)} oct · ${h.hora_santiago.slice(11, 16)}`}</text>}
         </g>)}
         <polyline points={horas.map((h, i) => `${x(i) + 6},${y(h.lluvia_pronosticada_mm)}`).join(" ")} fill="none" stroke="var(--aviso)" strokeWidth="2" strokeDasharray="5 3" />
         <line x1={x(evento) + 6} x2={x(evento) + 6} y1="45" y2="267" stroke="currentColor" strokeWidth="2" strokeDasharray="4" />
