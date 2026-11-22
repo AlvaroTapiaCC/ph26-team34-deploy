@@ -151,9 +151,9 @@ export function cargarRecorridos(): Promise<Recorrido[]> {
     .then((fc: { features: { properties: { servicio: string; sentido: string; destino: string | null }; geometry: { coordinates: LngLat[][] } }[] }) =>
       fc.features.map((f) => ({ ...f.properties, tramos: f.geometry.coordinates })),
     )
-    .catch(() => {
+    .catch((error: unknown) => {
       recorridosCache = null; // se reintenta en la próxima llamada
-      return [];
+      throw error;
     });
   return recorridosCache;
 }
@@ -163,9 +163,19 @@ export function useRecorridos(activo: boolean) {
   useEffect(() => {
     if (!activo) return;
     let vivo = true;
-    void cargarRecorridos().then((x) => vivo && setR(x));
+    let reintento: ReturnType<typeof setTimeout> | undefined;
+    const cargar = async (intento: number) => {
+      try {
+        const x = await cargarRecorridos();
+        if (vivo) setR(x);
+      } catch {
+        if (vivo && intento < 3) reintento = setTimeout(() => void cargar(intento + 1), 1000 * (intento + 1));
+      }
+    };
+    void cargar(0);
     return () => {
       vivo = false;
+      clearTimeout(reintento);
     };
   }, [activo]);
   return r;
