@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ESCURRIMIENTO, fmt, googleMapsTramos, MAX_WAYPOINTS_MOVIL, pad2, statsPunto, textoWhatsApp, type LngLat, type ScenarioId } from "@/lib/data";
+import { ESCURRIMIENTO, fmt, googleMapsTramos, MAX_WAYPOINTS_MOVIL, pad2, PUNTOS, statsPunto, textoWhatsApp, type LngLat, type ScenarioId } from "@/lib/data";
 import { boundsDe } from "@/lib/real";
 import { CUADRILLAS_MAX, useStore, type MobileTab } from "@/lib/store";
 import AvisoDatos from "../AvisoDatos";
@@ -18,6 +18,7 @@ function Nav() {
   const tabs: [MobileTab, string][] = [
     ["prioridades", "Prioridades"],
     ["ruta", "Ruta"],
+    ["durante", "Durante"],
   ];
   return (
     <nav className="mob__nav">
@@ -25,7 +26,7 @@ function Nav() {
         <button
           key={id}
           className={`mob__tab ${s.mobileTab === id ? "is-on" : ""}`}
-          onClick={() => set({ mobileTab: id, mobileView: "lista" })}
+          onClick={() => set({ mobileTab: id, mobileView: id === "prioridades" ? "lista" : "lista", modo: id === "durante" ? "durante" : "antes" })}
         >
           {label}
         </button>
@@ -51,7 +52,7 @@ function useMobilePins(onPin: (id: string) => void, focus?: string) {
   }, [ranking, s.comuna, focus]);
 }
 
-function Estado({ kind }: { kind: "cargando" | "vacio" | "error" }) {
+function Estado({ kind }: { kind: "cargando" | "vacio" | "error" | "caido" }) {
   const { s, set, reload } = useStore();
   if (kind === "cargando")
     return (
@@ -70,7 +71,8 @@ function Estado({ kind }: { kind: "cargando" | "vacio" | "error" }) {
         </Button>
       </div>
     );
-  return (
+  if (kind === "error")
+    return (
       <div className="mstate mstate--ink">
         <h3>Sin conexión</h3>
         <p>Muestra la última lista guardada (13:40). La ruta sigue en Google Maps.</p>
@@ -79,6 +81,12 @@ function Estado({ kind }: { kind: "cargando" | "vacio" | "error" }) {
         </Button>
       </div>
     );
+  return (
+    <div className="mstate mstate--danger">
+      <h3>Cámara de la demo · sin señal</h3>
+      <p>Usa “Simular reporte” para seguir la demo.</p>
+    </div>
+  );
 }
 
 function Prioridades() {
@@ -394,6 +402,68 @@ function Compartir() {
   );
 }
 
+function DuranteM() {
+  const { s, set, cadena, flood } = useStore();
+  const an = s.anegado ? PUNTOS[s.anegado] : null;
+  if (!an) {
+    return (
+      <div className="mob__body">
+        <div className="mgap">
+          {s.sensor === "caido" ? (
+            <Estado kind="caido" />
+          ) : (
+            <div className="alert" style={{ boxShadow: "inset 0 0 0 1.5px var(--line)" }}>
+              <Kicker tone="accent">
+                <span className="sensor__dot" /> Reportes de la demo
+              </Kicker>
+              <h2>Sin anegamientos reportados</h2>
+              <p>Simula un reporte para ver qué revisar aguas abajo.</p>
+            </div>
+          )}
+          <Button size="lg" className="btn--block" onClick={() => flood("p2", "sensor")}>
+            Simular reporte
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <>
+      <div className="mob__body">
+        <div className="mgap">
+          <div className="alert">
+            <Kicker tone="danger">
+              <span className="sensor__dot is-danger" /> {s.fuenteAnegamiento ?? "Anegado"}
+            </Kicker>
+            <h2>Anegado en {an.nombre}</h2>
+            <p>Revisa primero los puntos que reciben su agua.</p>
+          </div>
+          <div className="photo" style={{ height: 170, backgroundImage: "url(/img/sumidero-anegado.jpg)" }}>
+            <span className="photo__tag">Foto referencial · Unsplash</span>
+          </div>
+          <Kicker tone="accent">Aguas abajo · orden de recorrido</Kicker>
+          {cadena.map((p, i) => (
+            <div key={p.id} className="mrow">
+              <span className="ord mord">{i + 1}°</span>
+              <div>
+                <span className="mrow__name">{p.nombre}</span>
+              </div>
+              <PrioChip prio={p.prio} />
+            </div>
+          ))}
+        </div>
+      </div>
+      {cadena[0] && (
+        <div className="mob__cta">
+          <Button variant="primary" size="lg" className="btn--block" onClick={() => set({ ficha: cadena[0].id, mobileTab: "prioridades", mobileView: "ficha" })}>
+            Ir al 1° · {cadena[0].nombre.split(" / ")[0]}
+          </Button>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function Mobile() {
   const { s, set } = useStore();
   // En terreno se trabaja por comuna: por defecto Providencia (M01)
@@ -403,6 +473,7 @@ export default function Mobile() {
   }, []);
   let body: React.ReactNode;
   if (s.mobileTab === "ruta") body = s.mobileView === "compartir" ? <Compartir /> : <Ruta />;
+  else if (s.mobileTab === "durante") body = <DuranteM />;
   else if (s.mobileView === "mapa" || (s.mobileView === "filtros" && s.selected)) body = <MapaFull />;
   else if (s.mobileView === "ficha" && s.ficha) body = <FichaM />;
   else body = <Prioridades />;

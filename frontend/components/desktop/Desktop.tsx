@@ -3,6 +3,8 @@
 import { useStore } from "@/lib/store";
 import AvisoDatos from "../AvisoDatos";
 import { Toast } from "../ui";
+import BandaClima from "./BandaClima";
+import Durante from "./Durante";
 import Ficha from "./Ficha";
 import Modals from "./Modals";
 import Principal from "./Principal";
@@ -13,7 +15,9 @@ function Body() {
   const { s } = useStore();
   if (s.status === "error") return <ErrorDatos />;
   if (s.status === "loading") return <Cargando />;
+  if (s.modo === "durante") return <Durante />;
   if (s.ficha) return <Ficha />;
+  // Antes: el mapa con el flujo estimado, la tabla y el recorrido guiado
   return <Principal vacio={<Vacio />} />;
 }
 
@@ -22,6 +26,7 @@ export default function Desktop() {
   return (
     <div className="desk">
       <TopBar />
+      <BandaClima />
       <Body />
       <Modals />
       <AvisoDatos />

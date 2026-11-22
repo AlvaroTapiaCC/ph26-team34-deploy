@@ -11,7 +11,7 @@ from PIL import Image
 
 from app.main import app
 from app.routers import observations as router
-from app.schemas.claude import ClasificacionRejilla, LecturaTexto
+from app.schemas.claude import ClasificacionCamara, ClasificacionRejilla, LecturaTexto
 from app.services import observations as svc
 from app.services.claude_common import ResultadoClaude
 from app.services.claude_vision import ImagenInvalida
@@ -312,6 +312,32 @@ def test_imagen_ilegible_es_422(mundo):
 
 
 # --- compatibilidad con /reportar (PR #82) y reintentos ------------------------------------
+def test_camara_fija_clasifica_agua_y_recalcula_el_tramo(mundo, monkeypatch):
+    cuadro = ClasificacionCamara(
+        evaluable=True, hojas_calzada="pocas", basura_calzada="poca", agua_visible=True,
+        nivel_agua="cuneta", confianza="alta", nota="Agua en la cuneta",
+    )
+    monkeypatch.setattr(router, "clasificar_camara",
+                        lambda foto: ResultadoClaude(cuadro, "claude-test", "camara-v1", "k", 10))
+    datos = {"tipo": "agua", "fuente": "camara_fija", "lat": S_C["lat"], "lon": S_C["lon"]}
+    r = client.post("/observations", data={"datos": json.dumps(datos)},
+                    files={"foto": ("camara.jpg", _foto(), "image/jpeg")})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    observacion = mundo.observaciones[d["id"]]
+    assert observacion["fuente"] == mundo.eventos[-1][1]["fuente"] == "camara"
+    assert observacion["tipo"] == "foto_agua"
+    assert d["sumidero_id"] == "C" and d["caso_id"]
+    assert d["clasificacion"]["nivel_agua"] == "cuneta"
+    assert d["recalculado"] and mundo.recalculos == 1
+
+
+@pytest.mark.parametrize("tipo, ubicacion", [("rejilla", {"lat": -33.46, "lon": -70.61}), ("agua", {})])
+def test_camara_fija_requiere_cuadro_de_agua_ubicado(mundo, tipo, ubicacion):
+    r = _enviar(tipo, fuente="camara_fija", **ubicacion)
+    assert r.status_code == 422 and not mundo.observaciones
+
+
 def test_acepta_el_formato_datos_de_reportar_y_modo_campo(mundo):
     datos = {"id": "no-es-uuid-123", "tipo": "rejilla", "lat": -33.456, "lon": -70.6, "precision_m": 8,
              "sin_gps": False, "hora": datetime.now(timezone.utc).isoformat(), "clasificacion": {"x": 1},

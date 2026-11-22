@@ -11,6 +11,7 @@ export interface MapPin {
   rank: number | string;
   prio: Prioridad | "anegado";
   faded?: boolean;
+  ring?: "flood"; // Durante: ondas del punto anegado
   onClick?: () => void;
 }
 
@@ -21,6 +22,15 @@ export interface MapLabel {
   tone: "card" | "pill" | "danger" | "dark" | "area";
   offset?: [number, number];
   anchor?: "left" | "right" | "top" | "bottom" | "center" | "top-left" | "bottom-left";
+}
+
+export interface MapParadero {
+  id: string;
+  coord: LngLat;
+  nivel: "expuesto" | "en_riesgo" | "alternativo";
+  activo?: boolean;
+  titulo: string;
+  onClick?: () => void;
 }
 
 export interface DrenaMapProps {
@@ -35,6 +45,11 @@ export interface DrenaMapProps {
   /** Relieve (sombreado del terreno) y, si `tresD`, terreno 3D con edificios. Sin clave: AWS Terrain Tiles y OpenFreeMap. */
   relieve?: boolean;
   tresD?: boolean;
+  chain?: LngLat[] | null; // Durante: cadena aguas abajo del punto anegado
+  celda?: { poly: LngLat[]; rayos: LngLat[]; link: [LngLat, LngLat] } | null; // Durante: celda convectiva ilustrativa
+  paraderos?: MapParadero[] | null; // transporte: expuestos, en riesgo y alternativos (#92)
+  recorridos?: LngLat[][] | null; // trazado de los servicios afectados
+  caminatas?: [LngLat, LngLat][] | null; // paradero expuesto → paradero alternativo
   bounds: [LngLat, LngLat];
   padding?: number | { top: number; bottom: number; left: number; right: number };
   attribution?: string;
@@ -66,6 +81,26 @@ function pinEl(p: MapPin, size: number): HTMLElement {
   else shape = `<circle cx="20" cy="20" r="17" fill="${fill}" stroke="var(--bg)" stroke-width="3"/>`;
   const txt = p.prio === "anegado" ? "≋" : String(p.rank);
   el.innerHTML = `<svg viewBox="0 0 40 40" width="${size}" height="${size}">${shape}</svg><span class="pin__n">${txt}</span>`;
+  if (p.ring === "flood") {
+    el.insertAdjacentHTML("afterbegin", `<span class="pin__flood pin__flood--1"></span><span class="pin__flood pin__flood--2"></span><span class="pin__flood pin__flood--3"></span>`);
+  }
+  if (p.onClick) {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      p.onClick!();
+    });
+  }
+  return el;
+}
+
+const PARADERO_SIGNO = { expuesto: "≋", en_riesgo: "!", alternativo: "↪" } as const;
+
+function paraderoEl(p: MapParadero): HTMLElement {
+  const el = document.createElement("div");
+  el.className = `paradero paradero--${p.nivel}` + (p.activo ? " is-active" : "") + (p.onClick ? " pin--click" : "");
+  el.title = p.titulo;
+  el.setAttribute("aria-label", p.titulo);
+  el.innerHTML = `<span class="paradero__bus">BUS</span><span class="paradero__signo">${PARADERO_SIGNO[p.nivel]}</span>`;
   if (p.onClick) {
     el.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -161,7 +196,7 @@ export default function DrenaMap(props: DrenaMapProps) {
         mapRef.current = map;
         map.once("style.load", () => {
           const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]) });
-          ["esc", "lim", "area", "gore"].forEach(add);
+          ["esc", "chain", "lim", "area", "celda", "celda-link", "gore", "rec", "caminata"].forEach(add);
           map.addSource("comunas-rm", { type: "geojson", data: "/data/comunas_rm.geojson" });
           map.addSource("rejillas", { type: "geojson", data: "/data/rejillas.geojson", cluster: true, clusterMaxZoom: 16, clusterRadius: 30 });
           const { agua, gris } = FLUJO_CONFIG.colores;
@@ -199,6 +234,10 @@ export default function DrenaMap(props: DrenaMapProps) {
           }
           map.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-color": agua, "fill-opacity": 0.12 } });
           map.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-color": agua, "line-width": 2, "line-opacity": 0.8 } });
+          // Durante: celda convectiva ilustrativa (gris oscuro, no es agua ni alerta)
+          map.addLayer({ id: "celda-fill", type: "fill", source: "celda", paint: { "fill-color": "#1B1B1B", "fill-opacity": 0.14 } });
+          map.addLayer({ id: "celda-line", type: "line", source: "celda", paint: { "line-color": "#1B1B1B", "line-width": 2, "line-dasharray": [3, 2] } });
+          map.addLayer({ id: "celda-link", type: "line", source: "celda-link", paint: { "line-color": "#1B1B1B", "line-width": 3, "line-opacity": 0.8, "line-dasharray": [1.5, 1.5] } });
           map.addLayer({ id: "lim", type: "line", source: "lim", paint: { "line-color": "#5A5A57", "line-width": 2, "line-opacity": 0.8, "line-dasharray": [4, 3] } });
           const hidden = { visibility: "none" };
           // Límites de todas las comunas: línea fina punteada en --text-3, relleno casi invisible; las 3 del proyecto, algo más marcadas.
@@ -236,6 +275,12 @@ export default function DrenaMap(props: DrenaMapProps) {
           map.addLayer({ id: "esc-halo", type: "line", source: "esc", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": agua, "line-width": 8, "line-opacity": 0.12 } });
           map.addLayer({ id: "esc-line", type: "line", source: "esc", layout: { "line-cap": "round" }, paint: { "line-color": agua, "line-width": 2, "line-opacity": 0.8 } });
           map.addLayer({ id: "gore", type: "circle", source: "gore", minzoom: zc, paint: { "circle-radius": 2.5, "circle-color": gris, "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 0.75 } });
+          // Durante: cadena aguas abajo del punto anegado en accent (alerta).
+          // Transporte: azul fuera de la paleta de prioridad para no confundir un recorrido con escurrimiento.
+          map.addLayer({ id: "rec-line", type: "line", source: "rec", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#1F5FBF", "line-width": 3, "line-opacity": 0.55 } });
+          map.addLayer({ id: "caminata", type: "line", source: "caminata", layout: { "line-cap": "round" }, paint: { "line-color": "#1F5FBF", "line-width": 2.5, "line-dasharray": [0.5, 2] } });
+          map.addLayer({ id: "chain-halo", type: "line", source: "chain", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#FF3D0A", "line-width": 14, "line-opacity": 0.2 } });
+          map.addLayer({ id: "chain-line", type: "line", source: "chain", paint: { "line-color": "#FF3D0A", "line-width": 3, "line-dasharray": [1.5, 1.5] } });
           // Si cambia el esquema de color del sistema, se vuelven a leer los tokens
           const repintar = () => {
             const c = token("--text-3", "#7C7C78");
@@ -290,8 +335,13 @@ export default function DrenaMap(props: DrenaMapProps) {
     set("esc", fc((props.lines ?? []).map(line)));
     set("lim", fc((props.limites ?? []).map(line)));
     set("area", fc(props.area ? [poly(props.area)] : []));
+    set("chain", fc(props.chain ? [line(props.chain)] : []));
+    set("celda", fc(props.celda ? [poly(props.celda.poly)] : []));
+    set("celda-link", fc(props.celda ? [line(props.celda.link)] : []));
+    set("rec", fc((props.recorridos ?? []).map(line)));
+    set("caminata", fc((props.caminatas ?? []).map(line)));
     set("gore", fc((props.gore ?? []).map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }))));
-  }, [ready, props.lines, props.limites, props.area, props.gore]);
+  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.caminatas]);
 
   // Visibilidad de las capas de datos reales
   useEffect(() => {
@@ -345,10 +395,18 @@ export default function DrenaMap(props: DrenaMapProps) {
     const add = (el: HTMLElement, coord: LngLat, anchor = "center", offset: [number, number] = [0, 0]) => {
       markers.current.push(new ml.Marker({ element: el, anchor, offset }).setLngLat(coord).addTo(map));
     };
+    (props.celda?.rayos ?? []).forEach((c) => {
+      const el = document.createElement("div");
+      el.className = "rayo";
+      el.textContent = "ϟ";
+      add(el, c);
+    });
+    // Paraderos bajo los pines de prioridad; el activo al final para que quede encima
+    [...(props.paraderos ?? [])].sort((a, b) => Number(!!a.activo) - Number(!!b.activo)).forEach((p) => add(paraderoEl(p), p.coord));
     // pins: los atenuados primero para que queden debajo
     [...(props.pins ?? [])].sort((a, b) => Number(!!b.faded) - Number(!!a.faded)).forEach((p) => add(pinEl(p, size), p.coord));
     (props.labels ?? []).forEach((l) => add(labelEl(l), l.coord, l.anchor ?? "left", l.offset ?? [size / 2 + 6, 0]));
-  }, [ready, props.pins, props.labels, size]);
+  }, [ready, props.pins, props.labels, props.celda, props.paraderos, size]);
 
   return (
     <div className={`map ${props.className ?? ""}`}>

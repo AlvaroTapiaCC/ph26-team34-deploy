@@ -1,6 +1,7 @@
 "use client";
 
-import { googleMapsTramos, MAX_WAYPOINTS_WEB, textoWhatsApp } from "@/lib/data";
+import { useState } from "react";
+import { googleMapsTramos, MAX_WAYPOINTS_WEB, PUNTOS, SIMULABLES, textoWhatsApp } from "@/lib/data";
 import { useStore } from "@/lib/store";
 import { Button, CloseBtn, FakeQR, Kicker, Modal, PrioChip, Stat } from "../ui";
 
@@ -108,9 +109,40 @@ function WhatsAppModal() {
   );
 }
 
+function SimularModal() {
+  const { set, flood } = useStore();
+  const [sel, setSel] = useState("p2");
+  const close = () => set({ modal: null });
+  return (
+    <Modal onClose={close} width={640} className="modal--sim">
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <Kicker tone="accent">Modo demo</Kicker>
+        <h2 className="modal__title" style={{ fontSize: 30, lineHeight: "38px" }}>
+          Simular reporte
+        </h2>
+        <p style={{ fontSize: 15, color: "var(--text-2)" }}>Elige un punto para simular un reporte de anegamiento.</p>
+        {SIMULABLES.map((id) => (
+          <button key={id} className={`radio ${sel === id ? "is-on" : ""}`} onClick={() => setSel(id)} role="radio" aria-checked={sel === id}>
+            <span className="radio__dot" />
+            <span className="radio__name">{PUNTOS[id].nombre}</span>
+            <span className="radio__meta">{PUNTOS[id].comuna}</span>
+          </button>
+        ))}
+        <div className="row-btns">
+          <Button variant="primary" onClick={() => flood(sel, "sensor")}>
+            Simular anegamiento
+          </Button>
+          <Button onClick={close}>Cancelar</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 export default function Modals() {
   const { s } = useStore();
   if (s.modal === "ruta") return <RutaModal />;
   if (s.modal === "whatsapp") return <WhatsAppModal />;
+  if (s.modal === "simular") return <SimularModal />;
   return null;
 }

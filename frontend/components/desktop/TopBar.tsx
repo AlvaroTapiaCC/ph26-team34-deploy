@@ -1,7 +1,7 @@
 "use client";
 
 import type { ScenarioId } from "@/lib/data";
-import { CUADRILLAS_MAX, useStore } from "@/lib/store";
+import { CUADRILLAS_MAX, useStore, type Modo } from "@/lib/store";
 import { BarSegment, Dropdown, Logo } from "../ui";
 
 export default function TopBar() {
@@ -32,6 +32,16 @@ export default function TopBar() {
           onChange={(cuadrillas) => set({ cuadrillas })}
         />
       </div>
+      <div className="topbar__spacer" />
+      <BarSegment<Modo>
+        label="Fase de la lluvia"
+        options={[
+          { id: "antes", label: "Antes" },
+          { id: "durante", label: "Durante" },
+        ]}
+        value={s.modo}
+        onChange={(modo) => set({ modo, ficha: null })}
+      />
     </header>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cajasComunas } from "@/lib/comunas";
 import { cita, GORE, MAP_BOUNDS, motivo, pad2, PUNTOS, statsPunto, type LngLat, type RankedPunto } from "@/lib/data";
 import { ESTADOS, FLUJO_CONFIG, type EstadoRejilla } from "@/lib/flujo/config";
@@ -265,8 +265,15 @@ function MainMap({ flujo }: { flujo: Flujo }) {
   const { pins, labels } = usePins();
   const bounds = useEncuadre(flujo.ui.caja);
   const L = s.layers;
-  const [tresD, setTresD] = useState(true);
+  // Parte en 2D (AGENTS.md deja la visualización 3D fuera del alcance de la demo); el 3D queda como opción
+  const [tresD, setTresD] = useState(false);
   const [recorrido, setRecorrido] = useState<boolean | null>(null); // null: todavía no se sabe si ya se vio
+  // El recorrido usa 3D en sus vistas amplias; al terminar se vuelve a la vista que había
+  const tresDAntes = useRef(false);
+  useEffect(() => {
+    if (recorrido) tresDAntes.current = tresD;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recorrido]);
   const top = useMemo(() => filtered.slice(0, FLUJO_CONFIG.topPrioridad).map((p) => p.coord), [filtered]);
   // El recorrido arranca solo la primera vez (se recuerda en este navegador)
   useEffect(() => {
@@ -292,7 +299,10 @@ function MainMap({ flujo }: { flujo: Flujo }) {
       <BarraMapa tresD={tresD} onTresD={setTresD} onAyuda={() => setRecorrido(true)} guiado={!!recorrido} />
       <SimPanel flujo={flujo} />
       {!recorrido && <Leyenda />}
-      {recorrido && <Recorrido flujo={flujo} cerca={top} onTresD={setTresD} onFin={() => setRecorrido(false)} />}
+      {recorrido && <Recorrido flujo={flujo} cerca={top} onTresD={setTresD} onFin={() => {
+            setRecorrido(false);
+            setTresD(tresDAntes.current);
+          }} />}
     </DrenaMap>
   );
 }

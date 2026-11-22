@@ -303,6 +303,16 @@ export function textoWhatsApp(paradas: Parada[], scenarioLabel: string, comuna: 
   return [head, `Escenario: ${scenarioLabel}`, "", ...lines, "", ...links].join("\n");
 }
 
+// Modo Durante: cadena aguas abajo por punto anegado (ids de PUNTOS)
+export const CADENA: Record<string, string[]> = {
+  p2: ["p1", "p10", "p6"],
+  p1: ["p10", "p6"],
+  p5: ["p1", "p10", "p6"],
+  p3: ["p8"],
+  p4: ["p8", "p3"],
+};
+export const SIMULABLES = ["p1", "p2", "p3", "p4", "p5"];
+
 // Líneas de escurrimiento (aprox.)
 export const ESCURRIMIENTO: LngLat[][] = [
   [[-70.6335, -33.4375], [-70.62, -33.429], [-70.6013, -33.418], [-70.575, -33.4105], [-70.548, -33.4035]],
@@ -315,6 +325,16 @@ export const ESCURRIMIENTO: LngLat[][] = [
 export const LIMITES: LngLat[][] = [
   [[-70.6075, -33.4115], [-70.6005, -33.42], [-70.5975, -33.4305], [-70.5925, -33.4405], [-70.589, -33.4505]],
   [[-70.635, -33.4445], [-70.615, -33.4445], [-70.6, -33.4455], [-70.589, -33.4505]],
+];
+
+// Celda convectiva GOES-19 (ilustrativa)
+export const CELDA: LngLat[] = [
+  [-70.553, -33.4015], [-70.5395, -33.4045], [-70.5345, -33.4155], [-70.5415, -33.4265],
+  [-70.556, -33.4255], [-70.561, -33.4135],
+];
+export const RAYOS: LngLat[] = [
+  [-70.5555, -33.4085], [-70.5445, -33.4065], [-70.5385, -33.4105], [-70.5525, -33.4145], [-70.5475, -33.4095],
+  [-70.5375, -33.4175], [-70.5525, -33.4205], [-70.5395, -33.4215], [-70.5445, -33.4185], [-70.5575, -33.4225],
 ];
 
 // 175 puntos críticos GORE (muestra ilustrativa)
