@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { capaCadenas, cargarCadenas, type Tramo } from "@/lib/cadenas";
 import type { ObservacionPublica } from "@/lib/central";
 import type { Prioridad } from "@/lib/data";
+import type { EvidenciaAgua } from "@/lib/transporte";
 import type { MapLibre } from "../map/maplibre";
 
 export const COLORES_CADENAS = {
@@ -79,8 +80,8 @@ function instalarCapas(mapa: MapLibre) {
 export function useCapaCadenas(
   prioridades: ReadonlyMap<string, Prioridad>,
   observaciones: ObservacionPublica[],
+  evidenciaAgua: readonly EvidenciaAgua[],
   visible: boolean,
-  vigenciaAguaH: number,
   alcanceAguaM: number,
 ) {
   const [mapa, setMapa] = useState<MapLibre>(null);
@@ -88,8 +89,10 @@ export function useCapaCadenas(
   const [estado, setEstado] = useState<"cargando" | "ok" | "error">("cargando");
   const [ahora, setAhora] = useState(Date.now);
   const datos = useMemo(
-    () => visible && tramos ? capaCadenas(tramos, prioridades, observaciones, Math.max(ahora, Date.now()), vigenciaAguaH, alcanceAguaM) : null,
-    [visible, tramos, prioridades, observaciones, ahora, vigenciaAguaH, alcanceAguaM],
+    () => visible && tramos
+      ? capaCadenas(tramos, prioridades, observaciones, evidenciaAgua, Math.max(ahora, Date.now()), alcanceAguaM)
+      : null,
+    [visible, tramos, prioridades, observaciones, evidenciaAgua, ahora, alcanceAguaM],
   );
 
   const onMapReady = useCallback((mapaListo: MapLibre) => {
@@ -107,7 +110,7 @@ export function useCapaCadenas(
     }).catch(() => {
       if (vigente) setEstado("error");
     });
-    // Expira la evidencia incluso cuando las consultas periódicas devuelven el mismo contenido.
+    // La evidencia de obstrucción caduca aunque el feed de observaciones no cambie.
     const reloj = setInterval(() => setAhora(Date.now()), 30_000);
     return () => {
       vigente = false;

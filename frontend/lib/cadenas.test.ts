@@ -6,6 +6,7 @@ import { test } from "node:test";
 
 import type { ObservacionPublica } from "./central.ts";
 import { capaCadenas, type Tramo } from "./cadenas.ts";
+import type { EvidenciaAgua } from "./transporte.ts";
 
 const AHORA = Date.parse("2026-11-22T12:00:00Z");
 const COORD: Record<string, [number, number]> = { A: [-70.6, -33.418], B: [-70.6, -33.4185], C: [-70.6, -33.419] };
@@ -18,19 +19,15 @@ function tramo(desde: string, hasta: string, distancia_m: number): Tramo {
   };
 }
 
-function obs(sumidero_id: string, nivel_agua: string): ObservacionPublica {
-  return {
-    id: `o-${sumidero_id}`, sumidero_id, caso_id: null, ts: new Date(AHORA - 60_000).toISOString(),
-    fuente: "vecino", tipo: "foto_agua", is_simulated: false, urgente: false,
-    clasificacion: { evaluable: true, nivel_agua },
-  };
+function obs(sumidero_id: string, nivel: EvidenciaAgua["nivel"]): EvidenciaAgua {
+  return { sumidero_id, nivel, ts: new Date(AHORA - 60 * 60_000).toISOString(), is_simulated: false };
 }
 
 // A → B → C dentro de 150 m
 const CADENA = [tramo("A", "B", 50), tramo("B", "C", 70)];
 
-function tramosConAgua(tramos: Tramo[], observaciones: ObservacionPublica[]) {
-  const { geojson } = capaCadenas(tramos, new Map(), observaciones, AHORA, 6, 150);
+function tramosConAgua(tramos: Tramo[], evidenciaAgua: EvidenciaAgua[], observaciones: ObservacionPublica[] = []) {
+  const { geojson } = capaCadenas(tramos, new Map(), observaciones, evidenciaAgua, AHORA, 150);
   return geojson.features
     .filter(({ properties }) => properties.tipo === "agua_abajo")
     .map(({ geometry }) => {
@@ -56,4 +53,13 @@ test("C se marca si llega agua por otra cadena que no pasa por B", () => {
 
 test("el alcance de 150 m también corta el recorrido", () => {
   assert.deepEqual(tramosConAgua([tramo("A", "B", 50), tramo("B", "C", 120)], [obs("A", "cuneta")]), ["A→B"]);
+});
+
+test("el agua de transporte sigue visible después de 100 reportes de texto", () => {
+  const textos: ObservacionPublica[] = Array.from({ length: 100 }, (_, i) => ({
+    id: `texto-${i}`, sumidero_id: "A", caso_id: null, ts: new Date(AHORA - i * 1000).toISOString(),
+    fuente: "vecino", tipo: "texto", is_simulated: false, urgente: false,
+    clasificacion: { nivel_agua: "no_evaluable" },
+  }));
+  assert.deepEqual(tramosConAgua(CADENA, [obs("A", "cuneta")], textos), ["A→B", "B→C"]);
 });

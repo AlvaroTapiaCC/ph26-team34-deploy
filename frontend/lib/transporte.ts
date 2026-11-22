@@ -19,6 +19,13 @@ export interface CausaAgua {
   distancia_m: number;
 }
 
+export interface EvidenciaAgua {
+  sumidero_id: string;
+  nivel: CausaAgua["nivel"] | "sin_agua";
+  ts: string;
+  is_simulated: boolean;
+}
+
 export interface CausaRiesgo {
   sumidero_id: string;
   prioridad: number;
@@ -68,6 +75,7 @@ export interface Expuestos {
   aviso: string | null;
   fuente: { nombre: string; url: string | null; fecha_descarga: string | null } | null;
   parametros: { radio_m: number; aguas_abajo_m: number; riesgo_top_n: number; vigencia_agua_horas: number };
+  evidencia_agua: EvidenciaAgua[] | null;
   expuestos: ParaderoExpuesto[];
   en_riesgo: ParaderoEnRiesgo[];
 }
