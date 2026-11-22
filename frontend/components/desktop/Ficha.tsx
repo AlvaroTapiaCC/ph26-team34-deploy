@@ -5,6 +5,7 @@ import { areaAporte, ESCURRIMIENTO, fmt, instruccion, LIMITES, MAP_BOUNDS, pad2,
 import { NOMBRE_VARIABLE } from "@/lib/real";
 import { useStore } from "@/lib/store";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
+import { SenalesReales } from "./Senales";
 import { Button, Kicker, Stat } from "../ui";
 
 export function CriticidadPill({ text }: { text: string }) {
@@ -119,7 +120,10 @@ export default function Ficha() {
             )}
           </div>
           {real ? (
-            <VariablesReales />
+            <>
+              <VariablesReales />
+              <SenalesReales />
+            </>
           ) : (
             <div>
               <div className="origin__head">

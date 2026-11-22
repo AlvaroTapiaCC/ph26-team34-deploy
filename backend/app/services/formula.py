@@ -43,13 +43,19 @@ class SumideroInput:
     features: Mapping[str, float] = field(default_factory=dict)
     # Última foto evaluable y vigente de la rejilla: 'limpia' | 'parcial' | 'tapada' | None
     rejilla_observada: str | None = None
+    # Confianza que Claude dio a esa foto: 'alta' | 'media' | 'baja' | None (clasificación antigua)
+    confianza_foto: str | None = None
     # Reportes de texto (sin foto) vigentes que apuntan a una rejilla tapada o basura
     reportes_texto: int = 0
-    # Fase Durante: peor nivel de agua observado reciente
+    # Confianza de cada uno de esos reportes (`LecturaTexto.confianza` desde texto-v2, #124). Los
+    # reportes sin confianza registrada (lecturas texto-v1 antiguas) cuentan con factor 1.
+    confianza_textos: Sequence[str | None] = ()
+    # Fase Durante: nivel de agua observado reciente con mayor nivel · factor de confianza
     nivel_agua: str | None = None
+    # Confianza de la clasificación que aportó ese nivel (None: texto o clasificación antigua)
+    confianza_agua: str | None = None
     # Fase Durante: hay un caso urgente (personas en riesgo) asociado
     urgente: bool = False
-    confianza_foto: str | None = None
 
 
 @dataclass
@@ -104,11 +110,47 @@ def p_pred(features: Mapping[str, float], cfg: Mapping[str, Any]) -> tuple[float
     return clamp(sum(aportes.values())), aportes
 
 
+def factor_confianza(confianza: str | None, cfg: Mapping[str, Any]) -> float:
+    """Factor 0-1 de la confianza de Claude (#88, #124).
+
+    Sin confianza registrada (clasificación antigua o texto) o sin tabla `confianza` en la
+    config (p. ej. `formula_validacion.yaml`, congelada), el factor es 1: la observación pesa
+    como antes de ponderar.
+    """
+    tabla = cfg.get("confianza") or {}
+    if confianza not in tabla:
+        return 1.0
+    return clamp(float(tabla[confianza]))
+
+
+def elegir_agua(
+    lecturas: Iterable[tuple[str, str | None]], cfg: Mapping[str, Any]
+) -> tuple[str, str | None] | None:
+    """Entre lecturas (nivel_agua, confianza) vigentes, la que más sube C (§6.5, #124).
+
+    Gana el mayor nivel · factor de confianza; en un empate, el nivel más alto y después la
+    confianza más alta. Niveles fuera de `durante.nivel_agua` se ignoran.
+    """
+    niveles = cfg["durante"]["nivel_agua"]
+    mejor, clave_mejor = None, None
+    for nivel, conf in lecturas:
+        if nivel not in niveles:
+            continue
+        v, f = float(niveles[nivel]), factor_confianza(conf, cfg)
+        clave = (v * f, v, f)
+        if clave_mejor is None or clave > clave_mejor:
+            mejor, clave_mejor = (nivel, conf), clave
+    return mejor
+
+
 def p_final(s: SumideroInput, cfg: Mapping[str, Any]) -> tuple[float, float, float | None, dict[str, Any]]:
     """P que usa la fórmula. Devuelve (P, P_pred, P_obs, detalle).
 
-    Lo confirmado manda: si hay una foto evaluable vigente, P = valor observado.
-    Si no, P_pred más el aporte de los reportes de texto (pesan menos que una foto).
+    Lo confirmado manda: si hay una foto evaluable vigente, P se acerca al valor observado
+    según la confianza de Claude: P = P_pred + factor·(P_obs − P_pred). Con confianza alta o
+    sin confianza registrada (factor 1), P = P_obs.
+    Si no hay foto, P_pred más el aporte de los reportes de texto (pesan menos que una foto).
+    Cada reporte aporta en proporción al factor de su confianza (1 si no la trae).
     """
     pp, aportes = p_pred(s.features, cfg)
     detalle: dict[str, Any] = {"aportes": aportes}
@@ -118,16 +160,21 @@ def p_final(s: SumideroInput, cfg: Mapping[str, Any]) -> tuple[float, float, flo
         p_obs = float(obs_map[s.rejilla_observada])
         detalle["fuente_p"] = "foto"
         # Las clasificaciones históricas sin confianza conservan el peso original.
-        factor = cfg.get("confianza", {}).get(s.confianza_foto, 1.0)
+        factor = factor_confianza(s.confianza_foto, cfg)
         detalle["confianza_foto"] = s.confianza_foto
         detalle["factor_confianza_foto"] = factor
         p = p_obs if factor == 1 else pp + factor * (p_obs - pp)
         return p, pp, p_obs, detalle
 
     rt = cfg["reportes_texto"]
-    extra = min(rt["max_aporte"], rt["factor"] * rt["aporte_por_reporte"] * max(0, s.reportes_texto))
+    n = max(0, s.reportes_texto)
+    confs = list(s.confianza_textos)[:n]
+    factores = [factor_confianza(c, cfg) for c in confs] + [1.0] * (n - len(confs))
+    extra = min(rt["max_aporte"], rt["factor"] * rt["aporte_por_reporte"] * sum(factores))
     if extra:
         detalle["aporte_reportes_texto"] = extra
+    if any(c is not None for c in confs):
+        detalle["factores_confianza_texto"] = factores
     detalle["fuente_p"] = "prediccion"
     return clamp(pp + extra), pp, None, detalle
 
@@ -222,8 +269,12 @@ def consecuencia(
     cfg: Mapping[str, Any],
     nivel_agua: str | None = None,
     modo: str = "antes",
+    factor_agua: float = 1.0,
 ) -> float:
-    """C = área_efectiva · (1 + w_crit · criticidad). En Durante: C · (1 + w_agua · nivel_agua).
+    """C = área_efectiva · (1 + w_crit · criticidad).
+
+    En Durante: C · (1 + w_agua · nivel_agua · factor_agua), con factor_agua el de la confianza
+    de Claude en la clasificación que aportó el nivel (#124; 1 si no la trae).
 
     área_efectiva = piso + (1 - piso) · norm(área). El piso evita que un sumidero sin área
     de aporte (dato faltante o 0) quede con C = 0 y, por lo tanto, con prioridad 0 aunque
@@ -234,7 +285,7 @@ def consecuencia(
     c = area_ef * (1 + cfg["consecuencia"]["w_crit"] * clamp(criticidad))
     if modo == "durante" and nivel_agua:
         nivel = cfg["durante"]["nivel_agua"].get(nivel_agua, 0.0)
-        c *= 1 + cfg["durante"]["w_agua"] * nivel
+        c *= 1 + cfg["durante"]["w_agua"] * nivel * clamp(factor_agua)
     return c
 
 
@@ -271,13 +322,16 @@ def calcular_ranking(
     scores: list[Score] = []
     for s in sumideros:
         pp, po, det = pre[s.id]
-        c = consecuencia(area_norm[s.id], _f(s.features, "criticidad"), cfg, s.nivel_agua, modo)
+        factor_agua = factor_confianza(s.confianza_agua, cfg)
+        c = consecuencia(area_norm[s.id], _f(s.features, "criticidad"), cfg, s.nivel_agua, modo, factor_agua)
         det = {**det, "aporte_cadena": aporte_cadena.get(s.id, 0.0), "area_norm": area_norm[s.id],
                "criticidad": _f(s.features, "criticidad")}
         if _f(s.features, "area_aporte") <= 0:
             det["area_faltante"] = True  # C usa solo el piso: revisar el dato en el pipeline
         if modo == "durante" and s.nivel_agua:
             det["nivel_agua"] = s.nivel_agua
+            det["confianza_agua"] = s.confianza_agua
+            det["factor_confianza_agua"] = factor_agua
         urgente = modo == "durante" and s.urgente
         scores.append(Score(s.id, pp, po, p[s.id], p_ef[s.id], c, p_ef[s.id] * c, urgente, detalle=det))
 

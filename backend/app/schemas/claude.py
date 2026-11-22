@@ -61,7 +61,7 @@ class ClasificacionCamara(_Strict):
 
 
 class LecturaTexto(_Strict):
-    """§5.3 Texto de un vecino."""
+    """§5.3 Texto de un vecino. `confianza` (desde texto-v2, #124) pondera su aporte a la fórmula."""
 
     tipo: Literal["anegamiento", "rejilla_tapada", "basura", "arbol_caido", "otro"]
     gravedad: Literal["baja", "media", "alta"]
@@ -69,3 +69,4 @@ class LecturaTexto(_Strict):
     ubicacion_texto: str | None
     desde_cuando: str | None
     nivel_agua: NivelAgua
+    confianza: Confianza

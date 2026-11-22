@@ -1,7 +1,7 @@
 // Convierte las respuestas del backend a los tipos que ya usan los componentes (lib/data.ts).
 // El backend entrega un ranking por SUMIDERO; la interfaz muestra INTERSECCIONES: se agrupan por
 // `intersection_id` (el ranking ya trae `intersection_id` e `intersection_nombre`).
-import type { ApiEscenario, ApiFicha, ApiRanking, ApiRankingItem } from "./api";
+import type { ApiEscenario, ApiFicha, ApiRanking, ApiRankingItem, ApiSenal } from "./api";
 import type { Comuna, LngLat, Prioridad, RankedPunto, Scenario } from "./data";
 
 /**
@@ -109,6 +109,7 @@ export interface FichaReal {
   criticidad: string[];
   ultimaLimpieza: string | null;
   nObservaciones: number;
+  senales: ApiSenal[]; // observaciones vigentes con su fuente y confianza (#124)
 }
 
 export const NOMBRE_VARIABLE: Record<string, string> = {
@@ -146,5 +147,6 @@ export function aFichaReal(f: ApiFicha, sumideroAPunto: Record<string, string>, 
     criticidad: Array.isArray(crit) ? crit.map(String) : typeof crit === "string" ? [crit] : [],
     ultimaLimpieza: f.ultima_limpieza?.fecha ?? null,
     nObservaciones: f.observaciones.length,
+    senales: f.senales ?? [], // API anterior a #124: sin señales
   };
 }
