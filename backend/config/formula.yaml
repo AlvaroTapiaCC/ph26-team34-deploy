@@ -29,7 +29,11 @@ normalizacion:
 # (incluir_simulados = false) las ignora (§8.1).
 features_simuladas: [dias_sin_limpieza]
 
-# Lo confirmado manda: una foto reciente con rejilla evaluable fija P.
+# Lo confirmado manda: una foto reciente con rejilla evaluable mueve P hacia el valor observado.
+# P = P_pred + factor · (P_obs − P_pred), con el factor según la confianza de Claude (#88).
+# Sin confianza registrada (clasificaciones antiguas) el factor es 1 y la foto fija P.
+confianza: {alta: 1.0, media: 0.7, baja: 0.4}
+
 observado:
   tapada: 0.95
   parcial: 0.6

@@ -29,8 +29,8 @@ def test_mismos_pesos_que_la_completa():
 
 
 def test_resto_identico():
-    # Solo cambian p_pred y la lista de features simuladas; todo lo demás debe ser igual.
-    ignorar = {"p_pred", "features_simuladas"}
+    # La confianza de fotos se configura en la demo. La validación congelada es anterior.
+    ignorar = {"p_pred", "features_simuladas", "confianza"}
     assert {k: v for k, v in VALIDACION.items() if k not in ignorar} == {
         k: v for k, v in COMPLETA.items() if k not in ignorar
     }
