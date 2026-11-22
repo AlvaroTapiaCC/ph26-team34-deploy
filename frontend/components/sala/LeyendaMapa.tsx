@@ -38,7 +38,7 @@ export default function LeyendaMapa({ capas, durante, nReportes, modoAgua }: { c
         </>}
         {capas.catastro && <li><i className={s.lgCatastro} /><span>Catastro de contexto, sin prioridad mostrada</span></li>}
         {capas.calor && <li><i className={s.lgAlta} /><span>Halo: concentración de prioridad, no inundación</span></li>}
-        {capas.agua && <li><i className={s.lgAgua} /><span>Escurrimiento {modoAgua === "simulada" ? "simulado · lluvia supuesta" : "estimado · pronóstico y reportes"}</span></li>}
+        {capas.agua && <li><i className={s.lgAgua} /><span>Escurrimiento {demo.activo ? "modelado · lluvia histórica, no inundación observada" : modoAgua === "simulada" ? "simulado · lluvia supuesta" : "estimado · pronóstico y reportes"}</span></li>}
       </ul>
       <details className={s.fuentesMapa}>
         <summary>Capas y fuentes</summary>
