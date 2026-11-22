@@ -102,3 +102,14 @@ export const APORTES: Record<string, { nombre: string; simulado?: boolean }> = {
   obras: { nombre: "Obras cerca" },
   camara: { nombre: "Cámara" },
 };
+
+/** Catastro de rejillas por comuna. Fuente: public/data/rejillas.geojson (copia de data/rejillas.geojson,
+ *  pipeline/02_rejillas.py, catastro SIALL de la DOH, parcial). Si se regenera el catastro, actualizar aquí. */
+export const CATASTRO = {
+  total: 3002,
+  comunas: [
+    { nombre: "Las Condes", n: 1201 },
+    { nombre: "Ñuñoa", n: 1055 },
+    { nombre: "Providencia", n: 746 },
+  ],
+};

@@ -2,6 +2,11 @@
    Movimiento: 160–420 ms, ease-out, solo transform y opacidad; cada animación explica un cambio. */
 
 .sala {
+  /* Lo que es solo información no parece editable ni clickeable: cursor normal y sin cursor de texto */
+  cursor: default;
+  caret-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
   --vidrio: color-mix(in srgb, var(--fondo) 94%, var(--secundario));
   --vidrio-borde: color-mix(in srgb, var(--secundario) 9%, transparent);
   --sombra-alta: 0 24px 60px -12px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.35); /* paleta-ok: sombra */
@@ -19,11 +24,12 @@
 .barra {
   position: relative;
   z-index: 20;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 1rem 1.5rem;
   height: 3.75rem;
-  padding: 0 1rem;
+  padding: 0 1.25rem;
   border-bottom: 1px solid var(--vidrio-borde);
 }
 .logo {
@@ -37,6 +43,7 @@
 .nav {
   display: flex;
   gap: 2px;
+  justify-self: center;
 }
 .navLink {
   position: relative;
@@ -86,14 +93,14 @@
   transform: scaleX(1);
 }
 .zona {
-  color: var(--text-3);
-  font-size: 0.8125rem;
+  display: none;
 }
 .barraDer {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 1rem;
-  margin-left: auto;
+  min-width: 0;
 }
 .reloj {
   color: var(--text-3);
@@ -223,7 +230,8 @@
   transition: opacity 420ms var(--ease-out) 80ms;
 }
 /* En el inicio el mapa se monta y carga oculto: aparece listo al entrar a la central */
-.sala[data-vista="inicio"] .mapa {
+.sala[data-vista="inicio"] .mapa,
+.sala[data-vista="validacion"] .mapa {
   opacity: 0;
   visibility: hidden;
 }
@@ -332,9 +340,18 @@
 .inicioCuerpo {
   position: relative;
   display: grid;
-  gap: 1.75rem;
-  max-width: 72rem;
-  padding: clamp(1.5rem, 5vh, 3.5rem) clamp(1.25rem, 4vw, 3.5rem) 2rem;
+  grid-template-columns: minmax(0, 1.15fr) minmax(20rem, 0.85fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+  min-height: 100%;
+  max-width: 86rem;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vh, 3rem) clamp(1.25rem, 4vw, 3.5rem);
+}
+.inicioTexto {
+  display: grid;
+  gap: 1.5rem;
+  align-content: center;
 }
 .inicioClima {
   display: flex;
@@ -366,8 +383,8 @@
   font-size: 0.75rem;
 }
 .titular {
-  max-width: 22ch;
-  font: 700 clamp(2.2rem, 4.6vw, 4rem) / 1.04 var(--font-display);
+  max-width: 26ch;
+  font: 700 clamp(2rem, 3.8vw, 3.4rem) / 1.06 var(--font-display);
   letter-spacing: -0.02em;
 }
 .titularCifra {
@@ -385,20 +402,17 @@
 }
 .decisiones {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 0.85rem;
 }
 .decision {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  min-height: 13rem;
-  padding: 1.25rem;
+  padding: 1.1rem 1.25rem;
   border-radius: 20px;
   background: color-mix(in srgb, var(--fondo) 90%, var(--secundario));
   box-shadow: var(--sombra-alta), inset 0 0 0 1px var(--vidrio-borde);
-  transition: transform 260ms var(--ease-out);
 }
 .decision::before {
   content: "";
@@ -410,10 +424,7 @@
   transition: opacity 260ms var(--ease-out);
   pointer-events: none;
 }
-.decision:hover {
-  transform: translateY(-4px);
-}
-.decision:hover::before {
+.decision::before {
   opacity: 1;
 }
 .inicioActivo .decision {
@@ -572,9 +583,9 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid var(--text-3);
-  border-top-color: transparent;
-  animation: gira 0.9s linear infinite;
+  background: var(--text-3);
+  transform: scale(0.6);
+  animation: respira 1.4s var(--ease-out) infinite alternate;
 }
 .mapaEstado[data-listo="true"] {
   color: var(--principal);
@@ -615,7 +626,7 @@
   pointer-events: none;
   transition: opacity 320ms var(--ease-out), transform 420ms var(--ease-out);
 }
-.sala:not([data-vista="inicio"]) .riel {
+.sala:is([data-vista="antes"], [data-vista="durante"]) .riel {
   opacity: 1;
   transform: none;
   pointer-events: auto;
@@ -1250,10 +1261,15 @@
     height: 52vh;
     flex: none;
   }
-  .sala[data-vista="inicio"] .mapa {
+  .sala:is([data-vista="inicio"], [data-vista="validacion"]) .mapa {
     position: absolute;
     inset: 0;
     height: auto;
+  }
+  .pagina {
+    position: relative;
+    inset: auto;
+    overflow: visible;
   }
   .inicio {
     position: relative;
@@ -1271,7 +1287,7 @@
     width: auto;
     margin: 10px;
   }
-  .sala[data-vista="inicio"] .riel {
+  .sala:is([data-vista="inicio"], [data-vista="validacion"]) .riel {
     display: none;
   }
   .tabs {
@@ -1296,5 +1312,191 @@
   }
   .selTrigger {
     max-width: 11rem;
+  }
+}
+
+.sala :is(a, button, [role="tab"], [role="radio"]) {
+  cursor: pointer;
+}
+.sala code,
+.sala .filaNombre,
+.sala .tarjetaLugar {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Inicio: comunas del catastro y escenario de hoy */
+.comunas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.5rem;
+  margin-top: -0.5rem;
+}
+.comuna {
+  color: var(--text-2);
+  font-size: 1.05rem;
+}
+.comuna b {
+  color: var(--secundario);
+  font: 700 1.35rem/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+.comunaFuente {
+  color: var(--text-3);
+  font-size: 0.8125rem;
+}
+.escenarioHoy {
+  display: block;
+  max-width: 62rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--principal) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--principal) 25%, transparent);
+  color: var(--text-2);
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
+.escenarioHoy b {
+  color: var(--secundario);
+}
+.escenarioMarca {
+  display: inline-block;
+  margin-right: 0.6rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 7px;
+  background: var(--principal);
+  color: var(--sobre-principal);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Ranking: ver todas */
+.verMasLi {
+  margin-top: 6px;
+}
+.verMas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 2.75rem;
+  border-radius: 12px;
+  color: var(--text-2);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--vidrio-borde);
+  transition: transform var(--t-rapido) var(--ease-out), color var(--t-rapido) var(--ease-out);
+}
+.verMas:hover {
+  color: var(--secundario);
+}
+.verMas:active {
+  transform: scale(0.98);
+}
+.verMas i {
+  font-style: normal;
+}
+
+/* Mapa: 2D / 3D */
+.segmento {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--vidrio);
+  box-shadow: inset 0 0 0 1px var(--vidrio-borde);
+}
+.segmento button {
+  height: 1.9rem;
+  min-width: 2.6rem;
+  border-radius: 999px;
+  color: var(--text-2);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  transition: transform var(--t-rapido) var(--ease-out), color var(--t-rapido) var(--ease-out);
+}
+.segmento button:active {
+  transform: scale(0.94);
+}
+.segmento .segOn {
+  background: var(--principal);
+  color: var(--sobre-principal);
+}
+
+/* Página sin mapa dentro de la sala (Validación): misma barra, contenido con scroll propio */
+.pagina {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  overflow-y: auto;
+  animation: cruza 320ms var(--ease-out);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+@keyframes respira {
+  to {
+    opacity: 0.35;
+  }
+}
+
+/* Esqueleto del mapa */
+.esqMapa {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--fondo) 96%, var(--secundario));
+  animation: cruza 200ms var(--ease-out);
+}
+.esqCalles {
+  position: absolute;
+  inset: -20%;
+  background:
+    repeating-linear-gradient(28deg, transparent 0 46px, color-mix(in srgb, var(--secundario) 5%, transparent) 46px 49px),
+    repeating-linear-gradient(-62deg, transparent 0 64px, color-mix(in srgb, var(--secundario) 5%, transparent) 64px 67px);
+}
+.esqMapa::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 25%, color-mix(in srgb, var(--principal) 9%, transparent) 50%, transparent 75%);
+  transform: translateX(-100%);
+  animation: barrido 1.6s var(--ease-out) infinite;
+}
+.esqChips {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  gap: 8px;
+}
+.esqChips .skel {
+  border-radius: 999px;
+}
+.esqPin {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--principal) 22%, transparent);
+  animation: respira 1.1s var(--ease-out) infinite alternate both;
+}
+@media (max-width: 68rem) {
+  .inicioCuerpo {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+  .barra {
+    display: flex;
+  }
+  .barraDer {
+    margin-left: auto;
+  }
+}
+@media (max-width: 68rem) {
+  .esqMapa {
+    bottom: auto;
+    height: 52vh;
   }
 }

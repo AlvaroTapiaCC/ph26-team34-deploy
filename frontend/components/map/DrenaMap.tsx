@@ -59,6 +59,7 @@ export interface DrenaMapProps {
   tresD?: boolean;
   chain?: LngLat[] | null; // Durante: cadena aguas abajo del punto anegado
   celda?: { poly: LngLat[]; rayos: LngLat[]; link: [LngLat, LngLat] } | null; // Durante: celda convectiva ilustrativa
+  camara3D?: { pitch: number; bearing: number }; // inclinación y rumbo de la vista 3D (por defecto, los del flujo)
   resaltado?: string | null; // id de pin o punto a resaltar (p. ej. la fila bajo el mouse en la lista)
   onHover?: (id: string | null) => void; // mouse sobre un pin o punto del mapa
   focoSiempre?: boolean; // con foco: centrar aunque ya esté a la vista (llegada de un reporte)
@@ -424,7 +425,7 @@ export default function DrenaMap(props: DrenaMapProps) {
   useEffect(() => {
     if (!ready) return;
     const map = mapRef.current;
-    const ter = FLUJO_CONFIG.terreno;
+    const ter = props.camara3D ?? FLUJO_CONFIG.terreno;
     const bearing = props.tresD ? ter.bearing : 0;
     const cam = map.cameraForBounds(props.bounds, { padding: props.padding ?? 40, bearing });
     if (cam) map.easeTo({ ...cam, bearing, pitch: props.tresD ? ter.pitch : 0, duration: 900 });

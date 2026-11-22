@@ -12,7 +12,7 @@ import { usePulso, type ObservacionPublica } from "@/lib/central";
 import type { Cuadrilla } from "@/lib/cuadrilla";
 import type { LngLat } from "@/lib/data";
 import { boundsDe } from "@/lib/real";
-import { APORTES, dos, nombreFila, puntaje, SalaProvider, useSala, type Fila } from "@/lib/sala";
+import { APORTES, CATASTRO, dos, nombreFila, puntaje, SalaProvider, useSala, type Fila } from "@/lib/sala";
 import { horaSantiago, NIVEL_AGUA, useRecorridos, type EstadoConsulta, type EvidenciaAgua } from "@/lib/transporte";
 import { useCapaCadenas } from "../central/capaCadenas";
 import Transporte, { capasTransporte } from "../desktop/Transporte";
@@ -23,14 +23,17 @@ import s from "./sala.module.css";
 
 if (typeof window !== "undefined") precargarMapLibre();
 
-type Vista = "inicio" | "antes" | "durante";
-const vistaDe = (path: string): Vista => (path.startsWith("/central/durante") ? "durante" : path.startsWith("/central/antes") ? "antes" : "inicio");
+type Vista = "inicio" | "antes" | "durante" | "validacion";
+const vistaDe = (path: string): Vista =>
+  path.startsWith("/central/durante") ? "durante" : path.startsWith("/central/antes") ? "antes" : path.startsWith("/central/validacion") ? "validacion" : "inicio";
+const conMapa = (v: Vista) => v === "antes" || v === "durante";
 const sinMovimiento = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const ESTADO_REJILLA: Record<string, string> = { limpia: "Rejilla limpia", parcial: "Rejilla parcialmente tapada", tapada: "Rejilla tapada", no_evaluable: "Foto no evaluable" };
 const ESTADO_MISION: Record<string, string> = { pendiente: "Pendiente", en_camino: "En camino", en_sitio: "En el lugar", cerrada: "Cerrada", cancelada: "Cancelada" };
 const TIPO_REPORTE: Record<string, string> = { foto_agua: "Foto de calle", foto_rejilla: "Foto de rejilla", cuadro_camara: "Cuadro de cámara", texto: "Reporte de texto" };
 const TOP_NUMERADOS = 5;
+const CAMARA_3D = { pitch: 48, bearing: -12 };
 
 /* ───────────────────────── Piezas pequeñas ───────────────────────── */
 
@@ -53,12 +56,15 @@ function Pulso() {
 }
 
 function Reloj() {
-  const [h, setH] = useState(() => new Date().toISOString());
+  // La hora se pone en el navegador (en el servidor sería otra y React no podría hidratar)
+  const [h, setH] = useState<string | null>(null);
   useEffect(() => {
-    const t = setInterval(() => setH(new Date().toISOString()), 15_000);
+    const poner = () => setH(new Date().toISOString());
+    poner();
+    const t = setInterval(poner, 15_000);
     return () => clearInterval(t);
   }, []);
-  return <span className={s.reloj}>{horaSantiago(h)} Santiago</span>;
+  return <span className={s.reloj}>{h ? `${horaSantiago(h)} Santiago` : " "}</span>;
 }
 
 /** Número que cuenta hasta su valor al aparecer o cambiar (solo texto; respeta movimiento reducido). */
@@ -138,7 +144,7 @@ function Barra({ vista }: { vista: Vista }) {
       <span className={s.barraDer}>
         <Pulso />
         <Reloj />
-        {vista !== "inicio" && cuadrilla && <SelectorCuadrilla equipos={cuadrillas} valor={cuadrilla.id} onChange={elegirCuadrilla} />}
+        {conMapa(vista) && cuadrilla && <SelectorCuadrilla equipos={cuadrillas} valor={cuadrilla.id} onChange={elegirCuadrilla} />}
       </span>
     </header>
   );
@@ -160,6 +166,7 @@ function Inicio({ activo, mapaListo }: { activo: boolean; mapaListo: boolean }) 
     <section className={`${s.inicio} ${activo ? s.inicioActivo : ""}`} aria-hidden={!activo} inert={!activo}>
       <div className={s.inicioVelo} aria-hidden />
       <div className={s.inicioCuerpo}>
+        <div className={s.inicioTexto}>
         <p className={s.inicioClima}>
           <span className={s.climaDot} data-modo={c?.modo ?? "sin_dato"} />
           {c ? (
@@ -176,20 +183,61 @@ function Inicio({ activo, mapaListo }: { activo: boolean; mapaListo: boolean }) 
           )}
         </p>
         <h1 className={s.titular}>
+          <span className={s.titularCifra}>
+            <Cifra valor={CATASTRO.total} />
+          </span>{" "}
+          rejillas en Providencia, Ñuñoa y Las Condes. Drena ordena cuáles limpiar primero.
+        </h1>
+        <div className={s.comunas} aria-label="Rejillas del catastro por comuna">
+          {CATASTRO.comunas.map((c) => (
+            <span key={c.nombre} className={s.comuna}>
+              <b>{c.n.toLocaleString("es-CL")}</b> {c.nombre}
+            </span>
+          ))}
+          <span className={s.comunaFuente}>Catastro SIALL de la DOH (parcial)</span>
+        </div>
+        <p className={s.escenarioHoy}>
+          <span className={s.escenarioMarca}>Escenario de hoy</span>
           {cargando ? (
-            <Skel h={56} w="80%" />
+            <Skel h={18} w="22rem" />
           ) : (
             <>
-              <span className={s.titularCifra}>
-                <Cifra valor={antes.filas.length || null} />
-              </span>{" "}
-              rejillas priorizadas alrededor del MUT.
-              <br />
-              <span className={s.titularSuave}>La primera visita es {top[0] ? nombreFila(top[0]) : "—"}.</span>
+              Zona MUT: <b>{antes.filas.length || "Sin dato"}</b> rejillas con todas sus variables calculadas. La primera visita es <b>{top[0] ? nombreFila(top[0]) : "Sin dato"}</b>.
             </>
           )}
-        </h1>
+        </p>
 
+        <div className={s.inicioPie}>
+          <Link href="/central/antes" className={s.cta}>
+            <span>Abrir la central</span>
+            <i aria-hidden>→</i>
+          </Link>
+          <Link href="/central/durante" className={s.ctaSec}>
+            Ir a Durante la lluvia
+          </Link>
+          <Link href="/explorar" className={s.ctaSec}>
+            Explorar las 3 comunas
+          </Link>
+          <span className={s.mapaEstado} data-listo={mapaListo}>
+            <i aria-hidden />
+            {mapaListo ? "Mapa listo" : "Preparando el mapa…"}
+          </span>
+        </div>
+
+        <p className={s.ultimo}>
+          {ultimo ? (
+            <>
+              <b>Último reporte</b> · {TIPO_REPORTE[ultimo.tipo] ?? "Observación"} a las {horaSantiago(ultimo.ts)}
+              {ultimo.is_simulated && <span className={s.chipSim}>Simulado</span>}
+              {subio && <> · encabeza Durante: {nombreFila(subio)}</>}
+            </>
+          ) : observaciones.estado === "ok" ? (
+            "Sin reportes de vecinos todavía. Llegan desde /reportar."
+          ) : (
+            " "
+          )}
+        </p>
+        </div>
         <div className={s.decisiones}>
           <article className={s.decision} style={{ ["--i" as string]: 0 }}>
             <header>
@@ -268,33 +316,6 @@ function Inicio({ activo, mapaListo }: { activo: boolean; mapaListo: boolean }) 
           </article>
         </div>
 
-        <div className={s.inicioPie}>
-          <Link href="/central/antes" className={s.cta}>
-            <span>Abrir la central</span>
-            <i aria-hidden>→</i>
-          </Link>
-          <Link href="/central/durante" className={s.ctaSec}>
-            Ir a Durante la lluvia
-          </Link>
-          <span className={s.mapaEstado} data-listo={mapaListo}>
-            <i aria-hidden />
-            {mapaListo ? "Mapa listo" : "Preparando el mapa…"}
-          </span>
-        </div>
-
-        <p className={s.ultimo}>
-          {ultimo ? (
-            <>
-              <b>Último reporte</b> · {TIPO_REPORTE[ultimo.tipo] ?? "Observación"} a las {horaSantiago(ultimo.ts)}
-              {ultimo.is_simulated && <span className={s.chipSim}>Simulado</span>}
-              {subio && <> · encabeza Durante: {nombreFila(subio)}</>}
-            </>
-          ) : observaciones.estado === "ok" ? (
-            "Sin reportes de vecinos todavía. Llegan desde /reportar."
-          ) : (
-            " "
-          )}
-        </p>
       </div>
     </section>
   );
@@ -308,7 +329,7 @@ function useFlip(lista: React.RefObject<HTMLOListElement | null>, claves: string
     const ol = lista.current;
     if (!ol) return;
     const nuevas = new Map<string, number>();
-    const items = Array.from(ol.querySelectorAll<HTMLElement>(":scope > li"));
+    const items = Array.from(ol.querySelectorAll<HTMLElement>(":scope > li[data-k]"));
     for (const el of items) nuevas.set(el.dataset.k!, el.offsetTop);
     if (!sinMovimiento() && pos.current.size)
       for (const el of items) {
@@ -372,7 +393,14 @@ function PorQue({ p }: { p: Fila }) {
   );
 }
 
-function Ranking({ filas, estado, sel, onSel, hover, onHover }: { filas: Fila[]; estado: EstadoConsulta; sel: string | null; onSel: (id: string) => void; hover: string | null; onHover: (id: string | null) => void }) {
+const TOP_LISTA = 10;
+
+function Ranking({ filas: todas, estado, sel, onSel, hover, onHover }: { filas: Fila[]; estado: EstadoConsulta; sel: string | null; onSel: (id: string) => void; hover: string | null; onHover: (id: string | null) => void }) {
+  const [todasVisibles, setTodasVisibles] = useState(false);
+  // La lista muestra el top; si se elige una rejilla más abajo (desde el mapa), se despliega sola
+  const selFuera = !!sel && todas.findIndex((f) => f.sumidero_id === sel) >= TOP_LISTA;
+  const verTodas = todasVisibles || selFuera;
+  const filas = verTodas ? todas : todas.slice(0, TOP_LISTA);
   const ref = useRef<HTMLOListElement>(null);
   const claves = filas.map((f) => f.sumidero_id).join("|");
   useFlip(ref, claves);
@@ -409,7 +437,7 @@ function Ranking({ filas, estado, sel, onSel, hover, onHover }: { filas: Fila[];
         ))}
       </div>
     );
-  const max = Math.max(...filas.map((f) => f.prioridad ?? 0), 0.0001);
+  const max = Math.max(...todas.map((f) => f.prioridad ?? 0), 0.0001);
   return (
     <ol className={s.ranking} ref={ref} aria-label="Ranking de prioridad">
       {filas.map((p) => {
@@ -448,6 +476,14 @@ function Ranking({ filas, estado, sel, onSel, hover, onHover }: { filas: Fila[];
           </li>
         );
       })}
+      {todas.length > TOP_LISTA && (
+        <li className={s.verMasLi}>
+          <button type="button" className={s.verMas} onClick={() => setTodasVisibles(!verTodas)} aria-expanded={verTodas}>
+            {verTodas ? `Mostrar solo el top ${TOP_LISTA}` : `Ver las ${todas.length} rejillas`}
+            <i aria-hidden>{verTodas ? "▴" : "▾"}</i>
+          </button>
+        </li>
+      )}
     </ol>
   );
 }
@@ -638,6 +674,7 @@ const Mapa = memo(function Mapa({
 }) {
   const { observaciones, transporte, cuadrilla, ruta } = useSala();
   const [cadenasOn, setCadenasOn] = useState(true);
+  const [tresD, setTresD] = useState(true);
   const durante = fase === "durante";
   const prioridades = useMemo(() => new Map(filas.flatMap((p) => (p.prioridad == null ? [] : [[p.sumidero_id, p.prio] as const]))), [filas]);
   const cadenas = useCapaCadenas(prioridades, durante ? observaciones.datos : [], durante ? (transporte.datos?.evidencia_agua ?? SIN_AGUA) : SIN_AGUA, cadenasOn, transporte.datos?.parametros.vigencia_agua_horas ?? 6, transporte.datos?.parametros.aguas_abajo_m ?? 150);
@@ -689,6 +726,9 @@ const Mapa = memo(function Mapa({
         resaltado={hover}
         onHover={onHover}
         pinSize={30}
+        relieve
+        tresD={tresD}
+        camara3D={CAMARA_3D}
         paraderos={tp.paraderos}
         recorridos={tp.recorridos}
         caminatas={tp.caminatas}
@@ -697,6 +737,14 @@ const Mapa = memo(function Mapa({
         attributionSide="right"
       >
         <div className={s.mapaChips}>
+          <span className={s.segmento} role="radiogroup" aria-label="Vista del mapa">
+            <button type="button" role="radio" aria-checked={!tresD} className={!tresD ? s.segOn : ""} onClick={() => setTresD(false)}>
+              2D
+            </button>
+            <button type="button" role="radio" aria-checked={tresD} className={tresD ? s.segOn : ""} onClick={() => setTresD(true)}>
+              3D
+            </button>
+          </span>
           <button type="button" className={`${s.chipMapa} ${cadenasOn ? s.chipMapaOn : ""}`} onClick={() => setCadenasOn(!cadenasOn)} aria-pressed={cadenasOn}>
             <i aria-hidden />
             Cadenas calle abajo <small>estimado</small>
@@ -708,6 +756,28 @@ const Mapa = memo(function Mapa({
     </div>
   );
 });
+
+/* Esqueleto de la central mientras el mapa termina de cargar: misma distribución, sin ruedita */
+function EsqueletoMapa() {
+  return (
+    <div className={s.esqMapa} aria-label="Cargando el mapa" role="status">
+      <div className={s.esqCalles} aria-hidden />
+      <div className={s.esqChips} aria-hidden>
+        <Skel h={36} w="6rem" />
+        <Skel h={36} w="13rem" />
+      </div>
+      {[
+        [38, 30],
+        [46, 36],
+        [52, 33],
+        [33, 52],
+        [58, 58],
+      ].map(([x, y], i) => (
+        <span key={i} className={s.esqPin} style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${i * 120}ms` }} aria-hidden />
+      ))}
+    </div>
+  );
+}
 
 /* ───────────────────────── Sala ───────────────────────── */
 
@@ -833,20 +903,22 @@ function SalaInterior({ children }: { children: ReactNode }) {
       <Barra vista={vista} />
       <main className={s.escena}>
         <Mapa filas={filas} fase={vista} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} foco={foco} onListo={listo} />
+        {conMapa(vista) && !mapaListo && <EsqueletoMapa />}
         <Inicio activo={vista === "inicio"} mapaListo={mapaListo} />
-        <aside className={s.riel} aria-hidden={vista === "inicio"} inert={vista === "inicio"}>
-          {vista !== "inicio" && (
+        {vista === "validacion" && <div className={s.pagina}>{children}</div>}
+        <aside className={s.riel} aria-hidden={!conMapa(vista)} inert={!conMapa(vista)}>
+          {conMapa(vista) && (
             <Riel fase={fase} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} nuevo={nuevo} pestana={pestana} setPestana={setPestana} />
           )}
         </aside>
-        {vista !== "inicio" && (
+        {conMapa(vista) && (
           <div className={s.faseSello} key={fase}>
             {fase === "antes" ? "Antes de la lluvia" : "Durante la lluvia"}
           </div>
         )}
       </main>
       {presentacion && <span className={s.presTag}>Modo presentación · P para salir</span>}
-      {children}
+      {vista !== "validacion" && children}
     </div>
   );
 }

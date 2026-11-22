@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Logo } from "@/components/ui";
 import { leerEvidencia } from "./evidencia";
 import styles from "./validacion.module.css";
 
@@ -64,15 +62,6 @@ export default async function ValidacionPage() {
   const { replay, claude, congelamiento } = await leerEvidencia();
   return (
     <main className={styles.validacion}>
-      <header className={styles.header}>
-        <Link href="/" aria-label="Drena, inicio"><Logo /></Link>
-        <nav className={styles.nav} aria-label="Vistas de la central">
-          <Link href="/">Inicio</Link>
-          <Link href="/central/antes">Antes</Link>
-          <Link href="/central/durante">Durante</Link>
-          <Link href="/central/validacion" aria-current="page">Validación</Link>
-        </nav>
-      </header>
       <h1>Validación histórica</h1>
       {replay && <Hallazgo replay={replay} />}
 
