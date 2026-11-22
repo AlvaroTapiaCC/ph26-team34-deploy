@@ -34,6 +34,7 @@ export interface Layers {
   rayos: boolean;
   feed: boolean;
   reales: boolean;
+  transporte: boolean;
 }
 
 export interface State {
@@ -74,7 +75,7 @@ export const initialState: State = {
   modal: null,
   toast: null,
   status: "loading",
-  layers: { prioridad: true, escurrimiento: true, limites: false, gore: false, rejillas: false, cadena: false, rayos: false, feed: true, reales: true },
+  layers: { prioridad: true, escurrimiento: true, limites: false, gore: false, rejillas: false, cadena: false, rayos: false, feed: true, reales: true, transporte: true },
   sensor: "escuchando",
   anegado: null,
   fuenteAnegamiento: null,

@@ -47,11 +47,14 @@ def get_sumidero(sumidero_id: str, scenario_id: str = "base"):
 
         observaciones = conn.execute(
             """
-            select o.id, o.fuente, o.tipo, o.media_url, o.texto, o.ts, o.is_simulated,
-                   c.resultado as clasificacion
+            select o.id, o.fuente, o.tipo, o.ts, o.is_simulated,
+                   o.media_url is not null as tiene_foto,
+                   o.texto is not null as tiene_texto,
+                   c.clasificacion
               from observations o
               left join lateral (
-                select resultado from classifications where observation_id = o.id
+                select resultado - 'ubicacion_texto' - 'desde_cuando' - 'nota' as clasificacion
+                  from classifications where observation_id = o.id
                  order by created_at desc limit 1
               ) c on true
              where o.sumidero_id = %s

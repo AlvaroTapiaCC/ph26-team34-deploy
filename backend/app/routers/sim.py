@@ -1,11 +1,14 @@
 """Línea de tiempo de la demo (issue #46)."""
 import hmac
+from datetime import datetime
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
+from app.db import get_conn
+from app.services import reinicio
 from app.services.sim import TopeAlcanzado, get_simulador
 
 
@@ -51,9 +54,21 @@ def stop() -> dict[str, Any]:
 
 
 @router.post("/reset", dependencies=[Depends(_exigir_admin)])
-def reset() -> dict[str, Any]:
-    """Vuelve al inicio y borra los eventos aplicados."""
-    return get_simulador().reset()
+def reset(desde: datetime | None = None) -> dict[str, Any]:
+    """Reinicia la demo para ensayarla de nuevo (#97).
+
+    Borra lo que generó la demo desde el último reinicio (observaciones, casos, eventos y el plan
+    de las cuadrillas simuladas), recalcula los puntajes, genera de nuevo el plan inicial y vuelve
+    el reloj del simulador al inicio. No toca catastro, variables, predicción congelada, caché de
+    Claude ni datos de cuadrillas reales. `desde` (ISO 8601) fija el corte a mano; sin marca previa
+    y sin `desde` no borra observaciones. Si la base no responde: 503 y no se borra nada.
+    """
+    if desde is not None and desde.tzinfo is None:
+        raise HTTPException(422, "`desde` necesita zona horaria (por ejemplo 2026-11-22T08:00:00-03:00)")
+    with get_conn() as conn:
+        r = reinicio.reiniciar(conn, desde)
+    # Se mantiene la respuesta de antes (estado del simulador) y se agrega el reinicio de los datos
+    return {**get_simulador().reset(), "datos": r}
 
 
 @router.get("/status")
