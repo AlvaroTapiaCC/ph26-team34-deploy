@@ -1,8 +1,9 @@
 {
   "rotulo": "Datos reales del portal municipal, agregados por cuadra. Sin domicilios ni identificadores.",
   "evento": "2026-10-13",
-  "nota": "Complementario: tormenta del 13 de octubre de 2026. No es el evento reproducido por #86; se contrasta con el mismo ranking A congelado del MUT, que no depende del clima.",
+  "nota": "Complementario: tormenta del 13 de octubre de 2026. No es el evento reproducido por #86; se contrasta con el ranking A congelado del MUT, que no depende del clima.",
   "sector": {
+    "nombre": "mut",
     "centro_lonlat": [
       -70.601433,
       -33.417741

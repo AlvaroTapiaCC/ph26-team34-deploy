@@ -99,8 +99,9 @@ las horas de aviso o publicación y el corte que lleva al evento de julio para e
 ## Reclamos de Atención Vecino (#72)
 
 `validacion/reclamos/` reúne los tickets de sumideros y anegamiento del portal de datos abiertos de Las Condes,
-agrupados por cuadra y sin domicilios. El crudo no se versiona. `pipeline/12_reclamos.py` los cruza con el ranking
-congelado del MUT. El [README](validacion/reclamos/README.md) explica la fuente, la licencia pendiente y los resultados.
+agrupados por cuadra y sin domicilios. El crudo no se versiona. `pipeline/14_reclamos.py` los cruza con el ranking A
+del sector del replay de julio (`prediccion_replay_julio.csv`). El [README](validacion/reclamos/README.md) explica la fuente,
+la licencia pendiente y los resultados.
 
 ## Obsoleto
 

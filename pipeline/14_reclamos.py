@@ -2,10 +2,11 @@
 Contraste de reclamos de Atención Vecino de Las Condes con el ranking congelado (issue #72).
 
 Uso (desde la raíz del repo):
-    python pipeline/12_reclamos.py \
+    python pipeline/14_reclamos.py \
         --crudo /ruta/fuera/del/repo/atencion_vecino.csv \
         --descargado-utc 2026-11-22T01:21:28Z \
         --clima-meta data/escenarios/2026-07-16_17.meta.json \
+        --prediccion data/validacion/prediccion_replay_julio.csv \
         --nota "Evento reproducido por #86 (plan B de julio)"
 
 Entrada: el CSV de la capa «Atención Vecino» (id 6) del portal oficial
@@ -18,15 +19,15 @@ Qué hace:
     evento que viene en la metadata del clima del replay. La fecha del ticket solo trae el día.
   - Agrupa los tickets por cuadra: calle normalizada y tramo de numeración de 100.
     No se guarda el número de casa, ni las coordenadas, ni los identificadores.
-  - Cruza cada cuadra del sector del ranking congelado con las rejillas (ID_IDE) que están
+  - Cruza cada cuadra del sector del ranking (por defecto el del replay de julio, #87) con las rejillas (ID_IDE) que están
     a menos de 100 m y de 50 m de alguno de sus tickets.
   - Calcula la cobertura de #86 con el ranking A congelado (sin clima), con «solo área de
     aporte» y con el promedio de 1.000 permutaciones con semilla 86. Si el sector no tiene
     tickets, no se calcula ninguna cifra y el resultado lo dice.
 
-Salidas en data/validacion/reclamos/: <evento>.json y <evento>.meta.json.
-No modifica la configuración ni los pesos. Verifica el sha256 de la configuración y del
-ranking contra la metadata del congelamiento.
+Salidas en data/validacion/reclamos/: <evento>_<sector>.json y <evento>_<sector>.meta.json.
+No modifica la configuración ni los pesos. Verifica el sha256 de la configuración contra el
+congelamiento del MUT y el del ranking del sector contra su metadata.
 """
 
 import argparse
@@ -43,9 +44,10 @@ from collections import Counter, defaultdict
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
-SCRIPT_VERSION = "1.0.0"
+SCRIPT_VERSION = "1.1.0"
 REPO = Path(__file__).resolve().parents[1]
-PREDICCION = REPO / "data/validacion/prediccion_congelada.csv"
+PREDICCION = REPO / "data/validacion/prediccion_replay_julio.csv"
+CONGELAMIENTO = REPO / "data/validacion/prediccion_congelada.meta.json"
 CONFIG = REPO / "backend/config/formula_validacion.yaml"
 SALIDA = REPO / "data/validacion/reclamos"
 
@@ -109,7 +111,7 @@ def calle_normalizada(texto):
 
 
 def cuadra(ubicacion):
-    """«APOQUINDO 3721» → «APOQUINDO 3700-3799». None si no hay calle y número."""
+    """«APOQUINDO 3721» -> «APOQUINDO 3700-3799». None si no hay calle y número."""
     m = DIRECCION.match(ubicacion.strip())
     if not m:
         return None
@@ -263,11 +265,15 @@ def main():
         ap.exit(1, "--descargado-utc debe incluir zona horaria.\n")
 
     meta_pred = json.loads(a.prediccion.with_suffix(".meta.json").read_text(encoding="utf-8"))
-    if sha256(a.config) != meta_pred["formula"]["sha256_config"]:
+    congelado = json.loads(CONGELAMIENTO.read_text(encoding="utf-8"))["formula"]["sha256_config"]
+    if not sha256(a.config) == meta_pred["formula"]["sha256_config"] == congelado:
         ap.exit(1, "El sha256 de la configuración no coincide con el del congelamiento.\n")
+    if meta_pred["formula"]["modo"] != "antes" or meta_pred["formula"]["pesos_efectivos"]["w_clima"] != 0:
+        ap.exit(1, "El ranking del sector debe ser la predicción A, sin clima ni observaciones.\n")
     if sha256(a.prediccion) != meta_pred["salida"]["sha256"]:
         ap.exit(1, "El sha256 del ranking no coincide con su metadata.\n")
-    zona, = (v for k, v in meta_pred.items() if k.startswith("zona_"))
+    (clave_zona, zona), = ((k, v) for k, v in meta_pred.items() if k.startswith("zona_"))
+    sector = clave_zona.removeprefix("zona_")
     centro, radio_sector = tuple(zona["centro_lonlat"]), float(zona["radio_m"])
 
     meta_clima = json.loads(a.clima_meta.read_text(encoding="utf-8"))
@@ -281,7 +287,7 @@ def main():
         "rotulo": "Datos reales del portal municipal, agregados por cuadra. Sin domicilios ni identificadores.",
         "evento": evento["nombre"],
         "nota": a.nota,
-        "sector": {"centro_lonlat": list(centro), "radio_m": radio_sector, "rejillas": len(orden)},
+        "sector": {"nombre": sector, "centro_lonlat": list(centro), "radio_m": radio_sector, "rejillas": len(orden)},
         "resolucion_temporal": "día (fc_creacion), sin hora",
         "ventanas": {
             "principal": ventana_resultado(tickets, desde, hasta, *args),
@@ -293,7 +299,7 @@ def main():
     }
 
     a.salida.mkdir(parents=True, exist_ok=True)
-    ruta = a.salida / f"{evento['nombre']}.json"
+    ruta = a.salida / f"{evento['nombre']}_{sector}.json"
     ruta.write_text(json.dumps(resultado, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     meta = {
         "generado_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -326,17 +332,18 @@ def main():
         },
         "formula": {
             "config": {"ruta": relativa(a.config), "sha256": sha256(a.config)},
-            "sha256_config_al_congelar": meta_pred["formula"]["sha256_config"],
+            "sha256_config_al_congelar": congelado,
             "prediccion": {"ruta": relativa(a.prediccion), "sha256": sha256(a.prediccion)},
-            "git_head_al_congelar": meta_pred.get("git_head_al_generar"),
+            "git_head_al_generar_prediccion": meta_pred.get("git_head_al_generar"),
         },
-        "script": {"ruta": "pipeline/12_reclamos.py", "version": SCRIPT_VERSION, "sha256": sha256(__file__)},
+        "script": {"ruta": "pipeline/14_reclamos.py", "version": SCRIPT_VERSION, "sha256": sha256(__file__)},
         "salida": {"archivo": ruta.name, "sha256": sha256(ruta)},
     }
     ruta.with_suffix(".meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     p = resultado["ventanas"]["principal"]
-    print(f"{evento['nombre']}: {p['tickets_comuna']} tickets en la comuna, "
-          f"{p['tickets_en_sector']} en el sector ({p['cuadras_en_sector']} cuadras) → {relativa(ruta) or ruta}")
+    # Solo ASCII en consola: la codificación predeterminada de Windows (cp1252) no tiene flechas.
+    print(f"{evento['nombre']} ({sector}): {p['tickets_comuna']} tickets en la comuna, "
+          f"{p['tickets_en_sector']} en el sector ({p['cuadras_en_sector']} cuadras) -> {relativa(ruta) or ruta}")
 
 
 if __name__ == "__main__":

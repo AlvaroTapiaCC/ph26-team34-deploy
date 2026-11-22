@@ -1,6 +1,6 @@
 {
-  "generado_utc": "2026-11-22T01:25:45Z",
-  "git_head_al_generar": "74386beeb4280348fd4c4851e0b5627e8b44991e",
+  "generado_utc": "2026-11-22T01:57:02Z",
+  "git_head_al_generar": "5d37f18a22254066535c58fc73f491095a9f061e",
   "fuente": {
     "nombre": "Atención Vecino (capa 6), Portal de Datos Abiertos de la Municipalidad de Las Condes",
     "portal": "https://datos.lascondes.cl/datos",
@@ -75,15 +75,15 @@
       "ruta": "data/validacion/prediccion_congelada.csv",
       "sha256": "584029a89d8a7aabbc3b14ec73ffefef05b145246fb57619e258635971f9637f"
     },
-    "git_head_al_congelar": "48d9904901ceec572acf26762e193664ea3f6d9d"
+    "git_head_al_generar_prediccion": "48d9904901ceec572acf26762e193664ea3f6d9d"
   },
   "script": {
-    "ruta": "pipeline/12_reclamos.py",
-    "version": "1.0.0",
-    "sha256": "64748134d9b74bf5655832c9eed0884cea5e869ebbd49b4b5b90247cb4ad2045"
+    "ruta": "pipeline/14_reclamos.py",
+    "version": "1.1.0",
+    "sha256": "4b9815e79963dcbd0e5b43a9dca007ef8aac9af13946694af99138ee29754552"
   },
   "salida": {
-    "archivo": "2026-10-13.json",
-    "sha256": "a4713c540ba7c6d08f00f03673f82503409fdc00562106df776b88e209b4aa90"
+    "archivo": "2026-10-13_mut.json",
+    "sha256": "5285d76c7c29eca925523bb88588fa6ec1d20305c84416bd8a44a601e4e4ede8"
   }
 }
