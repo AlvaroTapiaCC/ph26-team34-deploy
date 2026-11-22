@@ -184,8 +184,6 @@ const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
   ["esc-line", "line-color", "agua"],
   ["gore", "circle-color", "contexto"],
   ["gore", "circle-stroke-color", "surface"],
-  ["rec-line", "line-color", "bus"],
-  ["rec-destacado", "line-color", "bus"],
   ["caminata", "line-color", "bus"],
   ["chain-halo", "line-color", "principal"],
   ["ruta-halo", "line-color", "principal"],
@@ -193,7 +191,6 @@ const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
   ["puntos-hover", "circle-stroke-color", "secundario"],
   ["puntos-sel", "circle-stroke-color", "principal"],
   ["puntos", "circle-stroke-color", "secundario"],
-  ["rec-fondo", "line-color", "bus"],
   ["chain-line", "line-color", "principal"],
 ];
 
@@ -217,9 +214,12 @@ function flechaBus(): ImageData {
 function pintarMapa(map: MapLibre) {
   if (map.hasImage?.("bus-sentido")) map.updateImage("bus-sentido", flechaBus());
   for (const [capa, prop, color] of COLORES_CAPAS) if (map.getLayer(capa)) map.setPaintProperty(capa, prop, colorDe(color));
+  const t = (c: string, a: number) => colorDe(c).replace(/^#(..)(..)(..)$/, (_m, r, g, b) => `rgba(${parseInt(r, 16)},${parseInt(g, 16)},${parseInt(b, 16)},${a})`); // paleta-ok: transparencia sobre colores de la paleta
+  // Los recorridos se recortan al radio del extracto GTFS: sus extremos se desvanecen en vez de terminar en seco.
+  const desvanecido = ["interpolate", ["linear"], ["line-progress"], 0, t("bus", 0), 0.12, t("bus", 1), 0.88, t("bus", 1), 1, t("bus", 0)];
+  for (const capa of ["rec-line", "rec-destacado", "rec-fondo"]) if (map.getLayer(capa)) map.setPaintProperty(capa, "line-gradient", desvanecido);
   if (map.getLayer("riesgo-calor")) {
     // Riesgo bajo = transparente (el mapa queda gris); medio = calipso tenue; alto = calipso a blanco
-    const t = (c: string, a: number) => colorDe(c).replace(/^#(..)(..)(..)$/, (_m, r, g, b) => `rgba(${parseInt(r, 16)},${parseInt(g, 16)},${parseInt(b, 16)},${a})`); // paleta-ok: transparencia sobre colores de la paleta
     map.setPaintProperty("riesgo-calor", "heatmap-color", ["interpolate", ["linear"], ["heatmap-density"], 0, "rgba(0,0,0,0)", 0.12, "rgba(0,0,0,0)", 0.3, t("principal", 0.15), 0.6, t("principal", 0.35), 0.85, t("principal", 0.55), 1, t("principal", 0.7)]); // paleta-ok: transparente
   }
   if (map.getLayer("puntos")) {
@@ -303,7 +303,7 @@ export default function DrenaMap(props: DrenaMapProps) {
         if (!props.relieve) map.touchZoomRotate.disableRotation();
         mapRef.current = map;
         map.once("style.load", () => {
-          const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]) });
+          const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]), lineMetrics: id.startsWith("rec") });
           ["esc", "chain", "lim", "area", "celda", "celda-link", "gore", "rec", "rec-destacado", "caminata"].forEach(add);
           map.addSource("comunas-rm", { type: "geojson", data: "/data/comunas_rm.geojson" });
           // El catastro completo (420 KB) se pide la primera vez que se enciende su capa
@@ -413,7 +413,7 @@ export default function DrenaMap(props: DrenaMapProps) {
             filter: ["==", ["get", "id"], ""],
             paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 6, 16, 10], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2 }, // paleta-ok: relleno transparente
           });
-          map.addSource("rec-fondo", { type: "geojson", data: fc([]) });
+          map.addSource("rec-fondo", { type: "geojson", data: fc([]), lineMetrics: true });
           map.addLayer({ id: "rec-fondo", type: "line", source: "rec-fondo", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 1.5, "line-opacity": 0.22 } });
           map.addLayer({
             id: "riesgo-calor",
