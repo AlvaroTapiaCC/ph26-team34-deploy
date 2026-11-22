@@ -149,7 +149,7 @@ export default function Ficha() {
           <div className="instr">
             <Kicker tone="accent">Instrucción</Kicker>
             <p>{instruccion(p)}</p>
-            {textoIa && <small>Explicación basada en los datos del ranking.</small>}
+            {textoIa && <small>{real ? "Explicación basada en los datos del ranking. No cambia el orden." : "Texto de ejemplo."}</small>}
           </div>
           <div>
             <Kicker>Aguas abajo (en orden)</Kicker>
