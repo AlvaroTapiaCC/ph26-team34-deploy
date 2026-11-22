@@ -15,6 +15,20 @@ const RUTA_CSS = join(raiz, "app", "globals.css");
 const BLOQUE = / *\/\* paleta:inicio[\s\S]*?paleta:fin \*\/\r?\n?/;
 const HEX = /^#[0-9a-f]{6}$/i;
 
+/**
+ * En Vercel el chequeo solo avisa: un desajuste de la paleta no debe tumbar un deploy. Bloquea en local
+ * y en el CI de GitHub (build del PR), donde se ve antes de llegar a producción.
+ */
+let conAvisos = false;
+function fallar() {
+  conAvisos = true;
+  if (process.env.VERCEL) {
+    console.warn("paleta: aviso en Vercel; el build sigue. Corrígelo en el repo antes del próximo deploy.");
+    return;
+  }
+  process.exit(1);
+}
+
 const ref = (x) => (HEX.test(x) ? x : `var(--${x})`);
 
 function generar(p) {
@@ -66,16 +80,16 @@ if (arg === "--escribir") {
   const actual = css.match(BLOQUE)[0].replace(/\r\n/g, "\n");
   if (actual.trimEnd() !== generar(paleta).trimEnd()) {
     console.error("paleta: app/globals.css no coincide con lib/paleta.json. Arreglo: npm run paleta -- --escribir");
-    process.exit(1);
+    fallar();
   }
   const fijos = buscarColoresFijos();
   if (fijos.length) {
     console.error("paleta: hay colores escritos a mano fuera de la paleta. Usa var(--…) en CSS o colorDe(\"…\") en TS:");
     for (const f of fijos) console.error("  " + f);
     console.error("Si un caso lo necesita a propósito, agrega el comentario `paleta-ok` en esa línea.");
-    process.exit(1);
+    fallar();
   }
-  console.log(`paleta: ${paleta.editables.length} editables, ${paleta.derivados.length} derivados, ${paleta.fijos.length} fijos; globals.css al día; sin colores fijos fuera de la paleta`);
+  if (!conAvisos) console.log(`paleta: ${paleta.editables.length} editables, ${paleta.derivados.length} derivados, ${paleta.fijos.length} fijos; globals.css al día; sin colores fijos fuera de la paleta`);
 }
 
 /**

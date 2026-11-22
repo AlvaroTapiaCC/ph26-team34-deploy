@@ -10,7 +10,7 @@ import type { MapLibre } from "../../components/map/maplibre";
 import { ESTADOS, FLUJO_CONFIG, type EstadoRejilla } from "./config";
 import { puntoEnTramo } from "./grafo";
 import type { MotorFlujo } from "./motor";
-import { colorDe } from "../paleta";
+import { colorDe, EVENTO_PALETA } from "../paleta";
 
 const SRC = { tramos: "flujo-tramos", sum: "flujo-sum", flecha: "flujo-flecha-src", columnas: "flujo-columnas-src", pop: "flujo-pop-src" };
 const TRAZOS = ["flujo-trazo-0", "flujo-trazo-1", "flujo-trazo-2"];
@@ -131,7 +131,6 @@ function cuadrado([x, y]: [number, number], lado: number) {
 export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClickSumidero: (id: string) => void }): CapaFlujo {
   const cfg = FLUJO_CONFIG;
   const { tramos, sumideros } = motor.grafo;
-  const { agua, aguaHondo, brillo, desborde } = cfg.colores;
   const logMin = Math.log1p(cfg.caudalMinimoLs);
   const logMax = Math.log1p(cfg.caudalGrosorMaxLs);
 
@@ -163,7 +162,7 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
     type: "line",
     source: SRC.tramos,
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": ["case", ["==", conAgua, 1], desborde, brillo], "line-width": anchoZoom(3), "line-blur": 6, "line-opacity": visibleSiAgua(0.28) },
+    paint: { "line-width": anchoZoom(3), "line-blur": 6, "line-opacity": visibleSiAgua(0.28) },
   });
   map.addLayer({
     id: "flujo-linea",
@@ -171,7 +170,6 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
     source: SRC.tramos,
     layout: { "line-cap": "round", "line-join": "round" },
     paint: {
-      "line-color": ["case", ["==", conAgua, 1], desborde, ["interpolate-lab", ["linear"], qn, 0, agua, 1, aguaHondo]],
       "line-width": anchoZoom(1),
       "line-opacity": visibleSiAgua(0.92),
     },
@@ -184,7 +182,6 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
       source: SRC.tramos,
       filter: ["==", ["get", "vc"], k],
       paint: {
-        "line-color": ["case", ["==", conAgua, 1], colorDe("principal-suave"), colorDe("agua-suave")],
         "line-width": anchoZoom(0.45),
         "line-opacity": visibleSiAgua(0.9),
         "line-dasharray": PATRON[0],
@@ -195,14 +192,12 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
     id: "flujo-columnas",
     type: "fill-extrusion",
     source: SRC.columnas,
-    paint: { "fill-extrusion-color": desborde, "fill-extrusion-height": ["get", "h"], "fill-extrusion-base": 0, "fill-extrusion-opacity": 0.85 },
+    paint: { "fill-extrusion-height": ["get", "h"], "fill-extrusion-base": 0, "fill-extrusion-opacity": 0.85 },
   });
   // Rejillas: círculo de 6 px; el borde dice el estado (limpia: azul; parcial: negro grueso; tapada: rellena en accent)
   const est = ["get", "est"];
   const circuloRejilla = {
     "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 2.5, 14, 3, 16.9, 5],
-    "circle-color": ["match", est, "tapada", desborde, "parcial", colorDe("surface-3"), colorDe("surface")],
-    "circle-stroke-color": ["match", est, "tapada", colorDe("surface"), "parcial", colorDe("secundario"), agua],
     "circle-stroke-width": ["match", est, "parcial", 2, 1.5],
   };
   map.addLayer({ id: "flujo-rej", type: "circle", source: SRC.sum, minzoom: cfg.zoomRejillas, maxzoom: cfg.zoomIconos, paint: circuloRejilla });
@@ -219,7 +214,7 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
     type: "circle",
     source: SRC.sum,
     filter: ["==", ["get", "id"], ""],
-    paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 8, 17, 16], "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": colorDe("secundario"), "circle-stroke-width": 2 },
+    paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 8, 17, 16], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 2 },
   });
   map.addLayer({
     id: "flujo-pop",
@@ -244,6 +239,28 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
     },
     paint: { "icon-opacity": ["get", "o"] },
   });
+
+  /**
+   * Colores de las capas del flujo desde la paleta. Se llama al montar y cada vez que cambia la paleta
+   * (EVENTO_PALETA): líneas, columnas, rejillas e íconos cambian sin recargar.
+   */
+  const pintar = () => {
+    const { agua, aguaHondo, brillo, desborde } = cfg.colores;
+    const set = (id: string, prop: string, valor: unknown) => map.getLayer(id) && map.setPaintProperty(id, prop, valor);
+    set("flujo-brillo", "line-color", ["case", ["==", conAgua, 1], desborde, brillo]);
+    set("flujo-linea", "line-color", ["case", ["==", conAgua, 1], desborde, ["interpolate-lab", ["linear"], qn, 0, agua, 1, aguaHondo]]);
+    TRAZOS.forEach((id) => set(id, "line-color", ["case", ["==", conAgua, 1], colorDe("principal-suave"), colorDe("agua-suave")]));
+    set("flujo-columnas", "fill-extrusion-color", desborde);
+    for (const id of ["flujo-rej", "flujo-rej-tap"]) {
+      set(id, "circle-color", ["match", est, "tapada", desborde, "parcial", colorDe("surface-3"), colorDe("surface")]);
+      set(id, "circle-stroke-color", ["match", est, "tapada", colorDe("surface"), "parcial", colorDe("secundario"), agua]);
+    }
+    set("flujo-sel", "circle-stroke-color", colorDe("secundario"));
+    if (map.hasImage("flujo-flecha")) map.updateImage("flujo-flecha", flechaImagen());
+    for (const e of ESTADOS) if (map.hasImage(`rejilla-${e}`)) map.updateImage(`rejilla-${e}`, rejillaImagen(e));
+  };
+  pintar();
+  window.addEventListener(EVENTO_PALETA, pintar);
 
   // Con rejillas a pocos metros las zonas de clic se pisan: se elige la más cercana al cursor, no la de encima
   const alClic = (e: { point: { x: number; y: number }; features?: { properties: { id: string }; geometry: { coordinates: [number, number] } }[] }) => {
@@ -348,7 +365,7 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
         pop = null;
         map.getSource(SRC.pop)?.setData(fc([]));
       } else {
-        const c = motor.estadoRejilla(i) === "tapada" ? desborde : colorDe("secundario");
+        const c = motor.estadoRejilla(i) === "tapada" ? cfg.colores.desborde : colorDe("secundario");
         map.getSource(SRC.pop)?.setData(fc([{ type: "Feature", properties: { r: 6 + 22 * k, o: 1 - k, c }, geometry: { type: "Point", coordinates: sumideros[i].coord } }]));
       }
     }
@@ -367,6 +384,7 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
       pop = { id, t0: reloj };
     },
     destruir() {
+      window.removeEventListener(EVENTO_PALETA, pintar);
       try {
         // Si el mapa ya se destruyó (cambio de vista), no queda nada que quitar
         if (!map.getStyle()) return;

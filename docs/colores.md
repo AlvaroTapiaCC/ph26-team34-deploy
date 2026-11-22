@@ -40,7 +40,8 @@ Tienen significado propio, así que no se derivan de los tres base:
 
 ## Cómo cambiar colores
 
-- **Probar en vivo:** abre cualquier página con `?paleta=1`. El editor cambia los 3 base en la página y en el mapa, y lo guarda solo en tu navegador.
+- **Probar en vivo:** abre cualquier página con `?paleta=1`. El editor cambia los 3 base en la página y en todas las capas del mapa (incluidos el flujo y las cadenas), y lo guarda solo en tu navegador. Al navegar a una URL sin `?paleta=1`, el editor se oculta.
+- **Exportar:** "Copiar :root" o "Descargar CSS" entregan el bloque `:root` completo que reproduce la vista previa. "Descargar JSON" entrega los 3 colores base.
 - **Dejarlo en el repo:** en el editor, "Descargar JSON". Luego, en `frontend/`, corre `npm run paleta -- paleta.json`.
 - **Cambiar una mezcla, un fijo o agregar un color:** edita `lib/paleta.json` y corre `npm run paleta -- --escribir`. Eso regenera el bloque `paleta:inicio … paleta:fin` de `app/globals.css`, que no se edita a mano.
 
@@ -49,4 +50,4 @@ Tienen significado propio, así que no se derivan de los tres base:
 - **En CSS:** usa siempre `var(--…)`. Para una variante más clara u oscura, usa `color-mix(in srgb, var(--principal) 20%, var(--surface))`.
 - **En TS (MapLibre, canvas):** usa `colorDe("…")` de `lib/paleta.ts`. Para que el mapa se repinte al editar la paleta, agrega la capa a `COLORES_CAPAS` en `components/map/DrenaMap.tsx`.
 - **Textos:** no nombres colores que dependen de la paleta ("en naranjo"). Di "en el color principal" o describe lo que significa.
-- **Chequeo del build:** `npm run build` corre primero `scripts/paleta.mjs`. Falla si `globals.css` no está al día o si hay un color escrito a mano (hex, `rgb()` o `hsl()`) fuera de la paleta. Se permiten las sombras neutras en negro y blanco con transparencia. Si un caso lo necesita a propósito, agrega el comentario `paleta-ok` en esa línea.
+- **Chequeo del build:** `npm run build` corre primero `scripts/paleta.mjs`. Falla si `globals.css` no está al día o si hay un color escrito a mano (hex, `rgb()` o `hsl()`) fuera de la paleta. Se permiten las sombras neutras en negro y blanco con transparencia. Si un caso lo necesita a propósito, agrega el comentario `paleta-ok` en esa línea. En Vercel el chequeo solo avisa, para no tumbar un deploy; en local y en el CI de GitHub sí bloquea.

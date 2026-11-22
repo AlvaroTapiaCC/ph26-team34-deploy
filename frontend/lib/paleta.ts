@@ -105,6 +105,26 @@ export function aplicarPaleta(paleta: Paleta) {
   window.dispatchEvent(new Event(EVENTO_PALETA));
 }
 
+/**
+ * Bloque :root completo con la paleta dada (los 3 base con su valor, derivados y fijos), en el mismo
+ * formato que genera scripts/paleta.mjs. Reproduce la vista previa del editor al pegarlo en un CSS.
+ */
+export function aCssRoot(paleta: Paleta): string {
+  const p = { ...paletaPorDefecto(), ...limpiarPaleta(paleta) };
+  const ref = (x: string) => (HEX.test(x) ? x : `var(--${x})`);
+  const l = [":root {", "  /* paleta:inicio — exportado desde el editor de paleta (?paleta=1) */", "  /* Editables (?paleta=1) */"];
+  for (const c of EDITABLES) l.push(`  --${c.id}: ${p[c.id]}; /* ${c.nombre} */`);
+  l.push("  /* Derivados de los editables */");
+  for (const c of DERIVADOS) {
+    const [a, pct, b] = c.mezcla;
+    l.push(`  --${c.id}: ${a === b || pct === 100 ? ref(a) : `color-mix(in srgb, ${ref(a)} ${pct}%, ${ref(b)})`}; /* ${c.nombre} */`);
+  }
+  l.push("  /* Fijos: tienen significado propio (peligro, correcto, advertencia, agua, transporte) */");
+  for (const c of FIJOS) l.push(`  --${c.id}: ${c.valor}; /* ${c.nombre} */`);
+  l.push("  /* paleta:fin */", "}");
+  return l.join("\n") + "\n";
+}
+
 /** Script en línea para <head>: aplica los colores guardados antes del primer pintado (sin parpadeo). */
 export function scriptInicialPaleta(): string {
   const ids = JSON.stringify(EDITABLES.map((c) => c.id));

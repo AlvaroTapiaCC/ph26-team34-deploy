@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import localFont from "next/font/local";
 import EditorPaleta from "@/components/paleta/EditorPaleta";
 import { EDITABLES, scriptInicialPaleta } from "@/lib/paleta";
@@ -37,7 +38,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
-        <EditorPaleta />
+        {/* useSearchParams en el editor: Next pide un límite de Suspense para el prerender estático */}
+        <Suspense fallback={null}>
+          <EditorPaleta />
+        </Suspense>
       </body>
     </html>
   );

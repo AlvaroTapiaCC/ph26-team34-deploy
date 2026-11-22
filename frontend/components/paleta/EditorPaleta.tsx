@@ -2,12 +2,13 @@
 
 // Editor de la paleta (#131). Solo aparece con ?paleta=1: el jurado y los vecinos no lo ven.
 // Se editan 3 colores (fondo, texto y acento); el resto se deriva de ellos y cambia solo.
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { aplicarPaleta, DERIVADOS, EDITABLES, FIJOS, leerPaletaGuardada, limpiarPaleta, paletaPorDefecto, resolver, type Paleta } from "@/lib/paleta";
+import { aCssRoot, aplicarPaleta, DERIVADOS, EDITABLES, FIJOS, leerPaletaGuardada, limpiarPaleta, paletaPorDefecto, resolver, type Paleta } from "@/lib/paleta";
 import "./paleta.css";
 
-function descargar(nombre: string, contenido: string) {
-  const url = URL.createObjectURL(new Blob([contenido], { type: "application/json;charset=utf-8" }));
+function descargar(nombre: string, contenido: string, tipo = "application/json") {
+  const url = URL.createObjectURL(new Blob([contenido], { type: `${tipo};charset=utf-8` }));
   const a = document.createElement("a");
   a.href = url;
   a.download = nombre;
@@ -18,7 +19,8 @@ function descargar(nombre: string, contenido: string) {
 }
 
 export default function EditorPaleta() {
-  const [visible, setVisible] = useState(false);
+  // Se lee en cada navegación (no solo al montar): al ir a una URL sin ?paleta=1 el editor se oculta
+  const visible = useSearchParams().get("paleta") === "1";
   const [abierto, setAbierto] = useState(true);
   const [paleta, setPaleta] = useState<Paleta>(paletaPorDefecto);
   const [aviso, setAviso] = useState("");
@@ -30,7 +32,6 @@ export default function EditorPaleta() {
     // El script de <head> ya aplicó las variables; aquí se sincroniza la barra del navegador y el mapa.
     if (Object.keys(guardada).length) aplicarPaleta(guardada);
     setPaleta({ ...paletaPorDefecto(), ...guardada });
-    setVisible(new URLSearchParams(window.location.search).get("paleta") === "1");
   }, []);
 
   useEffect(() => {
@@ -46,6 +47,15 @@ export default function EditorPaleta() {
     aplicarPaleta(siguiente);
   };
   const editados = EDITABLES.filter((c) => paleta[c.id] !== def[c.id]).length;
+
+  async function copiarCss() {
+    try {
+      await navigator.clipboard.writeText(aCssRoot(paleta));
+      setAviso("Bloque :root copiado");
+    } catch {
+      setAviso("No se pudo copiar; usa Descargar CSS");
+    }
+  }
 
   async function importar(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -130,6 +140,8 @@ export default function EditorPaleta() {
         </button>
         <button onClick={() => descargar("paleta.json", JSON.stringify(paleta, null, 2) + "\n")}>Descargar JSON</button>
         <button onClick={() => archivo.current?.click()}>Importar JSON</button>
+        <button onClick={copiarCss}>Copiar :root</button>
+        <button onClick={() => descargar("paleta.css", aCssRoot(paleta), "text/css")}>Descargar CSS</button>
         <input ref={archivo} type="file" accept="application/json,.json" hidden onChange={importar} />
       </footer>
       <p className="pal__nota">
