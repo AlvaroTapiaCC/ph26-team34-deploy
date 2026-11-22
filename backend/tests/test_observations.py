@@ -134,7 +134,7 @@ def mundo(monkeypatch):
         riesgo = m.riesgo or "atrapad" in texto
         return res(LecturaTexto(tipo="anegamiento", gravedad="alta" if riesgo else "media",
                                 personas_en_riesgo=riesgo, ubicacion_texto=None, desde_cuando=None,
-                                nivel_agua="sobre_vereda"), "texto-v1")
+                                nivel_agua="sobre_vereda", confianza="alta"), "texto-v2")
 
     monkeypatch.setattr(router, "leer_texto", leer)
 

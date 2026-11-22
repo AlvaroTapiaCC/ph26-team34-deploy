@@ -12,7 +12,8 @@ from app.schemas.claude import LecturaTexto
 from app.services import cache
 from app.services.claude_common import ResultadoClaude, llamar_estructurado
 
-PROMPT_VERSION_TEXTO = "texto-v1"
+# v2 (#124): agrega `confianza`. Cambia la clave de caché, así no se reusan lecturas v1 sin ese campo.
+PROMPT_VERSION_TEXTO = "texto-v2"
 NUMEROS_EMERGENCIA = [
     {"numero": "133", "nombre": "Carabineros"},
     {"numero": "132", "nombre": "Bomberos"},
@@ -49,7 +50,15 @@ nivel_agua:
 - cuneta: agua solo en la cuneta.
 - hasta_vereda: agua en la calzada hasta el borde de la vereda.
 - sobre_vereda: agua por sobre la vereda o entrando a casas.
-- no_evaluable: menciona agua pero no se puede saber cuánta."""
+- no_evaluable: menciona agua pero no se puede saber cuánta.
+
+confianza: qué tan claro es el texto para decidir tipo y nivel_agua.
+- alta: el texto dice de forma directa qué pasa (por ejemplo "la rejilla está tapada con hojas" o "el agua \
+pasa sobre la vereda").
+- media: se entiende qué pasa, pero hay algo de ambigüedad o falta un detalle (por ejemplo "hay harta agua" sin \
+decir hasta dónde llega).
+- baja: el texto es confuso, contradictorio, de segunda mano o no permite saber con seguridad qué pasa.
+La confianza no cambia personas_en_riesgo: ante la duda, ese campo sigue siendo true."""
 
 SCHEMA_TEXTO = {
     "type": "object",
@@ -60,8 +69,10 @@ SCHEMA_TEXTO = {
         "ubicacion_texto": {"anyOf": [{"type": "string"}, {"type": "null"}]},
         "desde_cuando": {"anyOf": [{"type": "string"}, {"type": "null"}]},
         "nivel_agua": {"type": "string", "enum": ["sin_agua", "cuneta", "hasta_vereda", "sobre_vereda", "no_evaluable"]},
+        "confianza": {"type": "string", "enum": ["alta", "media", "baja"]},
     },
-    "required": ["tipo", "gravedad", "personas_en_riesgo", "ubicacion_texto", "desde_cuando", "nivel_agua"],
+    "required": ["tipo", "gravedad", "personas_en_riesgo", "ubicacion_texto", "desde_cuando", "nivel_agua",
+                 "confianza"],
     "additionalProperties": False,
 }
 
@@ -93,6 +104,7 @@ def leer_texto(texto: str) -> ResultadoClaude[LecturaTexto]:
         ubicacion_texto=None,
         desde_cuando=None,
         nivel_agua="no_evaluable",
+        confianza="baja",  # sin lectura de Claude: tipo "otro", no sube P ni el nivel de agua
     )
     return llamar_estructurado(
         system=SYSTEM_TEXTO,

@@ -48,7 +48,7 @@ def test_texto_con_confianza_baja_aporta_menos_que_con_alta():
 
 
 def test_texto_sin_confianza_pesa_como_antes():
-    """Hoy LecturaTexto no trae confianza: el aporte y el detalle no cambian."""
+    """Lecturas texto-v1 guardadas antes de #124 no traen confianza: el aporte y el detalle no cambian."""
     sin = p_final(SumideroInput("a", {}, reportes_texto=2), CFG)
     nulos = p_final(SumideroInput("a", {}, reportes_texto=2, confianza_textos=[None, None]), CFG)
     assert sin[0] == nulos[0] and sin[3] == nulos[3]
@@ -197,3 +197,127 @@ def test_senales_no_exponen_texto_ni_foto():
     (s,) = scoring.senales_sumidero(conn, "s1", CFG)
     assert set(s) == {"observation_id", "senal", "fuente", "tipo_observacion", "ts", "valor", "confianza",
                       "factor_confianza", "aplica_en", "usada", "is_simulated"}
+
+
+# --- Texto de punta a punta: clasificador → classifications → scores.detalle (revisión de #135) ---
+import json  # noqa: E402
+from types import SimpleNamespace  # noqa: E402
+
+from app.services import cache, claude_common  # noqa: E402
+from app.services.claude_text import PROMPT_VERSION_TEXTO, SCHEMA_TEXTO, leer_texto  # noqa: E402
+
+
+class _ClaudeFalso:
+    """Cliente de Claude que responde, en orden, las lecturas dadas."""
+
+    def __init__(self, respuestas):
+        self.respuestas = [json.dumps(r) for r in respuestas]
+        self.beta = SimpleNamespace(messages=SimpleNamespace(create=self._create))
+
+    def _create(self, **kwargs):
+        return SimpleNamespace(stop_reason="end_turn", model="claude-test", stop_details=None,
+                               content=[SimpleNamespace(type="text", text=self.respuestas.pop(0))])
+
+
+class _BaseFalsa:
+    """Lo mínimo de Postgres para `cargar_entradas`: guarda el `resultado` tal como lo persiste
+    `insertar_clasificacion` y resuelve `resultado->>'campo'` y los filtros de cada lectura."""
+
+    def __init__(self, sumideros):
+        self.sumideros, self.obs = sumideros, []
+
+    def guardar(self, sumidero_id, tipo, resultado, fuente="vecino"):
+        self.obs.append({"observation_id": f"o{len(self.obs)}", "sumidero_id": sumidero_id, "fuente": fuente,
+                         "tipo": tipo, "ts": datetime.now(UTC), "is_simulated": False,
+                         "resultado": json.loads(json.dumps(resultado))})  # ida y vuelta por jsonb
+
+    def _filas(self, clase, params):
+        out = []
+        for o in self.obs:
+            r = o["resultado"]
+            if clase == "rejilla":
+                ok, valor = o["tipo"] == "foto_rejilla" and r.get("evaluable") and \
+                    r.get("rejilla") in ("limpia", "parcial", "tapada"), r.get("rejilla")
+            elif clase == "texto":
+                ok, valor = o["tipo"] == "texto" and r.get("tipo") in params["tipos"], r.get("tipo")
+            else:
+                ok, valor = r.get("nivel_agua") in params["niveles"], r.get("nivel_agua")
+            if ok:
+                out.append({**{k: v for k, v in o.items() if k != "resultado"},
+                            "confianza": r.get("confianza"), "valor": valor})
+        return out
+
+    def execute(self, sql, params=None):
+        clase = next((k for k, v in scoring._SQL_LECTURAS.items() if v == sql), None)
+        if clase:
+            filas = self._filas(clase, params)
+        elif "from scenarios" in sql:
+            filas = [{"parametros": {}}]
+        elif "from sumideros s" in sql:
+            filas = [{"id": sid, "features": f, "is_simulated": False, "ultima_limpieza": None}
+                     for sid, f in self.sumideros.items()]
+        else:  # casos urgentes y cadenas: ninguno en esta prueba
+            filas = []
+        return _Filas(filas)
+
+
+class _Filas(list):
+    def fetchone(self):
+        return self[0] if self else None
+
+    def fetchall(self):
+        return list(self)
+
+
+@pytest.fixture
+def claude_falso(monkeypatch):
+    mem = {}
+    monkeypatch.setattr(cache, "get", lambda k: mem.get(k))
+    monkeypatch.setattr(cache, "put", lambda k, r, m: mem.__setitem__(k, {"respuesta": r, "modelo": m}))
+
+    def usar(respuestas):
+        cliente = _ClaudeFalso(respuestas)  # uno solo: cada llamada consume la siguiente respuesta
+        monkeypatch.setattr(claude_common, "get_client", lambda: cliente)
+    return usar
+
+
+def _lectura(confianza, nivel="sin_agua", tipo="rejilla_tapada"):
+    return {"tipo": tipo, "gravedad": "media", "personas_en_riesgo": False, "ubicacion_texto": None,
+            "desde_cuando": None, "nivel_agua": nivel, "confianza": confianza}
+
+
+def test_lectura_de_texto_pide_y_valida_confianza():
+    assert "confianza" in SCHEMA_TEXTO["required"]
+    assert SCHEMA_TEXTO["properties"]["confianza"]["enum"] == ["alta", "media", "baja"]
+    assert PROMPT_VERSION_TEXTO == "texto-v2"  # la caché de texto-v1 (sin confianza) no se reusa
+
+
+def test_texto_sin_respuesta_de_claude_queda_con_confianza_baja(claude_falso):
+    claude_falso(["no es json", "tampoco"])
+    r = leer_texto("Hay agua en la esquina, creo")
+    assert r.fallo and r.resultado.confianza == "baja" and r.resultado.tipo == "otro"
+
+
+def test_confianza_del_texto_llega_desde_el_clasificador_hasta_el_detalle(claude_falso):
+    """La señal que entrega Claude se guarda, scoring la lee y la fórmula la deja en scores.detalle."""
+    claude_falso([_lectura("alta", "hasta_vereda"), _lectura("baja", "hasta_vereda")])
+    base = _BaseFalsa({"claro": {"area_aporte": 500}, "dudoso": {"area_aporte": 500}})
+    for sid, texto in (("claro", "La rejilla de la esquina está llena de hojas y el agua llega al borde"),
+                       ("dudoso", "Me dijeron que por ahí algo pasa con un sumidero")):
+        r = leer_texto(texto)
+        assert not r.fallo and r.meta()["prompt_version"] == "texto-v2"
+        base.guardar(sid, "texto", r.resultado.model_dump(mode="json"))  # igual que insertar_clasificacion
+
+    paso = CFG["reportes_texto"]["factor"] * CFG["reportes_texto"]["aporte_por_reporte"]
+    for modo in ("antes", "durante"):
+        entradas, chains = scoring.cargar_entradas(base, "base", modo, cfg=CFG)
+        s = {x.sumidero_id: x for x in calcular_ranking(entradas, chains, CFG, modo)}
+        claro, dudoso = s["claro"].detalle, s["dudoso"].detalle
+        assert claro["factores_confianza_texto"] == [1.0] and dudoso["factores_confianza_texto"] == [0.4]
+        assert claro["aporte_reportes_texto"] == pytest.approx(paso)
+        assert dudoso["aporte_reportes_texto"] == pytest.approx(paso * 0.4)
+        assert s["claro"].prioridad > s["dudoso"].prioridad
+    # En Durante, el nivel de agua del texto también pesa según su confianza
+    assert (claro["confianza_agua"], claro["factor_confianza_agua"]) == ("alta", 1.0)
+    assert (dudoso["confianza_agua"], dudoso["factor_confianza_agua"]) == ("baja", 0.4)
+    assert s["claro"].c > s["dudoso"].c

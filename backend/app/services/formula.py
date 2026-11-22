@@ -47,8 +47,8 @@ class SumideroInput:
     confianza_foto: str | None = None
     # Reportes de texto (sin foto) vigentes que apuntan a una rejilla tapada o basura
     reportes_texto: int = 0
-    # Confianza de cada uno de esos reportes, si la clasificación la trae (#124). Los reportes
-    # sin confianza registrada (hoy `LecturaTexto` no la tiene) cuentan con factor 1.
+    # Confianza de cada uno de esos reportes (`LecturaTexto.confianza` desde texto-v2, #124). Los
+    # reportes sin confianza registrada (lecturas texto-v1 antiguas) cuentan con factor 1.
     confianza_textos: Sequence[str | None] = ()
     # Fase Durante: nivel de agua observado reciente con mayor nivel · factor de confianza
     nivel_agua: str | None = None

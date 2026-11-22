@@ -26,6 +26,8 @@ export type LecturaTexto = {
   ubicacion_texto: string | null;
   desde_cuando: string | null;
   nivel_agua: ClasificacionRejilla["nivel_agua"];
+  /** Desde texto-v2 (#124). Opcional: lecturas guardadas antes en este navegador no la traen. */
+  confianza?: ClasificacionRejilla["confianza"];
 };
 
 export type Observacion = {

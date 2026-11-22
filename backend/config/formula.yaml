@@ -31,10 +31,10 @@ features_simuladas: [dias_sin_limpieza]
 
 # Factor según la confianza de Claude en cada observación (#88, #124). Docs: docs/pesos.md.
 # - Foto de rejilla: P = P_pred + factor · (P_obs − P_pred). Lo confirmado manda.
-# - Texto: cada reporte suma aporte_por_reporte · factor (LecturaTexto aún no trae confianza: 1).
+# - Texto: cada reporte suma aporte_por_reporte · factor (LecturaTexto la trae desde texto-v2).
 # - Agua (Durante): C · (1 + w_agua · nivel · factor); se toma la lectura con mayor nivel · factor.
 # - w_cam no se pondera: `camara` es una feature precalculada, sin clasificación asociada.
-# Sin confianza registrada (clasificaciones antiguas o textos) el factor es 1.
+# Sin confianza registrada (clasificaciones antiguas, p. ej. texto-v1) el factor es 1.
 confianza: {alta: 1.0, media: 0.7, baja: 0.4}
 
 observado:
