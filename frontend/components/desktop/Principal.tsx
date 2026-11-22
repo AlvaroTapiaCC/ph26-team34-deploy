@@ -8,18 +8,18 @@ import { useFlujo, type Flujo } from "@/lib/flujo/useFlujo";
 import { boundsDe } from "@/lib/real";
 import { useStore } from "@/lib/store";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
-import { Button, Check, Chevron, Kicker, PrioChip, Stat } from "../ui";
-import Recorrido, { recorridoVisto } from "./Recorrido";
+import { Button, Check, Chevron, PrioChip, Stat } from "../ui";
+import Recorrido from "./Recorrido";
 import SimPanel, { Leyenda } from "./SimPanel";
 
 export function Hero({ p }: { p: RankedPunto }) {
   const { set, addRuta, scenarioLabel } = useStore();
   return (
-    <section className="card hero">
+    <section className="card hero" aria-label="Atender primero">
       <div className="hero__head">
         <div className="rank-big">{pad2(p.rank)}</div>
         <div className="hero__txt">
-          <Kicker tone="accent">▲ Atender primero · {scenarioLabel}</Kicker>
+          <p className="hero__kicker">Atender primero · {scenarioLabel}</p>
           <h1 className="hero__title">{p.nombre}</h1>
           <p className="hero__sub">
             {p.comuna} · {p.cerca}
@@ -80,7 +80,7 @@ function Table({ rows: todas }: { rows: RankedPunto[] }) {
   return (
     <section className="card table">
       <div className="table__head">
-        <Kicker>Tabla de prioridades</Kicker>
+        <h2 className="table__t">Lo que sigue</h2>
         <span className="meta">{meta}</span>
       </div>
       <div className="table__rows">
@@ -98,10 +98,6 @@ function Table({ rows: todas }: { rows: RankedPunto[] }) {
     </section>
   );
 }
-
-// Infraestructura crítica que cuenta en la tarjeta "Puntos críticos"
-const CRITICA = /metro|paso bajo nivel|hospital|colegio/i;
-const TOP = 30;
 
 function Tile({ tone, titulo, cifra, unidad, children, accion }: { tone: string; titulo: string; cifra: string; unidad?: string; children: React.ReactNode; accion?: React.ReactNode }) {
   return (
@@ -121,48 +117,18 @@ function Tile({ tone, titulo, cifra, unidad, children, accion }: { tone: string;
   );
 }
 
-function Bottom({ flujo }: { flujo: Flujo }) {
+/** Dos tarjetas bajo el mapa, solo las que ayudan a decidir: cuántos puntos son de prioridad alta y la ruta de la cuadrilla. */
+function Bottom() {
   const { s, set, ruta, filtered } = useStore();
-  const real = filtered[0]?.real ? filtered : null;
-  const nSumideros = real ? real.reduce((a, p) => a + p.real!.sumideros.length, 0) : 0;
-  const top = filtered.slice(0, TOP);
-  const aguaExterna = top.length ? Math.round(top.reduce((a, p) => a + p.pctExterno, 0) / top.length) : 0;
-  const criticos = top.filter((p) => p.criticidad.some((c) => CRITICA.test(c)));
-  const { tapadas, total, lecturas } = flujo.ui;
-  const c = s.comuna;
-  const nTap = tapadas[c] ?? 0;
-  const nTot = total[c] ?? 0;
-  const nDesb = c === "Todas" ? lecturas.desbordados : (lecturas.desbordadosPorComuna[c] ?? 0);
+  const real = !!filtered[0]?.real;
+  const altas = filtered.filter((p) => p.prio === "alta").length;
   const n = ruta.paradas.length;
   return (
     <div className="bottom">
-      {real ? (
-        <>
-          <Tile tone="accent" titulo="Sumideros evaluados" cifra={nSumideros.toLocaleString("es-CL")}>
-            en {real.length.toLocaleString("es-CL")} intersecciones
-          </Tile>
-          <Tile tone="dark" titulo="Prioridad alta" cifra={String(real.filter((p) => p.prio === "alta").length)}>
-            intersecciones: el 10 % más alto del ranking
-          </Tile>
-        </>
-      ) : (
-        <>
-          <Tile tone="accent" titulo="Agua de otra comuna" cifra={String(aguaExterna)} unidad="%">
-            promedio del top {TOP}
-          </Tile>
-          <Tile tone="dark" titulo="Puntos críticos" cifra={String(criticos.length)} >
-            con metro, paso bajo nivel, hospital o colegio cerca
-          </Tile>
-        </>
-      )}
-      <Tile tone="plain" titulo="Rejillas tapadas" cifra={nTot ? String(nTap) : "—"}>
-        {nTot ? (
-          <>
-            de {nTot.toLocaleString("es-CL")} · <b className={nDesb ? "is-accent" : ""}>{nDesb} con agua ahora (estimado)</b>
-          </>
-        ) : (
-          `sin rejillas simuladas en ${c}`
-        )}
+      <Tile tone="dark" titulo="Prioridad alta" cifra={altas.toLocaleString("es-CL")}>
+        {real
+          ? `de ${filtered.length.toLocaleString("es-CL")} intersecciones: el 10 % más alto del ranking`
+          : `de ${filtered.length} puntos (datos de ejemplo)`}
       </Tile>
       <Tile
         tone="grey"
@@ -214,7 +180,7 @@ function useEncuadre(cajaRed: [LngLat, LngLat] | null): [LngLat, LngLat] {
 function BarraMapa({ tresD, onTresD, onAyuda, guiado }: { tresD: boolean; onTresD: (v: boolean) => void; onAyuda: () => void; guiado: boolean }) {
   const { s, toggleLayer, ranking } = useStore();
   const real = !!ranking[0]?.real;
-  const [abierta, setAbierta] = useState(() => window.innerWidth > 1400);
+  const [abierta, setAbierta] = useState(false); // plegada: el mapa parte limpio
   useEffect(() => {
     if (guiado) setAbierta(false);
   }, [guiado]);
@@ -234,7 +200,7 @@ function BarraMapa({ tresD, onTresD, onAyuda, guiado }: { tresD: boolean; onTres
             3D
           </button>
         </div>
-        <button className="mapbtn mapbtn--icono" onClick={onAyuda} aria-label="¿Cómo leer esto?" title="¿Cómo leer esto?">
+        <button className="mapbtn mapbtn--icono" onClick={onAyuda} aria-label="Recorrido guiado: ¿cómo leer el mapa?" title="Recorrido guiado: ¿cómo leer el mapa?">
           ?
         </button>
       </div>
@@ -259,32 +225,43 @@ function BarraMapa({ tresD, onTresD, onAyuda, guiado }: { tresD: boolean; onTres
   );
 }
 
-function MainMap({ flujo }: { flujo: Flujo }) {
-  const { s, ranking, filtered } = useStore();
+function MainMap({ flujo, simAbierta, onSimAbierta }: { flujo: Flujo; simAbierta: boolean; onSimAbierta: (v: boolean) => void }) {
+  const { s, set, ranking, filtered, toggleLayer } = useStore();
   const real = !!ranking[0]?.real;
   const { pins, labels } = usePins();
   const bounds = useEncuadre(flujo.ui.caja);
   const L = s.layers;
   // Parte en 2D (AGENTS.md deja la visualización 3D fuera del alcance de la demo); el 3D queda como opción
   const [tresD, setTresD] = useState(false);
-  const [recorrido, setRecorrido] = useState<boolean | null>(null); // null: todavía no se sabe si ya se vio
+  // El recorrido guiado ya no arranca solo: se abre con "?" y espera a que cargue la red de calles
+  const [recorrido, setRecorrido] = useState(false);
+  const [pedido, setPedido] = useState(false);
   // El recorrido usa 3D en sus vistas amplias; al terminar se vuelve a la vista que había
   const tresDAntes = useRef(false);
   useEffect(() => {
     if (recorrido) tresDAntes.current = tresD;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recorrido]);
-  const top = useMemo(() => filtered.slice(0, FLUJO_CONFIG.topPrioridad).map((p) => p.coord), [filtered]);
-  // El recorrido arranca solo la primera vez (se recuerda en este navegador)
   useEffect(() => {
-    if (!flujo.ui.cargado || recorrido !== null) return;
-    setRecorrido(!recorridoVisto());
-  }, [flujo.ui.cargado, recorrido]);
+    if (!pedido) return;
+    if (flujo.ui.cargado) {
+      setPedido(false);
+      setRecorrido(true);
+    } else if (flujo.ui.error) {
+      setPedido(false);
+      set({ toast: "No se pudo cargar la red de calles para el recorrido" });
+    }
+  }, [pedido, flujo.ui.cargado, flujo.ui.error, set]);
+  const top = useMemo(() => filtered.slice(0, FLUJO_CONFIG.topPrioridad).map((p) => p.coord), [filtered]);
+  const pedirRecorrido = () => {
+    toggleLayer("escurrimiento", true);
+    setPedido(true);
+  };
   return (
     <DrenaMap
       className="map--main"
       bounds={bounds}
-      padding={{ top: 70, bottom: 60, left: 40, right: 360 }}
+      padding={{ top: 70, bottom: 60, left: 40, right: simAbierta ? 360 : 40 }}
       pins={L.prioridad ? pins : []}
       labels={L.prioridad ? labels : []}
       comunas={L.limites}
@@ -296,13 +273,20 @@ function MainMap({ flujo }: { flujo: Flujo }) {
       attributionSide="right"
       onMapReady={flujo.alMapaListo}
     >
-      <BarraMapa tresD={tresD} onTresD={setTresD} onAyuda={() => setRecorrido(true)} guiado={!!recorrido} />
-      <SimPanel flujo={flujo} />
-      {!recorrido && <Leyenda />}
-      {recorrido && <Recorrido flujo={flujo} cerca={top} onTresD={setTresD} onFin={() => {
+      <BarraMapa tresD={tresD} onTresD={setTresD} onAyuda={pedirRecorrido} guiado={recorrido} />
+      <SimPanel flujo={flujo} abierto={simAbierta} onAbierto={onSimAbierta} />
+      {L.escurrimiento && !recorrido && <Leyenda />}
+      {recorrido && (
+        <Recorrido
+          flujo={flujo}
+          cerca={top}
+          onTresD={setTresD}
+          onFin={() => {
             setRecorrido(false);
             setTresD(tresDAntes.current);
-          }} />}
+          }}
+        />
+      )}
     </DrenaMap>
   );
 }
@@ -312,7 +296,13 @@ const PUNTOS_EJEMPLO = Object.values(PUNTOS).map((p) => ({ id: p.id, nombre: p.n
 const PUNTOS_FLUJO_MAX = 200; // intersecciones reales que se asocian con la red (las más prioritarias)
 
 export default function Principal({ vacio }: { vacio: React.ReactNode }) {
-  const { s, setRejillas, filtered, ranking } = useStore();
+  const { s, setRejillas, filtered, ranking, toggleLayer } = useStore();
+  // Simulación plegada por defecto: flujo.geojson se pide recién al abrirla o al encender la capa de agua
+  const [simAbierta, setSimAbierta] = useState(false);
+  const abrirSim = (v: boolean) => {
+    setSimAbierta(v);
+    if (v) toggleLayer("escurrimiento", true);
+  };
   const real = !!ranking[0]?.real;
   const puntosFlujo = useMemo(() => (real ? ranking.slice(0, PUNTOS_FLUJO_MAX).map((p) => ({ id: p.id, nombre: p.nombre, coord: p.coord })) : PUNTOS_EJEMPLO), [real, ranking]);
   const flujo = useFlujo({
@@ -320,6 +310,7 @@ export default function Principal({ vacio }: { vacio: React.ReactNode }) {
     puntos: puntosFlujo,
     estados: s.rejillas,
     visible: s.layers.escurrimiento,
+    activo: simAbierta || s.layers.escurrimiento,
     // Clic en una rejilla: limpia → parcial → tapada → limpia
     onClickRejilla: (id) => {
       const actual: EstadoRejilla = flujo.estadoDe(id) ?? "limpia";
@@ -335,7 +326,7 @@ export default function Principal({ vacio }: { vacio: React.ReactNode }) {
       <div className="col col--l">
         {hasAlta ? (
           <>
-            <Hero p={hero} />
+            <Hero key={hero.id} p={hero} />
             <Table rows={rest} />
           </>
         ) : (
@@ -343,8 +334,8 @@ export default function Principal({ vacio }: { vacio: React.ReactNode }) {
         )}
       </div>
       <div className="col col--r">
-        <MainMap flujo={flujo} />
-        <Bottom flujo={flujo} />
+        <MainMap flujo={flujo} simAbierta={simAbierta} onSimAbierta={abrirSim} />
+        <Bottom />
       </div>
     </main>
   );

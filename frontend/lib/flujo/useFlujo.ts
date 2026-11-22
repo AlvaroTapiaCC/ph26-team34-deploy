@@ -65,9 +65,12 @@ export function useFlujo(opts: {
   fuente?: FuenteObservaciones;
   /** Muestra u oculta las capas del flujo en el mapa. */
   visible?: boolean;
+  /** Pide flujo.geojson (690 KB) solo cuando hace falta: al abrir la simulación o encender la capa. Por defecto, sí. */
+  activo?: boolean;
 }) {
   const { scenario, puntos, estados } = opts;
   const visible = opts.visible ?? true;
+  const activo = opts.activo ?? true;
   const visibleRef = useRef(visible);
   visibleRef.current = visible;
   const fuente = opts.fuente ?? fuenteSimulada;
@@ -169,6 +172,7 @@ export function useFlujo(opts: {
 
   // Grafo -> motor
   useEffect(() => {
+    if (!activo || motor.current) return;
     let vivo = true;
     cargarGrafo()
       .then((g) => {
@@ -188,7 +192,7 @@ export function useFlujo(opts: {
     return () => {
       vivo = false;
     };
-  }, [montar, parche]);
+  }, [activo, montar, parche]);
 
   // Escenario y puntos del ranking: vuelve al inicio y la lluvia parte de la máxima del escenario
   useEffect(() => {

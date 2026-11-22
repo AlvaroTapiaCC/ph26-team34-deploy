@@ -2,9 +2,9 @@
 :root {
   /* paleta:inicio — generado por scripts/paleta.mjs desde lib/paleta.json (#131). No editar a mano. */
   /* Editables (?paleta=1) */
-  --principal: #368786; /* Principal */
-  --secundario: #ece9f4; /* Texto */
-  --fondo: #2a2930; /* Fondo */
+  --principal: #3fa3a1; /* Principal */
+  --secundario: #eef0f2; /* Texto */
+  --fondo: #15171b; /* Fondo */
   /* Derivados de los editables */
   --surface: color-mix(in srgb, var(--fondo) 92%, var(--secundario)); /* Tarjeta */
   --surface-2: color-mix(in srgb, var(--fondo) 86%, var(--secundario)); /* Tarjeta secundaria */
@@ -15,23 +15,25 @@
   --text-3: color-mix(in srgb, var(--secundario) 54%, var(--fondo)); /* Texto tenue */
   --contexto: color-mix(in srgb, var(--secundario) 45%, var(--fondo)); /* Capas de contexto del mapa */
   --texto-inv: var(--fondo); /* Texto sobre el color de texto */
-  --sobre-principal: var(--sobre-color); /* Texto sobre el principal */
+  --sobre-principal: var(--fondo); /* Texto sobre el principal */
   --principal-suave: color-mix(in srgb, var(--principal) 21%, var(--surface)); /* Principal suave */
-  --prio-alta: var(--principal); /* Prioridad alta */
-  --prio-media: var(--secundario); /* Prioridad media */
+  --prio-alta: var(--senal-alta); /* Prioridad alta */
+  --prio-media: var(--senal-media); /* Prioridad media */
   --prio-baja: color-mix(in srgb, var(--secundario) 57%, var(--fondo)); /* Prioridad baja */
   --agua-suave: color-mix(in srgb, var(--agua) 12%, var(--surface)); /* Agua suave */
   /* Fijos: tienen significado propio (peligro, correcto, advertencia, transporte) */
-  --sobre-color: #ffffff; /* Texto sobre color fuerte */
-  --danger: #b3261e; /* Peligro */
-  --ok: #2e7d32; /* Correcto */
-  --aviso: #b26a00; /* Advertencia */
-  --agua: #2f6fde; /* Agua (poco caudal) */
-  --agua-hondo: #0b3d91; /* Agua (mucho caudal) */
-  --agua-brillo: #8fb4f5; /* Brillo del agua */
-  --bus: #1f5fbf; /* Transporte */
-  --bus-dim: #dce7f7; /* Transporte suave */
-  --metro: #1e5fd8; /* Metro */
+  --sobre-color: #15171b; /* Texto sobre color fuerte */
+  --senal-alta: #f5a524; /* Prioridad alta (señal ámbar) */
+  --senal-media: #c9b98f; /* Prioridad media (arena) */
+  --danger: #ff5d52; /* Peligro */
+  --ok: #3ccf7a; /* Correcto */
+  --aviso: #ffb547; /* Advertencia */
+  --agua: #5b9bff; /* Agua (poco caudal) */
+  --agua-hondo: #2e64c9; /* Agua (mucho caudal) */
+  --agua-brillo: #a8c8ff; /* Brillo del agua */
+  --bus: #b49cff; /* Transporte */
+  --bus-dim: #2d2840; /* Transporte suave */
+  --metro: #6f9dff; /* Metro */
   /* paleta:fin */
 
   --r-10: 10px;
@@ -683,6 +685,117 @@ p {
 .topbar__spacer {
   flex: 1;
 }
+/* Antes (#ux): el escenario es el control principal (segmentado), comuna y cuadrillas quedan en segundo plano */
+.topbar .bargroup {
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--surface);
+}
+.topbar .bargroup .barbtn {
+  height: 38px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-2);
+  font-weight: 600;
+}
+.topbar .bargroup .barbtn:hover {
+  color: var(--secundario);
+}
+.topbar .bargroup .barbtn.is-on {
+  background: var(--surface-3);
+  color: var(--secundario);
+}
+.topbar__ctrls .dropdown .barbtn {
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-2);
+}
+.topbar__ctrls .dropdown .barbtn:hover,
+.topbar__ctrls .dropdown .barbtn[aria-expanded="true"] {
+  background: var(--surface);
+  color: var(--secundario);
+}
+.topbar__sep {
+  width: 1px;
+  height: 24px;
+  margin: 0 4px;
+  background: var(--line);
+}
+/* Etiquetas en Antes, celular y ficha: tipografía normal, sin mayúsculas ni espaciado de código */
+.desk .kicker,
+.mob .kicker {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.hero__kicker {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--principal);
+}
+.table__t {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--secundario);
+}
+/* Movimiento que explica un cambio: entra el nuevo #1, se abre la ficha o el panel. 200 ms, solo opacidad y posición. */
+@keyframes entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.hero,
+.ficha,
+.sim__cuerpo,
+.capas {
+  animation: entra var(--t-medio) var(--ease-out);
+}
+/* Arranque: esqueleto neutro mientras se decide escritorio o celular (nunca pantalla vacía) */
+.arranque {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: var(--fondo);
+}
+.arranque__barra {
+  height: 44px;
+  width: min(420px, 60%);
+}
+.arranque__cuerpo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 16px;
+}
+.arranque__lista {
+  width: min(600px, 40%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.arranque__mapa {
+  flex: 1;
+  border-radius: var(--r-24);
+}
+@media (max-width: 1099px) {
+  .arranque__cuerpo {
+    flex-direction: column;
+  }
+  .arranque__lista {
+    width: 100%;
+    order: 2;
+  }
+  .arranque__mapa {
+    flex: none;
+    height: 260px;
+  }
+}
 .banda-clima {
   flex: none;
   display: flex;
@@ -768,12 +881,12 @@ p {
   flex: none;
   display: grid;
   place-items: center;
-  background: var(--principal);
+  background: var(--prio-alta); /* el puesto lleva el color de la prioridad, no el de acción */
   color: var(--sobre-principal);
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 30px;
-  box-shadow: 0 6px 14px color-mix(in srgb, var(--principal) 28%, transparent), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--prio-alta) 28%, transparent), inset 0 1px 1px rgba(255, 255, 255, 0.3);
 }
 .hero__txt {
   display: flex;
@@ -938,10 +1051,11 @@ p {
 
 /* Tarjetas inferiores: título arriba; la cifra y su texto en la misma línea base */
 .bottom {
-  height: 120px;
+  height: 104px;
+  width: 100%;
   flex: none;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1.25fr;
+  grid-template-columns: 1fr 1.25fr;
   gap: 12px;
 }
 .tile {
@@ -1016,11 +1130,14 @@ p {
   color: var(--sobre-principal);
 }
 .tile--dark {
-  background: var(--secundario);
-  color: var(--surface);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.tile--dark .tile__big {
+  color: var(--prio-alta);
 }
 .tile--dark .tile__p {
-  color: var(--surface-3);
+  color: var(--text-2);
 }
 .tile--plain {
   background: var(--surface);
@@ -1578,8 +1695,8 @@ p {
   padding: 16px 16px 8px;
 }
 .mpill {
-  height: 32px;
-  padding: 6px 12px;
+  min-height: 44px;
+  padding: 6px 16px;
   border-radius: 999px;
   background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--line);
@@ -1680,7 +1797,7 @@ p {
   align-items: center;
 }
 .mfull__logo {
-  height: 43px;
+  height: 44px;
   padding: 8px 14px;
   border-radius: 999px;
   background: var(--surface);
@@ -2093,7 +2210,21 @@ p {
 }
 .sim.is-closed {
   width: auto;
-  padding: 10px 14px;
+  padding: 0;
+  border-radius: 999px;
+}
+.sim.is-closed .sim__head {
+  min-height: 40px;
+  padding: 0 14px;
+}
+.sim__est {
+  font-weight: 500;
+  color: var(--text-3);
+}
+.sim__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 .sim__head {
   display: flex;
@@ -2999,4 +3130,37 @@ p {
   flex-direction: column;
   gap: 10px;
   overflow-y: auto;
+}
+
+/* ── Revisión UX (rama local): foco, movimiento y curvas comunes ───────────────────────────── */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --t-rapido: 160ms;
+  --t-medio: 240ms;
+}
+:where(a, button, [role="tab"], [role="button"], input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--principal);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* Marcador que entra o cambia (rejilla que sube de puesto, paradero recién expuesto). Se anima el contenido:
+   el elemento raíz lo posiciona MapLibre con transform. */
+.is-nuevo > * {
+  animation: marcador-entra var(--t-medio) var(--ease-out) both;
+}
+@keyframes marcador-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+  }
 }

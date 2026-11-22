@@ -38,21 +38,27 @@ const N_REJILLAS = 47;
 type Paso = "elegir" | "captura" | "enviando" | "resultado" | "urgencia" | "error";
 type Cercana = { id: string; d: number };
 
+const TELEFONOS = [
+  { n: "133", quien: "Carabineros" },
+  { n: "132", quien: "Bomberos" },
+  { n: "131", quien: "Ambulancia" },
+] as const;
+
 function Emergencia() {
   return (
     <div className="rp-tel">
-      <a className="btn btn--danger btn--lg rp-big" href="tel:133">
-        133 · Carabineros
-      </a>
-      <a className="btn btn--danger btn--lg rp-big" href="tel:132">
-        132 · Bomberos
-      </a>
-      <a className="btn btn--danger btn--lg rp-big" href="tel:131">
-        131 · Ambulancia
-      </a>
+      {TELEFONOS.map((t) => (
+        <a key={t.n} className="rp-tel__btn" href={`tel:${t.n}`} aria-label={`Llamar al ${t.n}, ${t.quien}`}>
+          <b>{t.n}</b>
+          <span>Llamar a {t.quien}</span>
+        </a>
+      ))}
     </div>
   );
 }
+
+/** Precisión del GPS: si el navegador no la informa (0 o sin valor), "Sin dato". */
+const precisionTxt = (m: number | null | undefined) => (m != null && Number.isFinite(m) && m > 0 ? `±${m} m` : "Sin dato");
 
 export default function Reportar() {
   const [campo, setCampo] = useState(false);
@@ -66,6 +72,7 @@ export default function Reportar() {
   const [archivo, setArchivo] = useState("");
   const [texto, setTexto] = useState("");
   const [lento, setLento] = useState(false);
+  const [segundos, setSegundos] = useState(0);
   const [error, setError] = useState("");
   const [resultado, setResultado] = useState<Observacion | null>(null);
   const [entrega, setEntrega] = useState<"enviando" | "enviado" | "fallo">("enviando");
@@ -156,8 +163,10 @@ export default function Reportar() {
   async function enviar(sinGps = false) {
     setPaso("enviando");
     setLento(false);
+    setSegundos(0);
     setError("");
     const aviso = setTimeout(() => setLento(true), 8000);
+    const reloj = setInterval(() => setSegundos((n) => n + 1), 1000);
     try {
       const base: Observacion = {
         id: nuevoId(),
@@ -193,6 +202,7 @@ export default function Reportar() {
       setPaso("error");
     } finally {
       clearTimeout(aviso);
+      clearInterval(reloj);
     }
   }
 
@@ -205,16 +215,27 @@ export default function Reportar() {
   }
 
   const puedeEnviar = tipo === "texto" ? texto.trim().length >= 3 : !!foto;
-  const gpsTxt =
-    gpsEstado === "buscando" ? "Buscando GPS…" : gpsEstado === "ok" && gps ? `GPS listo · precisión ±${gps.precision_m} m` : `Sin GPS${gpsMsg ? ` · ${gpsMsg}` : ""}`;
+  const faltaTxt = tipo === "texto" ? "Escribe qué pasa para enviar" : "Saca una foto para enviar";
+  const permisoDenegado = /permiso/i.test(gpsMsg);
+  const gpsTxt = gpsEstado === "buscando" ? "Buscando GPS…" : gpsEstado === "ok" && gps ? `GPS listo · precisión ${precisionTxt(gps.precision_m)}` : "Sin ubicación";
 
   const gpsBar = (
     <div className={`rp-gps rp-gps--${gpsEstado}`} role="status">
-      <span>{gpsTxt}</span>
-      {gpsEstado !== "buscando" && (
-        <button className="rp-link" onClick={buscarGps}>
-          {gpsEstado === "ok" ? "Actualizar" : "Reintentar"}
-        </button>
+      <div className="rp-gps__fila">
+        <span className="rp-gps__txt">{gpsTxt}</span>
+        {gpsEstado !== "buscando" && (
+          <button className="btn btn--secondary btn--md rp-gps__btn" onClick={buscarGps}>
+            {gpsEstado === "ok" ? "Actualizar" : "Reintentar"}
+          </button>
+        )}
+      </div>
+      {gpsEstado === "error" && (
+        <p className="rp-gps__ayuda">
+          {permisoDenegado
+            ? "El navegador no tiene permiso para usar tu ubicación. Actívalo en los ajustes del sitio (ícono junto a la dirección) y toca Reintentar."
+            : `${gpsMsg || "No se pudo obtener la ubicación"}. Sal a cielo abierto y toca Reintentar.`}{" "}
+          También puedes enviar sin GPS: el reporte llega igual, sin el punto exacto.
+        </p>
       )}
     </div>
   );
@@ -315,12 +336,12 @@ export default function Reportar() {
                 Reintentar GPS
               </Button>
               <Button variant="primary" className="rp-big" disabled={!puedeEnviar} onClick={() => enviar(true)}>
-                Enviar sin GPS
+                {puedeEnviar ? "Enviar sin GPS" : faltaTxt}
               </Button>
             </div>
           ) : (
             <Button variant="primary" className="rp-big" disabled={!puedeEnviar || gpsEstado === "buscando"} onClick={() => enviar(false)}>
-              {gpsEstado === "buscando" ? "Esperando GPS…" : "Enviar reporte"}
+              {!puedeEnviar ? faltaTxt : gpsEstado === "buscando" ? "Esperando GPS…" : "Enviar reporte"}
             </Button>
           )}
           <button className="rp-link" onClick={() => reiniciar()}>
@@ -331,10 +352,10 @@ export default function Reportar() {
 
       {paso === "enviando" && (
         <section className="rp-sec rp-center" role="status">
-          <div className="rp-spin" aria-hidden />
+          <div className="rp-pulso" aria-hidden />
           <h1 className="rp-h1">{tipo === "texto" ? "Leyendo tu mensaje…" : "Analizando la foto…"}</h1>
-          <p className="rp-p">Puede tardar unos 10 segundos.</p>
-          {lento && <p className="rp-p rp-warn">Despertando el servidor. La primera vez puede tardar casi un minuto. No cierres la página.</p>}
+          <p className="rp-p">Suele tardar unos 10 segundos · llevamos {segundos} s</p>
+          {lento && <p className="rp-p rp-nota-lenta">El servidor está despertando. La primera vez puede tardar casi un minuto; no cierres la página. Si no responde, te avisamos y podrás reintentar.</p>}
         </section>
       )}
 
@@ -342,11 +363,12 @@ export default function Reportar() {
         <section className="rp-sec">
           <h1 className="rp-h1">No pudimos enviarlo</h1>
           <p className="rp-p">{error}</p>
+          <p className="rp-p">Tu {tipo === "texto" ? "mensaje" : "foto"} sigue aquí: no tienes que repetirlo.</p>
           <Button variant="primary" className="rp-big" onClick={() => enviar(gpsEstado !== "ok")}>
             Reintentar
           </Button>
           <button className="rp-link" onClick={() => setPaso("captura")}>
-            ← Volver
+            ← Volver y revisar
           </button>
         </section>
       )}
@@ -355,7 +377,7 @@ export default function Reportar() {
         <section className="rp-sec rp-urg">
           <h1 className="rp-h1">Si hay personas en riesgo, llama ahora</h1>
           <Emergencia />
-          <p className="rp-p">Llama primero; después puedes seguir.</p>
+          <p className="rp-p">Llama primero. Drena no avisa a emergencias por ti.</p>
           <Entrega estado={entrega} onReintentar={() => entregar(resultado)} />
           <Button variant="secondary" className="rp-big" onClick={() => reiniciar()}>
             Nuevo reporte
@@ -399,15 +421,28 @@ export default function Reportar() {
 }
 
 function Entrega({ estado, onReintentar }: { estado: "enviando" | "enviado" | "fallo"; onReintentar: () => void }) {
-  if (estado === "enviando") return <p className="rp-p rp-small" role="status">Enviando al servidor…</p>;
-  if (estado === "enviado") return <p className="rp-p rp-small">Enviado al servidor.</p>;
+  if (estado === "enviando")
+    return (
+      <div className="rp-entrega rp-entrega--enviando" role="status">
+        <b>Enviando a la central…</b>
+        <span>Con poca señal puede tardar hasta un minuto.</span>
+      </div>
+    );
+  if (estado === "enviado")
+    return (
+      <div className="rp-entrega rp-entrega--ok" role="status">
+        <b>✓ Reporte enviado a la central</b>
+        <span>La central municipal lo ve en su mapa y lo usa para decidir qué rejillas limpiar primero.</span>
+      </div>
+    );
   return (
-    <p className="rp-p rp-small rp-warn" role="status">
-      No se pudo enviar. Reintenta con señal.{" "}
-      <button className="rp-link" onClick={onReintentar}>
+    <div className="rp-entrega rp-entrega--fallo" role="status">
+      <b>No se pudo enviar a la central</b>
+      <span>Tu reporte quedó guardado en este teléfono. Busca señal y reintenta.</span>
+      <Button variant="secondary" className="rp-big" onClick={onReintentar}>
         Reintentar envío
-      </button>
-    </p>
+      </Button>
+    </div>
   );
 }
 
@@ -482,7 +517,7 @@ function Resultado({
             : "La foto no se pudo evaluar bien. Sácala de nuevo desde arriba, a 1 m, con la rejilla completa y buena luz."}
         </p>
       )}
-      <p className="rp-p rp-small">{obs.sin_gps ? "Sin GPS." : `GPS ±${obs.precision_m} m.`}</p>
+      <p className="rp-p rp-small">{obs.sin_gps ? "Reporte sin GPS." : `Precisión del GPS: ${precisionTxt(obs.precision_m)}.`}</p>
       {children}
       {campo && foto && obs.archivo && (
         <Button variant="secondary" className="rp-big" onClick={() => descargar(obs.archivo!, foto, "image/jpeg")}>

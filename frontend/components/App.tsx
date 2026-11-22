@@ -5,10 +5,13 @@ import { StoreProvider } from "@/lib/store";
 import Desktop from "./desktop/Desktop";
 import Mobile from "./mobile/Mobile";
 
+const CONSULTA_MOVIL = "(max-width: 1099px)";
+
+/** Se monta solo en el navegador (ssr: false): decide en el primer render, sin pantallazo vacío. */
 function useIsMobile() {
-  const [m, setM] = useState<boolean | null>(null);
+  const [m, setM] = useState(() => window.matchMedia(CONSULTA_MOVIL).matches);
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 1099px)");
+    const mq = window.matchMedia(CONSULTA_MOVIL);
     const on = () => setM(mq.matches);
     on();
     mq.addEventListener("change", on);
@@ -19,6 +22,5 @@ function useIsMobile() {
 
 export default function App() {
   const mobile = useIsMobile();
-  if (mobile === null) return null;
   return <StoreProvider>{mobile ? <Mobile /> : <Desktop />}</StoreProvider>;
 }

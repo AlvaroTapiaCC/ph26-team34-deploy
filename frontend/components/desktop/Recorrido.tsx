@@ -1,7 +1,7 @@
 "use client";
 
-// Recorrido guiado "¿Cómo leer esto?": 4 pasos con la cámara animada (easeTo). Arranca solo la primera vez (se recuerda
-// en localStorage, si el navegador lo permite) y se repite desde el botón "?" de la barra del mapa.
+// Recorrido guiado "¿Cómo leer esto?": 4 pasos con la cámara animada (easeTo). No arranca solo (tapaba el mapa al abrir):
+// se abre desde el botón "?" de la barra del mapa. Se sigue marcando como visto en localStorage.
 import { useEffect, useRef, useState } from "react";
 import type { LngLat } from "@/lib/data";
 import { FLUJO_CONFIG, LLUVIA_RECORRIDO } from "@/lib/flujo/config";

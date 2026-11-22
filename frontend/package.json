@@ -12,7 +12,11 @@
     "test": "node --experimental-strip-types --test lib/*.test.ts"
   },
   "dependencies": {
+    "@radix-ui/react-select": "^2.4.1",
+    "@radix-ui/react-tabs": "^1.2.1",
+    "@radix-ui/react-tooltip": "^1.4.1",
     "@supabase/supabase-js": "2.119.2",
+    "maplibre-gl": "^4.7.1",
     "next": "^15.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

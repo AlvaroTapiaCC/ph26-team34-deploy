@@ -26,16 +26,37 @@ function Fecha({ iso }: { iso: string }) {
 }
 
 function EnCurso() {
-  return <p className={styles.pendiente}>En curso</p>;
+  return <p className={styles.pendienteBloque}><span className={styles.pendiente}>En curso</span> Resultado pendiente; se publica al terminar la medición.</p>;
 }
 
 function Metrica({ valor }: { valor: { porcentaje: number; aciertos: number; total: number } | null }) {
-  if (!valor) return <span className={styles.muted}>En curso</span>;
+  if (!valor) return <span className={styles.pendiente}>En curso</span>;
   return (
     <>
       <strong>{porcentaje(valor.porcentaje)}</strong>
       <small>{cantidad(valor.aciertos)} de {cantidad(valor.total)}</small>
     </>
+  );
+}
+
+type Replay = NonNullable<Awaited<ReturnType<typeof leerEvidencia>>["replay"]>;
+
+/** Hallazgo principal: el corte 20 % superior a menos de 100 m (o el primero disponible), leído de los datos. */
+function Hallazgo({ replay }: { replay: Replay }) {
+  const c = replay.cortes.find((x) => x.top === 20 && x.distancia === 100) ?? replay.cortes[0];
+  const de = (v: { aciertos: number; total: number }) => `${cantidad(v.aciertos)} de ${cantidad(v.total)}`;
+  return (
+    <section className={styles.hallazgo} aria-labelledby="hallazgo">
+      <p className={styles.etiqueta}>Replay histórico · lluvia {replay.evento.replace("_", " al ")} · datos reproducidos</p>
+      <h2 id="hallazgo">
+        Con el {porcentaje(c.top)} superior de rejillas, la fórmula sin clima cubrió <strong>{de(c.formula)}</strong> {replay.puntosCriticos ? "puntos críticos" : "lugares"} a menos de {cantidad(c.distancia)} m
+      </h2>
+      <dl className={styles.comparacion}>
+        <div className={styles.gana}><dt>Fórmula sin clima</dt><dd>{de(c.formula)}</dd></div>
+        <div><dt>Solo área de aporte</dt><dd>{de(c.area)}</dd></div>
+        <div><dt>Azar (promedio)</dt><dd>{de(c.azar)}</dd></div>
+      </dl>
+    </section>
   );
 }
 
@@ -45,9 +66,14 @@ export default async function ValidacionPage() {
     <main className={styles.validacion}>
       <header className={styles.header}>
         <Link href="/" aria-label="Drena, inicio"><Logo /></Link>
-        <Link href="/">Volver al mapa</Link>
+        <nav className={styles.nav} aria-label="Vistas de la central">
+          <Link href="/">Antes</Link>
+          <Link href="/central/durante">Durante</Link>
+          <Link href="/central/validacion" aria-current="page">Validación</Link>
+        </nav>
       </header>
       <h1>Validación histórica</h1>
+      {replay && <Hallazgo replay={replay} />}
 
       <section className={styles.card} aria-labelledby="replay">
         <h2 id="replay">Replay de lluvia real</h2>
@@ -81,7 +107,7 @@ export default async function ValidacionPage() {
               </table>
             </div>
             <p><strong>Distancia temporal respecto del primer registro</strong>{" · "}
-              {replay.adelanto === null ? "En curso" : replay.adelanto === 0
+              {replay.adelanto === null ? <span className={styles.pendiente}>En curso</span> : replay.adelanto === 0
                 ? "Alerta y registro simultáneos"
                 : `Alerta ${cantidad(Math.abs(replay.adelanto))} h ${replay.adelanto > 0 ? "antes" : "después"} del registro`}
             </p>
