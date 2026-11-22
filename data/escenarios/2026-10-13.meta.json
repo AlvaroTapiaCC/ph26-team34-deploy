@@ -1,0 +1,56 @@
+{
+  "generado_utc": "2026-11-21T23:06:35Z",
+  "evento": {
+    "nombre": "2026-10-13",
+    "desde_santiago": "2026-10-13",
+    "hasta_santiago": "2026-10-13",
+    "nota": "Evento principal si #73 entrega verdad de terreno suficiente."
+  },
+  "ventana_utc": {
+    "desde_exclusivo": "2026-10-12T03:00:00Z",
+    "hasta_inclusivo": "2026-10-15T03:00:00Z"
+  },
+  "centro_pedido_latlon": [
+    -33.417741,
+    -70.601433
+  ],
+  "celda_open_meteo_latlon": [
+    -33.427067,
+    -70.64276
+  ],
+  "elevacion_celda_m": 628.0,
+  "fuentes": {
+    "observado": {
+      "api": "Open-Meteo Historical Forecast API",
+      "modelo": "best_match",
+      "url": "https://historical-forecast-api.open-meteo.com/v1/forecast?latitude=-33.417741&longitude=-70.601433&timezone=GMT&start_date=2026-10-11&end_date=2026-10-16&models=best_match&hourly=precipitation%2Cwind_gusts_10m%2Cwind_speed_10m",
+      "variables": [
+        "precipitation",
+        "wind_gusts_10m",
+        "wind_speed_10m"
+      ]
+    },
+    "pronostico_emitido_antes": {
+      "api": "Open-Meteo Previous Runs API",
+      "url": "https://previous-runs-api.open-meteo.com/v1/forecast?latitude=-33.417741&longitude=-70.601433&timezone=GMT&start_date=2026-10-11&end_date=2026-10-16&hourly=precipitation_previous_day1",
+      "variables": [
+        "precipitation_previous_day1"
+      ]
+    },
+    "licencia": "CC BY 4.0, https://open-meteo.com/en/license"
+  },
+  "config_clima": {
+    "ruta": "backend/config/clima.yaml",
+    "sha256": "e9a54df43280a245643e4a026561f7b25aba0ae0cbabd338c699c86108894d20",
+    "version": 1
+  },
+  "salida": {
+    "archivo": "2026-10-13.json",
+    "sha256": "5f85b3f8782a516a1f334bec368c3d2d503c58be95d05c443c7f09abc009384b"
+  },
+  "script": {
+    "ruta": "pipeline/11_clima_historico.py",
+    "version": "1.0.0",
+    "sha256": "b804cc75b332bc784f789c2b5cb680730e4aa993669c3ff744c2ec8d931cd2d8"
+  }
+}

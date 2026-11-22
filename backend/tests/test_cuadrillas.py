@@ -224,9 +224,11 @@ def test_cierre_con_foto(escena, monkeypatch):
     monkeypatch.setattr(storage, "url_firmada", lambda ruta, expira_s=3600: f"https://firmada/{ruta}")
     m = str(escena.m3)
 
-    # No se puede cerrar desde pendiente; la foto subida no queda huérfana
+    monkeypatch.setattr("app.routers.missions.clasificar_rejilla", lambda data: None)  # Claude caído: sin verificar
+
+    # No se puede cerrar desde pendiente: se responde antes de subir la foto (ni de llamar a Claude)
     r = client.post(f"/missions/{m}/close", files={"foto": ("x.jpg", _jpeg(), "image/jpeg")})
-    assert r.status_code == 409 and borradas == [subidas[0][0]]
+    assert r.status_code == 409 and subidas == [] and borradas == []
 
     client.post(f"/missions/{m}/status", json={"estado": "en_camino"})
     r = client.post(f"/missions/{m}/close", files={"foto": ("x.jpg", _jpeg(), "image/jpeg")})
@@ -238,6 +240,8 @@ def test_cierre_con_foto(escena, monkeypatch):
 
     # Cerrar dos veces: 409; imagen ilegible: 422; misión inexistente: 404
     assert client.post(f"/missions/{m}/close", files={"foto": ("x.jpg", _jpeg(), "image/jpeg")}).status_code == 409
+    # La misión debe estar cerrable para que se llegue a leer la imagen (si no, 409 antes)
+    assert client.post(f"/missions/{escena.m1}/status", json={"estado": "en_camino"}).status_code == 200
     assert client.post(f"/missions/{escena.m1}/close", files={"foto": ("x.jpg", b"nope", "image/jpeg")}).status_code == 422
     assert client.post(f"/missions/{uuid.uuid4()}/close", files={"foto": ("x.jpg", _jpeg(), "image/jpeg")}).status_code == 404
     from app.db import get_conn
