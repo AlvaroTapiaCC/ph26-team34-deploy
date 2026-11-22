@@ -800,17 +800,6 @@ const Mapa = memo(function Mapa({
               3D
             </button>
           </span>
-          {!simulacion && capas.agua && (
-            <span className={s.segmento} role="radiogroup" aria-label="Datos del agua">
-              <button type="button" role="radio" aria-checked={modoAgua === "real"} className={modoAgua === "real" ? s.segOn : ""} onClick={() => setModoAgua("real")}>
-                Agua: datos reales
-              </button>
-              <button type="button" role="radio" aria-checked={modoAgua === "simulada"} className={modoAgua === "simulada" ? s.segOn : ""} onClick={() => setModoAgua("simulada")}>
-                Simulada (1 de 5 tapadas)
-              </button>
-            </span>
-          )}
-          {!simulacion && capas.agua && modoAgua === "real" && sinLluvia && <span className={s.chipInfo}>Sin lluvia ahora (Open-Meteo): el agua real no escurre</span>}
           {!simulacion && (
             <span className={s.capasWrap}>
               <button type="button" className={`${s.chipMapa} ${menu ? s.chipMapaOn : ""}`} onClick={() => setMenu(!menu)} aria-expanded={menu}>
@@ -832,6 +821,17 @@ const Mapa = memo(function Mapa({
               )}
             </span>
           )}
+          {!simulacion && capas.agua && (
+            <span className={s.segmento} role="radiogroup" aria-label="Datos del agua">
+              <button type="button" role="radio" aria-checked={modoAgua === "real"} className={modoAgua === "real" ? s.segOn : ""} onClick={() => setModoAgua("real")}>
+                Agua: datos reales
+              </button>
+              <button type="button" role="radio" aria-checked={modoAgua === "simulada"} className={modoAgua === "simulada" ? s.segOn : ""} onClick={() => setModoAgua("simulada")}>
+                Simulada (1 de 5 tapadas)
+              </button>
+            </span>
+          )}
+          {!simulacion && capas.agua && modoAgua === "real" && sinLluvia && <span className={s.chipInfo}>Sin lluvia ahora (Open-Meteo): el agua real no escurre</span>}
           {capas.cadenas && !simulacion && cadenas.estado === "cargando" && <span className={s.chipInfo}>Cargando cadenas…</span>}
         </div>
         {!simulacion && (
