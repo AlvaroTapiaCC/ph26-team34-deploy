@@ -148,6 +148,48 @@
   font-weight: 700;
 }
 
+.toggleCadenas {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: fit-content;
+  min-height: 2rem;
+  font-weight: 650;
+}
+
+.leyendaCadenas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  color: var(--text-2);
+}
+
+.leyendaCadenas li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.leyendaCadenas i {
+  display: inline-block;
+  width: 1rem;
+  border-top: 3px solid;
+}
+
+.leyendaCadenas i.puntoCadena {
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 2px solid;
+  border-radius: 50%;
+}
+
+.leyendaCadenas i.trazoCadena {
+  border-top-style: dashed;
+}
+
 .stops,
 .ranking {
   margin: 0;

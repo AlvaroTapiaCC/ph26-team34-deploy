@@ -55,6 +55,8 @@ export interface DrenaMapProps {
   className?: string;
   children?: ReactNode;
   pinSize?: number;
+  /** Se llama una vez cuando el mapa y sus capas base están listos; puede devolver una función de limpieza. */
+  onMapReady?: (map: MapLibre, ml: MapLibre) => void | (() => void);
 }
 
 const HEX = "M20 3 L34.7 11.5 L34.7 28.5 L20 37 L5.3 28.5 L5.3 11.5 Z";
@@ -141,6 +143,14 @@ export default function DrenaMap(props: DrenaMapProps) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const size = props.pinSize ?? 40;
+
+  // Capas extra de quien usa el mapa (p. ej. las cadenas de la central).
+  const onMapReadyRef = useRef(props.onMapReady);
+  onMapReadyRef.current = props.onMapReady;
+  useEffect(() => {
+    if (!ready) return;
+    return onMapReadyRef.current?.(mapRef.current, libRef.current) || undefined;
+  }, [ready]);
 
   // Crear mapa
   useEffect(() => {
