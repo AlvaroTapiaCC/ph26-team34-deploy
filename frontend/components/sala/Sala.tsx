@@ -249,7 +249,13 @@ function PorQue({ p }: { p: Fila }) {
   return (
     <div className={s.porque}>
       <p className={s.porqueT}>Por qué está aquí</p>
-      {lista.length ? (
+      {p.detalle?.fuente_p === "foto" && p.p_obs != null ? (
+        <p className={s.porqueExp}>
+          Obstrucción estimada desde la foto de rejilla
+          {p.detalle.confianza_foto ? ` · confianza ${p.detalle.confianza_foto}` : ""}.
+          {p.is_simulated && <span className={s.chipSim}>Simulado</span>}
+        </p>
+      ) : lista.length ? (
         <ul>
           {lista.map(([k, v]) => (
             <li key={k}>

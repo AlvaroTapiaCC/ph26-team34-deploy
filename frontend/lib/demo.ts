@@ -21,22 +21,22 @@ export const pasoDemo = (segundo: number) => PASOS_DEMO.reduce((paso, p, i) => s
 
 // Extracto de cinco puntos del ranking congelado, usado únicamente como escenario de ejemplo.
 const PUNTOS = [
-  ["AL13SU016875", "Avenida Presidente Riesco", -70.602586, -33.411534, 0.814781],
-  ["AL13SU014265", "Napoleón", -70.596984, -33.418077, 0.814147],
-  ["AL13SU016872", "Avenida Presidente Riesco", -70.601949, -33.411693, 0.724388],
-  [DEMO_SUMIDERO, "Avenida Nueva Providencia", -70.604457, -33.417855, 0.697506],
-  ["AL13SU010155", "Avenida Holanda", -70.604984, -33.417958, 0.572031],
+  ["AL13SU016875", "Avenida Presidente Riesco", -70.602586, -33.411534, 0.814781, 0.326276, 0.466665, 1.745966],
+  ["AL13SU014265", "Napoleón", -70.596984, -33.418077, 0.814147, 0.373618, 0.435359, 1.870059],
+  ["AL13SU016872", "Avenida Presidente Riesco", -70.601949, -33.411693, 0.724388, 0.371297, 0.453166, 1.598504],
+  [DEMO_SUMIDERO, "Avenida Nueva Providencia", -70.604457, -33.417855, 0.697506, 0.368061, 0.376854, 1.850865],
+  ["AL13SU010155", "Avenida Holanda", -70.604984, -33.417958, 0.572031, 0.300364, 0.326382, 1.752644],
 ] as const;
-const inicial: ApiRankingItem[] = PUNTOS.map(([id, nombre, lon, lat, prioridad], i) => ({
+const inicial: ApiRankingItem[] = PUNTOS.map(([id, nombre, lon, lat, prioridad, p_pred, p_ef, c], i) => ({
   rank: i + 1, sumidero_id: id, intersection_nombre: nombre, lon, lat, prioridad,
-  p_pred: null, p_obs: null, p_ef: null, c: null, detalle: null,
+  p_pred, p_obs: null, p_ef, c, detalle: null,
   explicacion: "Puntaje de ejemplo para la demo local; no es un cálculo en vivo.",
   computed_at: HORA, intersection_id: null, street_id: null, is_simulated: true,
 }));
 const despues = inicial.map((p) => p.sumidero_id === DEMO_SUMIDERO ? {
-  ...p, prioridad: 1.48, p_obs: 0.8,
+  ...p, prioridad: 0.8 * p.c!, p_obs: 0.8, p_ef: 0.8,
   explicacion: "Demo simulada: la foto de ejemplo muestra una rejilla tapada con hojas.",
-  detalle: { confianza_foto: "alta" as const, factor_confianza_foto: 1 },
+  detalle: { fuente_p: "foto", confianza_foto: "alta" as const, factor_confianza_foto: 1 },
 } : p).sort((a, b) => (b.prioridad ?? 0) - (a.prioridad ?? 0)).map((p, i) => ({ ...p, rank: i + 1 }));
 
 const cuadrilla: Cuadrilla = { id: "demo-local-mut", nombre: "Cuadrilla MUT · demo", equipamiento: ["herramientas manuales"], estado: "disponible", is_simulated: true, carga: 3, lon: -70.6035, lat: -33.4165 };
@@ -44,7 +44,7 @@ const foto: ObservacionPublica = {
   id: "demo-local-foto", sumidero_id: DEMO_SUMIDERO, caso_id: null, ts: HORA,
   fuente: "vecino", tipo: "foto_rejilla", is_simulated: true, urgente: false,
   clasificacion: { evaluable: true, rejilla: "tapada", material: ["hojas"], confianza: "alta" },
-  prioridad: { antes: { scenario_id: "base", rank: 4, prioridad: 0.697506 }, despues: { scenario_id: "base", rank: 1, prioridad: 1.48 } },
+  prioridad: { antes: { scenario_id: "base", rank: 4, prioridad: 0.697506 }, despues: { scenario_id: "base", rank: 1, prioridad: despues[0].prioridad } },
 };
 
 export function datosDemo(paso: number) {
