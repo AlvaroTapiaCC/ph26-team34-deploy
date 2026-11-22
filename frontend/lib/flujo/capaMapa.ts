@@ -4,18 +4,25 @@
 // - agua que no cabe en la calle: ACCENT, solo en ese tramo y el siguiente, con una columna 3D (volumen que no entró
 //   a la rejilla) y una flecha animada hacia donde se va;
 // - rejillas: círculo de 6 px con el borde según su estado (tapada, rellena en accent); el ícono, solo de cerca.
-// El estado de tramos y rejillas se actualiza unas 4 veces por segundo (feature-state); el trazo, la flecha y las
-// columnas, en cada cuadro (requestAnimationFrame). No hay partículas: el trazo animado es mucho más liviano.
+// El estado de tramos y rejillas llega del worker del motor unas 4 veces por segundo (feature-state); el trazo, la
+// flecha y las columnas, en cada cuadro (requestAnimationFrame). No hay partículas: el trazo animado es mucho más liviano.
+//
+// Para que la red de las 3 comunas no pese: el caudal llega en niveles (cambian pocos tramos por ciclo), solo se
+// actualizan los tramos a la vista (más un margen) y con un tope por ciclo, con zoom bajo se dibujan solo los troncales
+// (área acumulada alta) y las rejillas se vuelven a pasar al mapa solo cuando cambia el estado de alguna.
 import type { MapLibre } from "../../components/map/maplibre";
 import { ESTADOS, FLUJO_CONFIG, type EstadoRejilla } from "./config";
-import { puntoEnTramo } from "./grafo";
-import type { MotorFlujo } from "./motor";
+import { puntoEnTramo, type Tramo } from "./grafo";
+import type { MotorRemoto } from "./remoto";
+import { AGUA_DESBORDE, AGUA_NIVEL } from "./simulador";
 import { colorDe, EVENTO_PALETA } from "../paleta";
 
 const SRC = { tramos: "flujo-tramos", sum: "flujo-sum", flecha: "flujo-flecha-src", columnas: "flujo-columnas-src", pop: "flujo-pop-src" };
 const TRAZOS = ["flujo-trazo-0", "flujo-trazo-1", "flujo-trazo-2"];
 const LAYERS = ["flujo-brillo", "flujo-linea", ...TRAZOS, "flujo-columnas", "flujo-rej", "flujo-rej-tap", "flujo-rej-ico", "flujo-sel", "flujo-pop", "flujo-hit", "flujo-flecha"];
 const fc = (features: unknown[]) => ({ type: "FeatureCollection", features });
+/** Filtro del trazo animado de calles lentas (0), medias (1) o rápidas (2), solo con los troncales si `acc` > 0. */
+const filtroTrazo = (k: number, acc: number) => (acc > 0 ? ["all", ["==", ["get", "vc"], k], [">=", ["get", "acc"], acc]] : ["==", ["get", "vc"], k]);
 
 // Patrón del trazo animado: cada paso corre un poco el guion a lo largo de la línea (dibujada de aguas arriba a aguas abajo)
 const PATRON = [
@@ -36,7 +43,9 @@ const PATRON = [
 ];
 
 export interface CapaFlujo {
-  /** Estado de tramos y rejillas (llamar unas 4 veces por segundo y tras cambiar un estado). */
+  /** Tras cargar teselas: pasa al mapa los tramos y rejillas nuevos. */
+  agregar(): void;
+  /** Estado de tramos y rejillas desde la última foto del motor (al llegar cada foto y al mover el mapa). */
   actualizarEstado(): void;
   /** Un cuadro de animación. `dtS` y `tS` son segundos reales. */
   cuadro(dtS: number, tS: number): void;
@@ -128,29 +137,31 @@ function cuadrado([x, y]: [number, number], lado: number) {
   ];
 }
 
-export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClickSumidero: (id: string) => void }): CapaFlujo {
+/** Área acumulada mínima (m²) de los tramos que se dibujan con este zoom (0: todos). */
+export function accMinimo(zoom: number, cfg = FLUJO_CONFIG): number {
+  if (zoom >= cfg.zoomDetalle) return 0;
+  for (const r of cfg.troncales) if (zoom < r.hastaZoom) return r.accMinM2;
+  return 0;
+}
+
+export function montarCapaFlujo(map: MapLibre, motor: MotorRemoto, opts: { onClickSumidero: (id: string) => void }): CapaFlujo {
   const cfg = FLUJO_CONFIG;
   const { tramos, sumideros } = motor.grafo;
-  const logMin = Math.log1p(cfg.caudalMinimoLs);
-  const logMax = Math.log1p(cfg.caudalGrosorMaxLs);
 
-  map.addSource(SRC.tramos, {
-    type: "geojson",
-    promoteId: "id",
-    data: fc(tramos.map((t) => ({ type: "Feature", properties: { id: t.id, vc: t.vc }, geometry: { type: "LineString", coordinates: t.coords } }))),
-  });
-  map.addSource(SRC.sum, {
-    type: "geojson",
-    promoteId: "id",
-    data: fc(sumideros.map((s, i) => ({ type: "Feature", properties: { id: s.id, est: motor.estadoRejilla(i) }, geometry: { type: "Point", coordinates: s.coord } }))),
-  });
+  // Features que ya están en el mapa (se agregan, no se recrean) y tramos por tesela para buscar lo visible
+  const featTramos: unknown[] = [];
+  const featSum: { type: "Feature"; properties: { id: string; est: EstadoRejilla }; geometry: { type: "Point"; coordinates: [number, number] } }[] = [];
+  const porTesela = new Map<string, { caja: [number, number, number, number]; tramos: Tramo[] }>();
+  let nTramos = 0;
+  map.addSource(SRC.tramos, { type: "geojson", promoteId: "id", data: fc(featTramos) });
+  map.addSource(SRC.sum, { type: "geojson", promoteId: "id", data: fc(featSum) });
   map.addSource(SRC.flecha, { type: "geojson", data: fc([]) });
   map.addSource(SRC.columnas, { type: "geojson", data: fc([]) });
   map.addSource(SRC.pop, { type: "geojson", data: fc([]) });
   if (!map.hasImage("flujo-flecha")) map.addImage("flujo-flecha", flechaImagen());
   for (const e of ESTADOS) if (!map.hasImage(`rejilla-${e}`)) map.addImage(`rejilla-${e}`, rejillaImagen(e), { pixelRatio: PR });
 
-  // Grosor según el caudal (escala logarítmica); 0 bajo el caudal mínimo: esas calles no se pintan
+  // Grosor según el nivel de caudal (escala logarítmica, en saltos); 0 bajo el caudal mínimo: esas calles no se pintan
   const qn = ["coalesce", ["feature-state", "qn"], 0];
   const conAgua = ["case", [">", ["coalesce", ["feature-state", "h"], 0], 0.05], 1, 0];
   const ancho = ["interpolate", ["linear"], qn, 0, 0, 0.01, 1.2, 1, 6];
@@ -180,7 +191,7 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
       id,
       type: "line",
       source: SRC.tramos,
-      filter: ["==", ["get", "vc"], k],
+      filter: filtroTrazo(k, 0),
       paint: {
         "line-width": anchoZoom(0.45),
         "line-opacity": visibleSiAgua(0.9),
@@ -240,6 +251,17 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
     paint: { "icon-opacity": ["get", "o"] },
   });
 
+  // Con zoom bajo, solo los troncales: se cambia el filtro de las líneas cuando el umbral cambia (no en cada cuadro)
+  let accFiltro = -1;
+  function filtrar() {
+    const u = accMinimo(map.getZoom(), cfg);
+    if (u === accFiltro) return;
+    accFiltro = u;
+    for (const id of ["flujo-brillo", "flujo-linea"]) if (map.getLayer(id)) map.setFilter(id, u > 0 ? [">=", ["get", "acc"], u] : null);
+    TRAZOS.forEach((id, k) => map.getLayer(id) && map.setFilter(id, filtroTrazo(k, u)));
+  }
+  filtrar();
+
   /**
    * Colores de las capas del flujo desde la paleta. Se llama al montar y cada vez que cambia la paleta
    * (EVENTO_PALETA): líneas, columnas, rejillas e íconos cambian sin recargar.
@@ -282,35 +304,96 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
   map.on("mouseenter", "flujo-hit", entrar);
   map.on("mouseleave", "flujo-hit", salir);
 
+  // ---- Tramos y rejillas nuevos (al cargar teselas) ----
+  let nSum = 0;
+  function agregar() {
+    const lista = motor.grafo.lista;
+    for (; nTramos < lista.length; nTramos++) {
+      const t = lista[nTramos];
+      featTramos.push({ type: "Feature", properties: { id: t.id, vc: t.vc, acc: t.acc }, geometry: { type: "LineString", coordinates: t.coords } });
+      const g = porTesela.get(t.tesela) ?? { caja: [Infinity, Infinity, -Infinity, -Infinity] as [number, number, number, number], tramos: [] };
+      g.tramos.push(t);
+      g.caja = [Math.min(g.caja[0], t.caja[0]), Math.min(g.caja[1], t.caja[1]), Math.max(g.caja[2], t.caja[2]), Math.max(g.caja[3], t.caja[3])];
+      porTesela.set(t.tesela, g);
+    }
+    map.getSource(SRC.tramos)?.setData(fc(featTramos));
+    if (nSum < sumideros.length) {
+      for (; nSum < sumideros.length; nSum++) {
+        const s = sumideros[nSum];
+        featSum.push({ type: "Feature", properties: { id: s.id, est: motor.estadoRejilla(nSum) }, geometry: { type: "Point", coordinates: s.coord } });
+      }
+      ultimaVersion = -2; // fuerza a pasar las rejillas en el próximo estado
+    }
+    actualizarEstado();
+  }
+
   // ---- Estado de tramos y rejillas ----
-  const ultimoQ = new Float32Array(tramos.length).fill(-1);
-  const ultimoH = new Float32Array(tramos.length).fill(-1);
+  const ultimo = new Uint8Array(motor.grafo.totalTramos).fill(255); // último valor que se pasó al mapa (255: ninguno)
+  let ultimaVersion = -1;
   let ultimoEst = "";
   let conAguaIdx: number[] = []; // rejillas con agua fuera de la calle, de más a menos volumen
+  let giro = 0; // dónde empieza el próximo ciclo cuando se llega al tope
+
+  /** Tramos que vale la pena actualizar: a la vista (con margen) y que se dibujan con este zoom. */
+  function aLaVista(): Tramo[] {
+    const b = map.getBounds();
+    const o = b.getWest(), s = b.getSouth(), e = b.getEast(), n = b.getNorth();
+    const mx = (e - o) * cfg.margenVisible, my = (n - s) * cfg.margenVisible;
+    const caja = [o - mx, s - my, e + mx, n + my];
+    const u = accMinimo(map.getZoom(), cfg);
+    const out: Tramo[] = [];
+    porTesela.forEach((g) => {
+      if (g.caja[2] < caja[0] || g.caja[0] > caja[2] || g.caja[3] < caja[1] || g.caja[1] > caja[3]) return;
+      for (const t of g.tramos) {
+        if (t.acc < u || t.caja[2] < caja[0] || t.caja[0] > caja[2] || t.caja[3] < caja[1] || t.caja[1] > caja[3]) continue;
+        out.push(t);
+      }
+    });
+    return out;
+  }
 
   function actualizarEstado() {
-    for (const t of tramos) {
-      const q = motor.q[t.id];
-      const n = q < cfg.caudalMinimoLs ? 0 : Math.min(1, Math.max(0.01, (Math.log1p(q) - logMin) / (logMax - logMin)));
-      const h = q > 0 ? motor.qExc[t.id] / q : 0;
-      if (Math.abs(n - ultimoQ[t.id]) > 0.01 || Math.abs(h - ultimoH[t.id]) > 0.04) {
-        ultimoQ[t.id] = n;
-        ultimoH[t.id] = h;
-        map.setFeatureState({ source: SRC.tramos, id: t.id }, { qn: n, h });
+    const t0 = performance.now();
+    filtrar();
+    const agua = motor.agua;
+    const vista = aLaVista();
+    let cambios = 0;
+    const n = vista.length;
+    const inicio = n ? giro % n : 0;
+    for (let k = 0; k < n && cambios < cfg.estadosPorCiclo; k++) {
+      const t = vista[(inicio + k) % n];
+      const a = agua[t.id];
+      if (a === ultimo[t.id]) continue;
+      ultimo[t.id] = a;
+      cambios++;
+      map.setFeatureState({ source: SRC.tramos, id: t.id }, { qn: (a & AGUA_NIVEL) / cfg.nivelesCaudal, h: a & AGUA_DESBORDE ? 1 : 0 });
+    }
+    giro = inicio + cfg.estadosPorCiclo;
+
+    // Estado de cada rejilla: va como propiedad del dato (los símbolos no leen feature-state en el layout). Solo se pasa
+    // al mapa cuando cambió alguno; se cambia la propiedad en las features que ya existen.
+    const version = motor.versionEstados * 1e6 + motor.versionManual;
+    if (version !== ultimaVersion) {
+      ultimaVersion = version;
+      let clave = "";
+      for (let i = 0; i < featSum.length; i++) {
+        const e = motor.estadoRejilla(i);
+        featSum[i].properties.est = e;
+        clave += e[0];
+      }
+      if (clave !== ultimoEst) {
+        ultimoEst = clave;
+        map.getSource(SRC.sum)?.setData(fc(featSum));
       }
     }
-    // Estado de cada rejilla: va como propiedad del dato (los símbolos no leen feature-state en el layout)
-    const est = sumideros.map((_, i) => motor.estadoRejilla(i));
-    const clave = est.join();
-    if (clave !== ultimoEst) {
-      ultimoEst = clave;
-      map.getSource(SRC.sum)?.setData(fc(sumideros.map((s, i) => ({ type: "Feature", properties: { id: s.id, est: est[i] }, geometry: { type: "Point", coordinates: s.coord } }))));
-    }
     const lista: { i: number; v: number }[] = [];
-    sumideros.forEach((_, i) => motor.desborda(i) && lista.push({ i, v: motor.volumen[i] }));
+    for (let i = 0; i < sumideros.length; i++) if (motor.desborda(i)) lista.push({ i, v: motor.volumen[i] ?? 0 });
     lista.sort((a, b) => b.v - a.v);
     conAguaIdx = lista.slice(0, cfg.columnasMax).map((x) => x.i);
+    performance.measure("flujo:actualizarEstado", { start: t0, detail: { aLaVista: n, cambios } });
   }
+  // Al mover el mapa entran tramos que no se actualizaban: se ponen al día apenas se detiene
+  map.on("moveend", actualizarEstado);
 
   // ---- Animación (cada cuadro) ----
   const fase = [0, 0, 0];
@@ -335,7 +418,7 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
     map.getSource(SRC.columnas)?.setData(
       fc(
         conAguaIdx.map((i) => {
-          const alto = Math.min(cfg.columnaAltoMaxM, 6 + motor.volumen[i] * cfg.columnaMPorM3);
+          const alto = Math.min(cfg.columnaAltoMaxM, 6 + (motor.volumen[i] ?? 0) * cfg.columnaMPorM3);
           return { type: "Feature", properties: { h: alto * respira }, geometry: { type: "Polygon", coordinates: cuadrado(sumideros[i].coord, cfg.columnaLadoM) } };
         }),
       ),
@@ -348,7 +431,7 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
       if (s.tramo === null) return [];
       let t = tramos[s.tramo];
       let m = s.pos * t.L + 12 + 30 * avance;
-      if (m > t.L && t.sig !== null) {
+      if (m > t.L && t.sig !== null && tramos[t.sig]) {
         m -= t.L;
         t = tramos[t.sig];
       }
@@ -372,6 +455,7 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
   }
 
   return {
+    agregar,
     actualizarEstado,
     cuadro,
     setVisible(v, soloAgua = false) {
@@ -393,6 +477,7 @@ export function montarCapaFlujo(map: MapLibre, motor: MotorFlujo, opts: { onClic
         map.off("click", "flujo-hit", alClic);
         map.off("mouseenter", "flujo-hit", entrar);
         map.off("mouseleave", "flujo-hit", salir);
+        map.off("moveend", actualizarEstado);
         LAYERS.forEach((id) => map.getLayer(id) && map.removeLayer(id));
         Object.values(SRC).forEach((id) => map.getSource(id) && map.removeSource(id));
       } catch {

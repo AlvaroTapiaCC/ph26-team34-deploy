@@ -2,8 +2,9 @@
 Plan B de la red de calles para 04_flujo.py: la baja de la API 0.6 de OpenStreetMap por teselas cuando Overpass
 no responde (el servicio público se cae seguido).
 
-Deja el mismo archivo que 03_terreno.py y 04_flujo.py usan como caché:
+Deja el mismo archivo que usan como caché 03_terreno.py (radio alrededor del MUT) o 04_flujo.py (--comunas):
     cache/osm/red_drive_mut_2500m.graphml
+    cache/osm/red_drive_comunas_1000m.graphml   (con --comunas: caja de Providencia, Ñuñoa y Las Condes + 1 km)
 
 Cómo se arma (equivale a ox.graph_from_point(..., network_type="drive", simplify=True)):
   - Baja las teselas de ~550 m de la caja de 2,5 km alrededor del MUT (/api/0.6/map devuelve todo lo de la caja,
@@ -12,7 +13,7 @@ Cómo se arma (equivale a ox.graph_from_point(..., network_type="drive", simplif
   - ox.graph_from_xml arma y simplifica el grafo; ox.save_graphml lo guarda.
 
 Uso (desde la raíz del repo):
-    python pipeline/04a_red_osm_api.py
+    python pipeline/04a_red_osm_api.py --comunas
     python pipeline/04_flujo.py
 
 La API tiene una política de uso: se baja una tesela a la vez, con pausa, y se identifica con User-Agent.
@@ -72,14 +73,26 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--radio", type=float, default=2500.0)
     ap.add_argument("--tesela", type=float, default=0.005, help="lado de la tesela en grados")
+    ap.add_argument("--comunas", nargs="?", const="data/comunas.geojson", default=None,
+                    help="baja la caja de las comunas (data/comunas.geojson) más --margen, para 04_flujo.py")
+    ap.add_argument("--margen", type=float, default=1000.0, help="margen alrededor de las comunas (m), con --comunas")
     ap.add_argument("--salida", default=None)
     a = ap.parse_args()
-    salida = Path(a.salida or f"cache/osm/red_drive_mut_{a.radio:.0f}m.graphml")
+    if a.comunas:
+        salida = Path(a.salida or f"cache/osm/red_drive_comunas_{a.margen:.0f}m.graphml")
+    else:
+        salida = Path(a.salida or f"cache/osm/red_drive_mut_{a.radio:.0f}m.graphml")
     salida.parent.mkdir(parents=True, exist_ok=True)
 
     import osmnx as ox
 
-    w0, s0, e0, n0 = caja(a.radio)
+    if a.comunas:
+        import geopandas as gpd
+
+        zona = gpd.read_file(a.comunas).to_crs(32719).union_all().buffer(a.margen)
+        w0, s0, e0, n0 = gpd.GeoSeries([zona], crs=32719).to_crs(4326).total_bounds
+    else:
+        w0, s0, e0, n0 = caja(a.radio)
     nodos, vias = {}, {}
     cola = []
     x = w0
@@ -136,6 +149,7 @@ def main():
 
     G = ox.graph_from_xml(xml_unido, bidirectional=False, simplify=True, retain_all=False)
     ox.save_graphml(G, salida)
+    salida.with_suffix(".fuente.json").write_text('{"fuente": "API 0.6 de OpenStreetMap (04a_red_osm_api.py)", "url": "%s"}' % API, encoding="utf-8")
     print(f"Grafo: {G.number_of_nodes()} nodos, {G.number_of_edges()} tramos -> {salida}")
 
 

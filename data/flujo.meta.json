@@ -1,63 +1,121 @@
 {
-  "generado_utc": "2026-11-21T20:36:23+00:00",
+  "generado_utc": "2026-11-22T06:28:33+00:00",
   "metodo": "mismo que 03_terreno.py: elevación por nodo, relleno de depresiones y D8 sobre el grafo de calles",
+  "aviso": "Flujo estimado por la pendiente (OSM y DEM Copernicus GLO-30); no es una simulación hidráulica ni una medición.",
+  "zona": {
+    "comunas": [
+      "Las Condes",
+      "Providencia",
+      "Ñuñoa"
+    ],
+    "fuente": {
+      "ruta": "data/comunas.geojson",
+      "sha256": "ab7712c5772caae7076bf1c00ac7e5a9c09d33142c824897caf042626686521a"
+    },
+    "margen_m": 1000.0
+  },
   "red_calles": {
-    "graphml": "cache\\osm\\red_drive_mut_2500m.graphml",
-    "sha256": "4cf78a8be6ad98591aac8fed9d6d11b3e53013360b99ba05dcbf893475fee661",
-    "radio_m": 2500.0,
-    "osmnx": "2.2.0"
+    "fuente": "OpenStreetMap vía OSMnx",
+    "network_type": "drive",
+    "graphml": "cache/osm/red_drive_comunas_1000m.graphml",
+    "sha256": "b3c2c81a14d8392acbef41a988e2449997b862e4ed0abca7170567856f81c0b1",
+    "descargada_utc": "2026-11-22T06:19:53+00:00",
+    "osmnx": "2.2.0",
+    "descarga": {
+      "fuente": "Overpass",
+      "url": "https://maps.mail.ru/osm/tools/overpass/api"
+    }
   },
   "dem": {
-    "sha256": "a27fc1c1b4ef86047f3d7523c222fdbb322a3e3aff09bb6a7d5d30b6fe2c91c1"
+    "fuente": "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_S34_00_W071_00_DEM/Copernicus_DSM_COG_10_S34_00_W071_00_DEM.tif",
+    "sha256": "a27fc1c1b4ef86047f3d7523c222fdbb322a3e3aff09bb6a7d5d30b6fe2c91c1",
+    "muestreo": "mínimo de 3×3 píxeles por nodo"
+  },
+  "entradas": {
+    "rejillas": {
+      "ruta": "data/rejillas.geojson",
+      "sha256": "dde763af25b2afb38c8b17f9aa66c670c860fae797d1821c9191fd012c55de22"
+    }
   },
   "parametros": {
     "ancho_aporte_m": 20.0,
-    "radio_export_m": 2300.0,
-    "snap_max_m": 30.0
+    "snap_max_m": 30.0,
+    "borde_relleno_m": 150,
+    "simplificar_m": 2.0,
+    "tesela_grados": 0.02,
+    "pendiente_min": 0.003,
+    "pendiente_max": 0.25,
+    "suavizado": "mediana de la pendiente de los tramos vecinos que bajan (entrantes y siguiente), con piso y tope"
   },
   "conteos": {
-    "tramos": 1606,
-    "sumideros": 544,
+    "nodos": 14148,
+    "tramos_red": 20253,
+    "tramos": 9159,
+    "sumideros": 2967,
+    "rejillas_fuera_de_red": 35,
+    "salidas_interiores": 0,
+    "tramos_suavizados": 2832,
+    "tramos_con_nombre": 8721,
+    "vertices": {
+      "antes": 40823,
+      "despues": 21258
+    },
+    "teselas": 32,
     "comprobacion_terreno": {
-      "calzan": 539,
-      "de": 541
+      "calzan": 535,
+      "de": 536
     }
   },
   "salida": {
-    "archivo": "frontend/public/data/flujo.geojson",
-    "sha256": "2f8c6c3b52077fd90c38dd6ecad1895d6b3a30cc14cf171f5e1c1ad6bbd56106",
-    "bytes": 692609
+    "carpeta": "frontend/public/data/flujo",
+    "bytes": 821746,
+    "indice": {
+      "archivo": "frontend/public/data/flujo/indice.json",
+      "sha256": "8ee2bb00adfa0d3db0e683a71b54e8b609ca87691a9762716ea98ed9b5f2f86f"
+    },
+    "teselas_sha256": {
+      "t_0_0.json": "bf81d39456a1ef283b96e0bfe864c298a46699c1bcdc57f03cb3501d58ef9741",
+      "t_0_1.json": "51089eb60a49b1392a7c7415441a2f4d45e122565d09ad8b39b62edc89a94256",
+      "t_0_2.json": "b5788195ea08c98bfa5c6dc10864aea9a92a3c56fe2fba986128090062abc5df",
+      "t_0_3.json": "cb2785300b30bb96d0ed0a866299b7811753f5d5fce15b4f29b185e23bc8365f",
+      "t_1_0.json": "43de91bad2f9c6750817c12355573a4e16afbb63c5b30352eb9321a2b18239e6",
+      "t_1_1.json": "ef066e7b17e05b2aac37d14459b2492229f3f95c603927c7c7936d00741e7421",
+      "t_1_2.json": "8a2f366f79718a5e6aec35d56cde34a165fdbc7fca5a7615171678438176473a",
+      "t_1_3.json": "b0f453e6c733443ea499e0e6921cad82d1c3b002ff4cc6ffd3e9f81f38ce1b56",
+      "t_2_0.json": "13f82fcc606fd37ce381ca552185b4080636e1f6af29f6b150a1a84b2193abb4",
+      "t_2_1.json": "90e82a104d60cbbf7373986da9731abdf11e74423b0f152deeed76bbfdaf5e21",
+      "t_2_2.json": "94060bbde067499404ed9b6739c1b231fd62a381fbfddf75395a1e3e5f3f2896",
+      "t_2_3.json": "2b7971478bb4358c3925ddfea08734e3aae1f3ddd979190afde26a88d566d697",
+      "t_2_4.json": "425c7e081ea188b3e6f6a0f5c9a26d3f465eb2e07fdf67f44ea3f02494dcb7dc",
+      "t_3_0.json": "18abf3d947e0a9d309352315c568ceb6fb00a6709ccc1e82f351ab76471c9f36",
+      "t_3_1.json": "d2253cd372ab80d774ee4caf1159eaf1ca530abea1c904c4f92fd4e23ad7ea14",
+      "t_3_2.json": "4a14f98e53efcdf5488ff9556c7527c57ee06d272821129ed2778763d0e39be6",
+      "t_3_3.json": "39118215b9a9085e11ac1c378a03e77f67b0da6e8f9125062138e85927f37dd0",
+      "t_3_4.json": "ea53b866825ef11bcc38da7ed2c47515d9fef6477030556c7f5eafce1dfe3b38",
+      "t_4_2.json": "b82275a93ded8774947130f26e37d2df2b468bf4345a1a2e9424c39294b53611",
+      "t_4_3.json": "07a41fa23e13e19a2fb0e882e5369fdaf0dd4caee188ba0eed26380a62e73af0",
+      "t_4_4.json": "3509306a7ee5d2cf134f3fdaad19d903fb52fc99623a9ef94fdb0338101284d4",
+      "t_4_5.json": "ca97e4aa1fcbcabfe1c8c283bcfa2dbfd686e88c83b0e0e141249244cea2a2f0",
+      "t_5_2.json": "30aea7013314da8972bec03abae8e7b10e8b2e5206ba324c4824458dbdac56b1",
+      "t_5_3.json": "a7ae8ee7ceae5c238c15851e4807873d8d1bb8653a5b7277c98e2fbaab301c39",
+      "t_5_4.json": "634d6727f8ddfee8835373a360bbb4d05b8628ce418fc72a414d0ad4f164be75",
+      "t_5_5.json": "349efc11ae0f1a54a2f859c3a2f5ff3f574867009657ada4bfeb402f5700102b",
+      "t_6_3.json": "bf0bd2845a763fa6e2f8d0cc44142db265e2f71d88df745fc125b4ef1e0d59e2",
+      "t_6_4.json": "e1a89bcabee2207efb67fe15cf37f64ee38d4f93f870c216c8448aa16270f3db",
+      "t_6_5.json": "38d9ceca92800f9c32206eab81d48a40e46e5965e74f8a8d2e99231f1cf10fb9",
+      "t_7_4.json": "0d973ec8ca8d4c4a2a00f4953be5dea38ad17d29137d54fec750c4a53ecd0c66",
+      "t_7_5.json": "6b497b3755fea3b481ea1cd172a3bfe5a66c4fb660b9de9673b626a8b7997d28",
+      "t_7_6.json": "be28683dda1b642a8c6e7b4451c7152144c2b0b9c185613fd89e40b44669599b"
+    }
   },
   "script": {
     "ruta": "pipeline/04_flujo.py",
-    "version": "0.1.0",
-    "sha256": "cb1d9d414b2336f18f9e573871d8289d1790846e6407cc172d48c5df7479c643"
+    "version": "0.2.0",
+    "sha256": "b18ce425cb93bd94c8a6d5771346cbd1c35a0c91b23cc75928298f551c8ac1da"
   },
   "pendientes": {
-    "generado_utc": "2026-11-21T22:56:19+00:00",
-    "fuente": "Copernicus DEM GLO-30, elevación por nodo de pipeline/04_flujo.py (PR #75)",
-    "fuente_respaldo": {
-      "url": "https://api.opentopodata.org/v1/srtm30m",
-      "lote": 100,
-      "pausa_s": 1.0,
-      "max_consultas_dia": 1000,
-      "puntos_consultados": 0
-    },
-    "suavizado": {
-      "pendiente_min": 0.003,
-      "pendiente_max": 0.25,
-      "tramos_suavizados": 488,
-      "de": 1606,
-      "regla": "mediana de la pendiente de los tramos vecinos que bajan (entrantes y siguiente), con piso y tope"
-    },
-    "nombres_calles": {
-      "fuente": "OpenStreetMap (red de 04_flujo.py en caché)",
-      "tramos_con_nombre": 1530
-    },
-    "script": {
-      "ruta": "pipeline/flujo/pendientes.py",
-      "version": "0.2.0",
-      "sha256": "b5c347568a42a213076592423ea7fe86c2b73b10e190171150779ee4f3117efe"
-    }
+    "ruta": "pipeline/flujo/pendientes.py",
+    "version": "0.2.0",
+    "sha256": "aa673ff1be2d392e1d8a5e82ebab429aeab9d2b8b30c49649741c06b1fbf2f2d"
   }
 }

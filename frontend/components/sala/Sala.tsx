@@ -941,6 +941,13 @@ function EsqueletoMapa({ listo }: { listo: boolean }) {
   );
 }
 
+/** Supuesto fijo del agua simulada: 1 de cada 5 rejillas tapada, elegida por su id (no cambia al cargar más red). */
+function quintoDe(id: string): boolean {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return ((h % 5) + 5) % 5 === 0;
+}
+
 /* ───────────────────────── Simulación ───────────────────────── */
 
 function Simulacion({ flujo, estados, setEstados }: { flujo: Flujo; estados: Record<string, EstadoRejilla>; setEstados: (e: Record<string, EstadoRejilla>) => void }) {
@@ -1021,7 +1028,12 @@ function Simulacion({ flujo, estados, setEstados }: { flujo: Flujo; estados: Rec
                 <b>{ui.elegida.nombre}</b>: rejilla {ui.elegida.estado} · {ui.elegida.conAgua ? "acumula agua (estimado)" : "sin agua acumulada (estimado)"}
               </p>
             )}
-            <p className={s.nota}>Red de 544 rejillas y 1.606 tramos (OSM y elevación Copernicus). No calcula profundidades ni tiempos de llegada.</p>
+            <p className={s.nota}>
+              {ui.red
+                ? `Red de ${ui.red.sumideros.toLocaleString("es-CL")} rejillas y ${ui.red.tramos.toLocaleString("es-CL")} tramos en Providencia, Ñuñoa y Las Condes (OSM y elevación Copernicus); se calcula lo que se ve y lo que está aguas arriba (${ui.red.tramosCargados.toLocaleString("es-CL")} tramos ahora).`
+                : "Red de calles de OSM y elevación Copernicus."}{" "}
+              No calcula profundidades ni tiempos de llegada.
+            </p>
           </>
         )}
       </section>
@@ -1110,7 +1122,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
     setCapas(vista === "durante" ? CAPAS_DURANTE : CAPAS_ANTES);
   }, [vista]);
 
-  // Motor de flujo: solo pide la red (690 KB) y dibuja en la vista Simulación
+  // Motor de flujo: solo pide la red (por teselas: lo visible y lo que está aguas arriba) y dibuja en la vista Simulación
   const puntosFlujo = useMemo(() => sala.antes.filas.map((p) => ({ id: p.sumidero_id, nombre: nombreFila(p), coord: [p.lon, p.lat] as LngLat })), [sala.antes.filas]);
   const simulando = vista === "simulacion";
   const aguaEnMapa = simulando || ((vista === "antes" || vista === "durante") && capas.agua);
@@ -1133,12 +1145,13 @@ function SalaInterior({ children }: { children: ReactNode }) {
     },
   });
   flujoRef.current = flujo;
+  // La red crece por teselas al mover el mapa: cada rejilla nueva recibe su supuesto, que depende solo de su id
+  const nRejillas = flujo.ui.red?.sumiderosCargados ?? 0;
   useEffect(() => {
     if (!flujo.ui.cargado) return;
-    const ids = flujo.rejillas().map((r) => r.id).sort();
-    setSupuestas(Object.fromEntries(ids.map((id, i) => [id, (i % 5 === 0 ? "tapada" : "limpia") as EstadoRejilla])));
+    setSupuestas(Object.fromEntries(flujo.rejillas().map((r) => [r.id, (quintoDe(r.id) ? "tapada" : "limpia") as EstadoRejilla])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flujo.ui.cargado]);
+  }, [flujo.ui.cargado, nRejillas]);
   // El agua corre sola cuando está a la vista. Con datos reales, la lluvia es la del pronóstico de Open-Meteo (mm/h);
   // simulada, la del escenario de la demo.
   const mmhReal = (sala.clima.datos?.lluvia_pronosticada_prox_24h_mm ?? 0) / 24;

@@ -10,7 +10,11 @@
 // - Estado de cada rejilla: lo que marcó el operador manda; después lo observado (FuenteObservaciones); después el
 //   supuesto del escenario; si no hay nada, limpia.
 //
-// Flujo estimado; no es una simulación hidráulica ni una medición. Módulo puro: no toca el DOM ni el mapa.
+// - La red crece por teselas (agregar): los arreglos tienen el tamaño de la red completa y se indexan por el id global
+//   del tramo y por el índice de carga del sumidero, así el estado no se pierde al cargar más.
+//
+// Flujo estimado; no es una simulación hidráulica ni una medición. Módulo puro: no toca el DOM ni el mapa (corre en
+// el worker de motor.worker.ts, o en el hilo principal si el navegador no tiene workers).
 import type { LngLat, ScenarioId } from "../data";
 import { capacidadCalzada, capacidadCuneta, distM, type Grafo } from "./grafo";
 import { estadosDe, FLUJO_CONFIG, lluviaDe, picoEscenario, RADIO_PUNTO_M, type EstadoRejilla, type NivelAgua } from "./config";
@@ -56,13 +60,16 @@ export class MotorFlujo {
   readonly idx = new Map<string, number>();
   /** Rejillas del catastro que rodean a cada punto del ranking. */
   sumideroIdsPorPunto: Record<string, string[]> = {};
+  private puntos: { id: string; coord: LngLat }[] = [];
+  /** Sube cada vez que puede cambiar el estado efectivo de alguna rejilla (para no redibujarlas en cada ciclo). */
+  versionEstados = 0;
 
   constructor(grafo: Grafo, cfg = FLUJO_CONFIG) {
     this.grafo = grafo;
     this.cfg = cfg;
     this.intensidadMmH = picoEscenario(this.scenario);
-    const nt = grafo.tramos.length;
-    const ns = grafo.sumideros.length;
+    const nt = Math.max(grafo.totalTramos, grafo.tramos.length);
+    const ns = Math.max(grafo.totalSumideros, grafo.sumideros.length);
     this.q = new Float32Array(nt);
     this.qExc = new Float32Array(nt);
     this.qSal = new Float32Array(nt);
@@ -75,17 +82,27 @@ export class MotorFlujo {
     this.local = new Float32Array(ns);
     this.capCunetaSum = new Float32Array(ns);
     this.capCalzadaSum = new Float32Array(ns);
-    grafo.sumideros.forEach((s, i) => {
+    this.agregar(grafo.sumideros.map((_, i) => i));
+  }
+
+  /** Tras sumar teselas al grafo: capacidades de las rejillas nuevas y puntos del ranking que ahora tienen rejillas cerca. */
+  agregar(nuevos: number[]) {
+    const { sumideros, tramos } = this.grafo;
+    for (const i of nuevos) {
+      const s = sumideros[i];
       this.idx.set(s.id, i);
-      const t = s.tramo !== null ? grafo.tramos[s.tramo] : null;
-      this.capCunetaSum[i] = t ? t.capCuneta : capacidadCuneta(s.s, cfg);
-      this.capCalzadaSum[i] = t ? t.capCalzada : capacidadCalzada(s.s, cfg);
-    });
+      const t = s.tramo !== null ? tramos[s.tramo] : null;
+      this.capCunetaSum[i] = t ? t.capCuneta : capacidadCuneta(s.s, this.cfg);
+      this.capCalzadaSum[i] = t ? t.capCalzada : capacidadCalzada(s.s, this.cfg);
+    }
+    if (nuevos.length && this.puntos.length) this.asociarPuntos(this.puntos);
+    this.versionEstados++;
   }
 
   // ---- Escenario, estados y observaciones ----
   /** Asocia los puntos del ranking con las rejillas del catastro a menos de RADIO_PUNTO_M. */
   asociarPuntos(puntos: { id: string; coord: LngLat }[]) {
+    this.puntos = puntos;
     this.sumideroIdsPorPunto = {};
     for (const p of puntos) {
       const cerca = this.grafo.sumideros.filter((s) => distM(s.coord, p.coord) <= RADIO_PUNTO_M).map((s) => s.id);
@@ -106,6 +123,7 @@ export class MotorFlujo {
   /** Estado supuesto por el escenario para cada rejilla (a partir de los puntos del ranking). */
   private aplicarEstadosEscenario() {
     this.estadoEscenario.clear();
+    this.versionEstados++;
     for (const [punto, estado] of Object.entries(this.estadosEscenario)) {
       for (const id of this.sumideroIdsPorPunto[punto] ?? []) this.estadoEscenario.set(id, estado);
     }
@@ -114,11 +132,13 @@ export class MotorFlujo {
   /** Estados que marcó el operador (clic en el mapa o botones del panel). Se aplican al instante. */
   setEstadosManuales(estados: Record<string, EstadoRejilla>) {
     this.manual = new Map(Object.entries(estados));
+    this.versionEstados++;
   }
 
   setObservaciones(lista: ObservacionPunto[]) {
     this.obs.clear();
     for (const o of lista) if (this.idx.has(o.sumideroId)) this.obs.set(o.sumideroId, { ...this.obs.get(o.sumideroId), ...o });
+    this.versionEstados++;
   }
 
   reiniciar() {
