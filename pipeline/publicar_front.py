@@ -32,7 +32,7 @@ def sha256(ruta):
     return hashlib.sha256(Path(ruta).read_bytes()).hexdigest()
 
 
-def publicar_recorridos(origen, destino):
+def publicar_recorridos(origen, destino, zona="mut"):
     """Un MultiLineString por servicio y sentido, con la fuente y la fecha del GTFS."""
     src = json.loads(Path(origen).read_text(encoding="utf-8"))
     meta_ruta = Path(origen).with_suffix(".meta.json")
@@ -56,9 +56,14 @@ def publicar_recorridos(origen, destino):
             if r.get("geometria")
         ],
     }
-    ruta = Path(destino) / "recorridos.geojson"
+    nombre = "recorridos_san_carlos.geojson" if zona == "san-carlos" else "recorridos.geojson"
+    ruta = Path(destino) / nombre
     ruta.write_text(json.dumps(salida, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"{ruta}  sha256={sha256(ruta)[:12]}…  {len(salida['features'])} recorridos")
+    if zona == "san-carlos":
+        ruta_json = Path(destino) / "transporte_san_carlos.json"
+        shutil.copyfile(origen, ruta_json)
+        print(f"{ruta_json}  sha256={sha256(ruta_json)[:12]}…")
 
 
 def publicar_cadenas(datos, destino, coordenadas):
@@ -110,14 +115,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--datos", default="data")
     ap.add_argument("--destino", default="frontend/public/data")
-    ap.add_argument("--transporte", default="backend/data/transporte_mut.json")
+    ap.add_argument("--zona", choices=("mut", "san-carlos"), default="mut")
+    ap.add_argument("--transporte")
     ap.add_argument("--solo-recorridos", action="store_true")
     a = ap.parse_args()
+    a.transporte = a.transporte or f"backend/data/transporte_{'san_carlos' if a.zona == 'san-carlos' else 'mut'}.json"
     datos, destino = Path(a.datos), Path(a.destino)
     destino.mkdir(parents=True, exist_ok=True)
 
     if Path(a.transporte).exists():
-        publicar_recorridos(a.transporte, destino)
+        publicar_recorridos(a.transporte, destino, a.zona)
     else:
         print(f"Sin {a.transporte}: no se publica recorridos.geojson")
     if a.solo_recorridos:

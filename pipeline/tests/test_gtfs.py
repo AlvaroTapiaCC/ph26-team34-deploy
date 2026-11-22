@@ -99,3 +99,77 @@ def test_servidor_inaccesible_detiene_publicacion(tmp_path, monkeypatch):
     assert ajustador.consultar(FUENTE) == {}
     with pytest.raises(RuntimeError, match="OSRM no responde"):
         ajustador.consultar(FUENTE)
+
+
+def test_solo_cache_conserva_gtfs_sin_red(tmp_path, monkeypatch):
+    def abrir(*args, **kwargs):
+        pytest.fail("No debe consultar la red")
+
+    monkeypatch.setattr(gtfs, "urlopen", abrir)
+    ajustador = gtfs.AjustadorOSRM("https://osrm.invalid", tmp_path, solo_cache=True)
+    assert ajustador.ajustar(FUENTE, "test") == FUENTE
+    assert ajustador.metadatos()["totales"] == {"matched": 0, "fallback": 1}
+    assert ajustador.metadatos()["solo_cache"] is True
+
+
+def test_zona_san_carlos_cubre_ranking_y_margen(tmp_path):
+    ranking = tmp_path/"ranking.csv"
+    ranking.write_text("rank,ID_IDE,prioridad\n1,a,0.7\n2,b,0.3\n")
+    rejillas = tmp_path/"rejillas.geojson"
+    coords = [[-70.544252, -33.406522], [-70.553754, -33.42352]]
+    rejillas.write_text(json.dumps({"features": [
+        {"properties": {"ID_IDE": key}, "geometry": {"coordinates": xy}}
+        for key, xy in zip(("a", "b"), coords)]}))
+    centro, radio, sector, meta = gtfs.zona_san_carlos(ranking, rejillas)
+    assert centro == (-70.541, -33.418)
+    assert all(gtfs.distancia(p, centro)+80 <= radio for p in coords)
+    assert radio % 100 == 0
+    assert [r["rank"] for r in sector] == [1, 2]
+    assert meta["cantidad_rejillas"] == 2
+    assert len(meta["sha256_ranking"]) == 64
+
+
+def test_zona_rechaza_ranking_vacio_y_rejilla_sin_coordenadas(tmp_path):
+    ranking = tmp_path/"ranking.csv"
+    rejillas = tmp_path/"rejillas.geojson"
+    ranking.write_text("rank,ID_IDE,prioridad\n")
+    rejillas.write_text('{"features": []}')
+    with pytest.raises(ValueError, match="vacío"):
+        gtfs.zona_san_carlos(ranking, rejillas)
+    ranking.write_text("rank,ID_IDE,prioridad\n1,a,0.7\n")
+    with pytest.raises(KeyError):
+        gtfs.zona_san_carlos(ranking, rejillas)
+
+
+def test_cercanos_incluye_todas_las_rejillas_del_sector():
+    stops = [{"id": "s", "lon": -70.541, "lat": -33.418}]
+    sector = [{"id": "a", "coords": [-70.541, -33.418], "rank": 1, "prioridad": .7},
+              {"id": "b", "coords": [-70.541, -33.4181], "rank": 2, "prioridad": .6},
+              {"id": "c", "coords": [-70.541, -33.42], "rank": 3, "prioridad": .5}]
+    pares = gtfs.cercanos(stops, sector)
+    assert [p["rejilla"] for p in pares] == ["a", "b"]
+    assert pares[1]["rank"] == 2 and pares[1]["prioridad"] == .6
+    assert gtfs.cercanos(stops, []) == []
+    assert gtfs.cercanos([], sector) == []
+
+
+def test_recorte_zona_y_default_mut():
+    puntos = [[-70.545, -33.418], [-70.537, -33.418]]
+    assert gtfs.tramos(puntos) == gtfs.tramos(puntos, gtfs.CENTRO, gtfs.RADIO) == []
+    assert gtfs.tramos(puntos, (-70.541, -33.418), 1600) == [puntos]
+
+
+def test_publicar_zona_no_reemplaza_mut(tmp_path):
+    spec = importlib.util.spec_from_file_location("publicar", Path(__file__).parents[1]/"publicar_front.py")
+    publicar = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(publicar)
+    origen = tmp_path/"transporte.json"
+    datos = {"paraderos": [], "recorridos": [{"servicio": "C", "sentido": "0", "destino": "X",
+                                              "geometria": [FUENTE]}]}
+    origen.write_text(json.dumps(datos))
+    mut = tmp_path/"recorridos.geojson"
+    mut.write_text("mut intacto")
+    publicar.publicar_recorridos(origen, tmp_path, "san-carlos")
+    assert mut.read_text() == "mut intacto"
+    assert json.loads((tmp_path/"transporte_san_carlos.json").read_text()) == datos
+    assert len(json.loads((tmp_path/"recorridos_san_carlos.geojson").read_text())["features"]) == 1

@@ -143,30 +143,31 @@ export interface Recorrido {
   tramos: LngLat[][];
 }
 
-let recorridosCache: Promise<Recorrido[]> | null = null;
+export type ZonaTransporte = "mut" | "san-carlos";
+const recorridosCache: Partial<Record<ZonaTransporte, Promise<Recorrido[]>>> = {};
 
-export function cargarRecorridos(): Promise<Recorrido[]> {
-  recorridosCache ??= fetch("/data/recorridos.geojson")
+export function cargarRecorridos(zona: ZonaTransporte = "mut"): Promise<Recorrido[]> {
+  return recorridosCache[zona] ??= fetch(zona === "san-carlos" ? "/data/recorridos_san_carlos.geojson" : "/data/recorridos.geojson")
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
     .then((fc: { features: { properties: { servicio: string; sentido: string; destino: string | null }; geometry: { coordinates: LngLat[][] } }[] }) =>
       fc.features.map((f) => ({ ...f.properties, tramos: f.geometry.coordinates })),
     )
     .catch((error: unknown) => {
-      recorridosCache = null; // se reintenta en la próxima llamada
+      delete recorridosCache[zona]; // se reintenta en la próxima llamada
       throw error;
     });
-  return recorridosCache;
 }
 
-export function useRecorridos(activo: boolean) {
+export function useRecorridos(activo: boolean, zona: ZonaTransporte = "mut") {
   const [r, setR] = useState<Recorrido[]>([]);
   useEffect(() => {
+    setR([]);
     if (!activo) return;
     let vivo = true;
     let reintento: ReturnType<typeof setTimeout> | undefined;
     const cargar = async (intento: number) => {
       try {
-        const x = await cargarRecorridos();
+        const x = await cargarRecorridos(zona);
         if (vivo) setR(x);
       } catch {
         if (vivo && intento < 3) reintento = setTimeout(() => void cargar(intento + 1), 1000 * (intento + 1));
@@ -177,7 +178,7 @@ export function useRecorridos(activo: boolean) {
       vivo = false;
       clearTimeout(reintento);
     };
-  }, [activo]);
+  }, [activo, zona]);
   return r;
 }
 
