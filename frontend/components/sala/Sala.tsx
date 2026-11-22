@@ -112,10 +112,11 @@ function SelectorCuadrilla({ equipos, valor, onChange }: { equipos: Cuadrilla[];
     <Select.Root value={valor} onValueChange={onChange}>
       <Select.Trigger className={s.selTrigger} aria-label="Cuadrilla que sigue la central">
         <Select.Value />
+        {equipos.find((c) => c.id === valor)?.is_simulated && <span className={s.chipSim}>Simulada</span>}
         <Select.Icon className={s.selIcon}>▾</Select.Icon>
       </Select.Trigger>
       <Select.Portal>
-        <Select.Content className={s.selContent} position="popper" sideOffset={8} align="end">
+        <Select.Content className={s.selContent} position="popper" sideOffset={8} align="start">
           <Select.Viewport>
             {equipos.map((c) => (
               <Select.Item key={c.id} value={c.id} className={s.selItem}>
@@ -142,7 +143,6 @@ const NAV: { href: string; vista: Vista | "validacion"; texto: string }[] = [
 ];
 
 function Barra({ vista }: { vista: Vista }) {
-  const { cuadrillas, cuadrilla, elegirCuadrilla } = useSala();
   return (
     <header className={s.barra}>
       <Link href="/" className={s.logo} aria-label="Drena, inicio">
@@ -161,7 +161,6 @@ function Barra({ vista }: { vista: Vista }) {
           <span className={s.barraDer}>
             <Pulso />
             <Reloj />
-            {(vista === "antes" || vista === "durante") && cuadrilla && <SelectorCuadrilla equipos={cuadrillas} valor={cuadrilla.id} onChange={elegirCuadrilla} />}
           </span>
         </>
       )}
@@ -498,15 +497,15 @@ function Recomendacion() {
 /* ───────────────────────── Cuadrilla ───────────────────────── */
 
 function Misiones() {
-  const { cuadrilla, ruta, estadoRuta } = useSala();
+  const { cuadrillas, cuadrilla, elegirCuadrilla, ruta, estadoRuta } = useSala();
   if (!cuadrilla) return <p className={s.vacio}>No hay cuadrillas registradas.</p>;
   const cierre = ruta?.ultimo_cierre;
   return (
     <div className={s.panel}>
-      <p className={s.hint}>
-        Propuesta de Drena para {cuadrilla.nombre}
-        {cuadrilla.is_simulated && <span className={s.chipSim}>Simulada</span>}
-      </p>
+      <div className={s.propuesta}>
+        <span>Propuesta de Drena para</span>
+        <SelectorCuadrilla equipos={cuadrillas} valor={cuadrilla.id} onChange={elegirCuadrilla} />
+      </div>
       {ruta?.misiones.length ? (
         <ol className={s.paradas}>
           {ruta.misiones.map((m, i) => (

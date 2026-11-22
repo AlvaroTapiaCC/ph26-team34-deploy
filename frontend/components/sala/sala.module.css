@@ -1017,6 +1017,15 @@
   background: color-mix(in srgb, var(--principal) 20%, transparent);
   color: var(--principal);
 }
+.propuesta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.25rem 0;
+  color: var(--text-2);
+  font-size: 0.8125rem;
+}
 .hint {
   color: var(--text-2);
   font-size: 0.8125rem;
