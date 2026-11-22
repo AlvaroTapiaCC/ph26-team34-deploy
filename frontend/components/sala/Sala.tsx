@@ -958,7 +958,7 @@ function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, servicio
   const nPar = sala.transporte.datos ? sala.transporte.datos.expuestos.length + sala.transporte.datos.en_riesgo.length : null;
   return (
     <>
-      <div className={s.rielTop} key={fase}>
+      {!sala.demo.activo && <div className={s.rielTop} key={fase}>
         {fase === "durante" ? (
           <>
             <EncabezadoDurante />
@@ -967,7 +967,7 @@ function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, servicio
         ) : (
           <Recomendacion />
         )}
-      </div>
+      </div>}
       <Tabs.Root className={s.tabs} value={pestana} onValueChange={setPestana}>
         <Tabs.List className={s.tabLista} aria-label="Detalle">
           <Tabs.Trigger value="prioridad" className={s.tab}>
@@ -1153,7 +1153,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
         {conMapa(vista) && <EsqueletoMapa key={`esq-${vista}`} listo={mapaListo && (!simulando || flujo.ui.cargado || flujo.ui.error)} />}
         <Inicio activo={vista === "inicio"} mapaListo={mapaListo} />
         {(vista === "validacion" || vista === "san-carlos") && <div className={s.pagina}>{children}</div>}
-        <aside className={s.riel} aria-hidden={!conMapa(vista)} inert={!conMapa(vista)}>
+        <aside className={`${s.riel} ${demoActivo ? s.rielDemo : ""}`} aria-hidden={!conMapa(vista)} inert={!conMapa(vista)}>
           <GuionDemo />
           {simulando ? (
             <Simulacion flujo={flujo} estados={estados} setEstados={setEstados} />
