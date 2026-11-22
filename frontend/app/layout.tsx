@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import EditorPaleta from "@/components/paleta/EditorPaleta";
+import { PALETA, scriptInicialPaleta } from "@/lib/paleta";
 import "./globals.css";
 
 const space = localFont({
@@ -24,12 +26,19 @@ export const metadata: Metadata = {
   description: "Prioriza qué sumideros limpiar antes y durante una tormenta. Providencia · Ñuñoa · Las Condes.",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#EDEDEB" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: PALETA.find((c) => c.id === "bg")!.defecto };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${space.variable} ${geist.variable} ${geistMono.variable}`}>
-      <body>{children}</body>
+    <html lang="es" suppressHydrationWarning className={`${space.variable} ${geist.variable} ${geistMono.variable}`}>
+      <head>
+        {/* Paleta editada en este navegador (#131), antes del primer pintado para que no parpadee */}
+        <script dangerouslySetInnerHTML={{ __html: scriptInicialPaleta() }} />
+      </head>
+      <body>
+        {children}
+        <EditorPaleta />
+      </body>
     </html>
   );
 }
