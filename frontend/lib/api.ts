@@ -132,7 +132,11 @@ export interface ApiFicha {
 }
 
 export const getEscenarios = (o?: GetOpts) => apiGet<ApiEscenario[]>("/scenarios", o);
-export const getRanking = (id: string, o?: GetOpts) => apiGet<ApiRanking>(`/scenarios/${encodeURIComponent(id)}/ranking?modo=antes&limit=5000`, o);
+export function getRanking(id: string, o?: GetOpts, modo: ApiRanking["modo"] = "antes", zona?: string) {
+  const query = new URLSearchParams({ modo, limit: "5000" });
+  if (zona) query.set("zona", zona);
+  return apiGet<ApiRanking>(`/scenarios/${encodeURIComponent(id)}/ranking?${query}`, o);
+}
 export const getFicha = (id: string, escenario: string, o?: GetOpts) => apiGet<ApiFicha>(`/sumideros/${encodeURIComponent(id)}?scenario_id=${encodeURIComponent(escenario)}`, o);
 
 // --- Clima en vivo (backend/app/routers/clima.py, issue #13) ---

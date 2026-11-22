@@ -1,0 +1,22 @@
+{
+  "fuente": "SENAPRED, Programa Invierno 2026",
+  "fuente_url": "https://services5.arcgis.com/i7S5PSnIJAUcWvSE/arcgis/rest/services/compilado_INV_2026/FeatureServer/0/query?where=UPPER%28Comuna%29+%3D+%27LAS+CONDES%27&outFields=FID%2CComuna%2CSector%2CCausa_del_%2CNivel_de_R%2CTemporada_%2CPunto_Cr%C3%AD&orderByFields=FID&outSR=4326&f=geojson",
+  "descargado_utc": "2026-11-22T01:12:25+00:00",
+  "cobertura": "Las Condes, Región Metropolitana, Chile",
+  "salida": {
+    "archivo": "puntos_criticos_invierno_2026.geojson",
+    "sha256": "21aa3c73de1c418ecddeb978d2b8c2a20c5b25f5822e540beda29cef047edd0b"
+  },
+  "registros": 29,
+  "registros_fuente": 33,
+  "omitidos_por_privacidad": [
+    11856,
+    11866,
+    11876,
+    11879
+  ],
+  "unidades": {
+    "coordenadas": "grados WGS84"
+  },
+  "nota": "Antecedentes de riesgo por recurrencia. La fuente no fecha anegamientos de julio."
+}

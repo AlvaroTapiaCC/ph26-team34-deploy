@@ -1,12 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { ScenarioId } from "@/lib/data";
 import { useStore, type Modo } from "@/lib/store";
+import Link from "next/link";
 import { Button, Logo, Segmented, Selector } from "../ui";
 
 export default function TopBar() {
+  const router = useRouter();
   const { s, set, escenarios, comunas } = useStore();
-  const go = (vista: "validacion" | "metodologia") => set({ vista: s.vista === vista ? "main" : vista, ficha: null });
   return (
     <header className="topbar">
       <button onClick={() => set({ vista: "main", ficha: null })} aria-label="Inicio">
@@ -41,12 +43,18 @@ export default function TopBar() {
           { id: "durante", label: "Durante" },
         ]}
         value={s.modo}
-        onChange={(modo) => set({ modo, vista: "main", ficha: null })}
+        onChange={(modo) => {
+          if (modo === "durante") router.push("/central/durante");
+          else set({ modo, vista: "main", ficha: null });
+        }}
       />
-      <Button variant={s.vista === "validacion" ? "primary" : "secondary"} onClick={() => go("validacion")}>
+      <Link href="/central/validacion" className="btn btn--secondary btn--md">
         Validación histórica
-      </Button>
-      <Button variant={s.vista === "metodologia" ? "primary" : "secondary"} onClick={() => go("metodologia")}>
+      </Link>
+      <Button
+        variant={s.vista === "metodologia" ? "primary" : "secondary"}
+        onClick={() => set({ vista: s.vista === "metodologia" ? "main" : "metodologia", ficha: null })}
+      >
         Metodología
       </Button>
     </header>

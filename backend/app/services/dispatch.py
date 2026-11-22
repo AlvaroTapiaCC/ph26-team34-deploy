@@ -352,7 +352,7 @@ def planificar(conn: Connection, motivo: str, observation_id: str | None = None,
                            "cambio": version is not None, "paradas": [p.resumen() for p in despues[c.id]]}
             if version is not None:
                 conn.execute(
-                    "insert into events (tipo, payload) values ('replan', %s)",
+                    "insert into events (tipo, payload, ts) values ('replan', %s, clock_timestamp())",
                     (Jsonb({"crew_id": c.id, "motivo": motivo, "observation_id": observation_id,
                             "siguiente_antes": sig_a, "siguiente_despues": sig_d, "ruta_version": version,
                             "paradas": [p.resumen() for p in despues[c.id]], "hora": ahora}),),
