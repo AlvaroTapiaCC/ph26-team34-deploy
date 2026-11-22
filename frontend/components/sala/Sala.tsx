@@ -4,6 +4,7 @@
 // El mapa se monta una vez, detrás del inicio, y queda listo cuando se entra a la central.
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import * as Select from "@radix-ui/react-select";
 import * as Tabs from "@radix-ui/react-tabs";
@@ -12,7 +13,7 @@ import { usePulso, type ObservacionPublica } from "@/lib/central";
 import type { Cuadrilla } from "@/lib/cuadrilla";
 import type { LngLat } from "@/lib/data";
 import { boundsDe } from "@/lib/real";
-import { APORTES, CATASTRO, dos, nombreFila, puntaje, SalaProvider, useSala, type Fila } from "@/lib/sala";
+import { APORTES, dos, nombreFila, puntaje, SalaProvider, useSala, type Fila } from "@/lib/sala";
 import { horaSantiago, NIVEL_AGUA, useRecorridos, type EstadoConsulta, type EvidenciaAgua } from "@/lib/transporte";
 import { useCapaCadenas } from "../central/capaCadenas";
 import { useCapaContexto } from "./capaContexto";
@@ -146,19 +147,23 @@ function Barra({ vista }: { vista: Vista }) {
       <Link href="/" className={s.logo} aria-label="Drena, inicio">
         <Logo />
       </Link>
-      <nav className={s.nav} aria-label="Vistas">
-        {NAV.filter((n) => n.vista !== "validacion").map((n) => (
-          <Link key={n.href} href={n.href} aria-current={n.vista === vista ? "page" : undefined} className={s.navLink}>
-            {n.texto}
-          </Link>
-        ))}
-      </nav>
-      <span className={s.zona}>Zona MUT · Providencia y Las Condes</span>
-      <span className={s.barraDer}>
-        <Pulso />
-        <Reloj />
-        {(vista === "antes" || vista === "durante") && cuadrilla && <SelectorCuadrilla equipos={cuadrillas} valor={cuadrilla.id} onChange={elegirCuadrilla} />}
-      </span>
+      {vista !== "inicio" && (
+        <>
+          <nav className={s.nav} aria-label="Vistas">
+            {NAV.filter((n) => n.vista !== "validacion").map((n) => (
+              <Link key={n.href} href={n.href} aria-current={n.vista === vista ? "page" : undefined} className={s.navLink}>
+                {n.texto}
+              </Link>
+            ))}
+          </nav>
+          <span className={s.zona}>Zona MUT · Providencia y Las Condes</span>
+          <span className={s.barraDer}>
+            <Pulso />
+            <Reloj />
+            {(vista === "antes" || vista === "durante") && cuadrilla && <SelectorCuadrilla equipos={cuadrillas} valor={cuadrilla.id} onChange={elegirCuadrilla} />}
+          </span>
+        </>
+      )}
     </header>
   );
 }
@@ -166,165 +171,38 @@ function Barra({ vista }: { vista: Vista }) {
 /* ───────────────────────── Inicio ───────────────────────── */
 
 function Inicio({ activo, mapaListo }: { activo: boolean; mapaListo: boolean }) {
-  const { antes, durante, cuadrilla, ruta, estadoRuta, transporte, clima, observaciones } = useSala();
-  const top = antes.filas.slice(0, 3);
-  const sig = ruta?.misiones[0];
-  const nExp = transporte.datos ? transporte.datos.expuestos.length + transporte.datos.en_riesgo.length : null;
-  const ultimo = observaciones.datos[0];
-  const c = clima.datos;
-  const lluvia48 = c?.lluvia_pronosticada_48h_mm;
-  const cargando = antes.estado === "cargando" && !antes.filas.length;
-  const subio = durante.esInicial ? null : durante.filas[0];
   return (
     <section className={`${s.inicio} ${activo ? s.inicioActivo : ""}`} aria-hidden={!activo} inert={!activo}>
       <div className={s.inicioVelo} aria-hidden />
       <div className={s.inicioCuerpo}>
         <div className={s.inicioTexto}>
-        <p className={s.inicioClima}>
-          <span className={s.climaDot} data-modo={c?.modo ?? "sin_dato"} />
-          {c ? (
-            <>
-              {c.modo === "seco" ? "Sin lluvia ahora" : c.modo === "durante" ? "Lloviendo ahora" : c.modo === "tormenta_inminente" ? "Lluvia en camino" : "Clima sin dato"}
-              {" · "}
-              {lluvia48 == null ? "pronóstico sin dato" : `${dos(lluvia48).replace(",00", "")} mm en las próximas 48 h`}
-              <span className={s.fuente}>Open-Meteo</span>
-            </>
-          ) : clima.estado === "error" ? (
-            "Clima sin dato"
-          ) : (
-            "Consultando el clima…"
-          )}
-        </p>
-        <h1 className={s.titular}>
-          <span className={s.titularCifra}>
-            <Cifra valor={CATASTRO.total} />
-          </span>{" "}
-          rejillas en Providencia, Ñuñoa y Las Condes. Drena ordena cuáles limpiar primero.
-        </h1>
-        <div className={s.comunas} aria-label="Rejillas del catastro por comuna">
-          {CATASTRO.comunas.map((c) => (
-            <span key={c.nombre} className={s.comuna}>
-              <b>{c.n.toLocaleString("es-CL")}</b> {c.nombre}
-            </span>
-          ))}
-          <span className={s.comunaFuente}>Catastro SIALL de la DOH (parcial)</span>
-        </div>
-        <p className={s.escenarioHoy}>
-          <span className={s.escenarioMarca}>Escenario de hoy</span>
-          {cargando ? (
-            <Skel h={18} w="22rem" />
-          ) : (
-            <>
-              Zona MUT: <b>{antes.filas.length || "Sin dato"}</b> rejillas con todas sus variables calculadas. La primera visita es <b>{top[0] ? nombreFila(top[0]) : "Sin dato"}</b>.
-            </>
-          )}
-        </p>
-
-        <div className={s.inicioPie}>
-          <Link href="/central/antes" className={s.cta}>
+          <p className={s.inicioEtiqueta}>Drenaje urbano · Santiago</p>
+          <h1 className={s.titular}>
+            Cada lluvia,<br />
+            <span>una respuesta a tiempo.</span>
+          </h1>
+          <p className={s.inicioDescripcion}>
+            Drena ayuda a la central municipal a decidir qué sumideros limpiar primero y por dónde enviar a las cuadrillas.
+          </p>
+          <Link href="/central/antes" className={s.cta} prefetch={mapaListo}>
             <span>Abrir la central</span>
             <i aria-hidden>→</i>
           </Link>
-          <Link href="/central/durante" className={s.ctaSec}>
-            Ir a Durante la lluvia
-          </Link>
-          <span className={s.mapaEstado} data-listo={mapaListo}>
-            <i aria-hidden />
-            {mapaListo ? "Mapa listo" : "Preparando el mapa…"}
-          </span>
         </div>
-
-        <p className={s.ultimo}>
-          {ultimo ? (
-            <>
-              <b>Último reporte</b> · {TIPO_REPORTE[ultimo.tipo] ?? "Observación"} a las {horaSantiago(ultimo.ts)}
-              {ultimo.is_simulated && <span className={s.chipSim}>Simulado</span>}
-              {subio && <> · encabeza Durante: {nombreFila(subio)}</>}
-            </>
-          ) : observaciones.estado === "ok" ? (
-            "Sin reportes de vecinos todavía. Llegan desde /reportar."
-          ) : (
-            " "
-          )}
-        </p>
-        </div>
-        <div className={s.decisiones}>
-          <article className={s.decision} style={{ ["--i" as string]: 0 }}>
-            <header>
-              <span className={s.decN}>1</span>
-              <h2>Qué limpiar primero</h2>
-            </header>
-            {top.length ? (
-              <ol className={s.top3}>
-                {top.map((p) => (
-                  <li key={p.sumidero_id}>
-                    <span className={s.top3N}>{p.puesto}</span>
-                    <span className={s.top3T}>{nombreFila(p)}</span>
-                    <b>{puntaje(p.prioridad)}</b>
-                  </li>
-                ))}
-              </ol>
-            ) : antes.estado === "error" ? (
-              <p className={s.vacio}>No se pudo leer el ranking. Reintentando.</p>
-            ) : (
-              <div className={s.skelPila}>
-                <Skel h={22} />
-                <Skel h={22} />
-                <Skel h={22} />
-              </div>
-            )}
-          </article>
-
-          <article className={s.decision} style={{ ["--i" as string]: 1 }}>
-            <header>
-              <span className={s.decN}>2</span>
-              <h2>Hacia dónde va la cuadrilla</h2>
-            </header>
-            {sig ? (
-              <>
-                <p className={s.decGrande}>{sig.nombre}</p>
-                <p className={s.decMeta}>
-                  Siguiente parada · {ESTADO_MISION[sig.estado] ?? sig.estado} · {ruta!.misiones.length} {ruta!.misiones.length === 1 ? "parada" : "paradas"} en ruta
-                </p>
-              </>
-            ) : estadoRuta === "cargando" ? (
-              <div className={s.skelPila}>
-                <Skel h={26} w="70%" />
-                <Skel h={14} w="50%" />
-              </div>
-            ) : (
-              <p className={s.vacio}>Sin paradas propuestas.</p>
-            )}
-            {cuadrilla && (
-              <p className={s.decPie}>
-                {cuadrilla.nombre}
-                {cuadrilla.is_simulated && <span className={s.chipSim}>Simulada</span>}
-              </p>
-            )}
-          </article>
-
-          <article className={s.decision} style={{ ["--i" as string]: 2 }}>
-            <header>
-              <span className={s.decN}>3</span>
-              <h2>Quién espera la micro</h2>
-            </header>
-            {nExp == null ? (
-              <div className={s.skelPila}>
-                <Skel h={40} w="30%" />
-                <Skel h={14} w="80%" />
-              </div>
-            ) : (
-              <>
-                <p className={s.decGrande}>
-                  <Cifra valor={nExp} /> <small>{nExp === 1 ? "paradero" : "paraderos"} con riesgo</small>
-                </p>
-                <p className={s.decMeta}>{nExp ? `${(transporte.datos!.expuestos[0] ?? transporte.datos!.en_riesgo[0]).nombre.replace(/^P[A-Z]\d+-/, "")} y servicios con alternativo` : "Ningún paradero cerca de agua o prioridad alta."}</p>
-              </>
-            )}
-            <p className={s.decPie}>GTFS de DTPM · Red confirma cualquier desvío</p>
-          </article>
-        </div>
-
+        <figure className={s.inicioFoto}>
+          <Image
+            src="/img/san-carlos-apoquindo.jpg"
+            alt="Autos entre barro y escombros tras el aluvión en San Carlos de Apoquindo."
+            width={1200}
+            height={675}
+            sizes="(max-width: 68rem) 90vw, 48vw"
+            priority
+          />
+          <figcaption>
+            <span>San Carlos de Apoquindo · 9 oct 2026</span>
+            <a href="https://www.cooperativa.cl/noticias/pais/desastres-naturales/inundaciones/asi-amanecio-san-carlos-de-apoquindo-tras-el-aluvion/2026-10-09/083733.html" target="_blank" rel="noreferrer">Foto: ATON / Cooperativa</a>
+          </figcaption>
+        </figure>
       </div>
     </section>
   );
