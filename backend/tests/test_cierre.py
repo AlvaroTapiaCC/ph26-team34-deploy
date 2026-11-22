@@ -134,6 +134,17 @@ def test_sin_verificar_cierra_igual_sin_500(falso, monkeypatch, claude):
     assert falso.observaciones == [] and falso.recalculos == 0 and falso.despachos == ["cierre"]
 
 
+def test_falla_de_storage_no_muestra_detalles_tecnicos_a_la_cuadrilla(falso, monkeypatch):
+    def sin_storage(*a, **kw):
+        raise storage.StorageError("Faltan SUPABASE_URL o SUPABASE_SERVICE_KEY")
+
+    monkeypatch.setattr(router, "clasificar_rejilla", lambda data: _rejilla("limpia"))
+    monkeypatch.setattr(storage, "subir", sin_storage)
+    r = client.post("/missions/00000000-0000-0000-0000-000000000001/close", files=_foto())
+    assert r.status_code == 503 and r.json()["detail"] == "No se pudo guardar la foto en el servidor"
+    assert falso.cerradas == [] and falso.rechazadas == []
+
+
 def test_falla_del_recalculo_no_tumba_el_cierre(falso, monkeypatch):
     monkeypatch.setattr(router, "clasificar_rejilla", lambda data: _rejilla("limpia"))
     monkeypatch.setattr(router, "recalcular_todo", lambda _c: (_ for _ in ()).throw(RuntimeError("db")))

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { CELDA, ESCURRIMIENTO, MAP_BOUNDS, PUNTOS, RAYOS, type LngLat } from "@/lib/data";
 import { useStore } from "@/lib/store";
-import { useExpuestos, useRecorridos, type Expuestos } from "@/lib/transporte";
+import { useExpuestos, useRecorridos, useRecorridoCompleto, type Expuestos, type ZonaTransporte } from "@/lib/transporte";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Button, Check, EstadoChip, Kicker, PrioChip, Toast } from "../ui";
 import Transporte, { capasTransporte } from "./Transporte";
@@ -139,15 +139,17 @@ interface TransporteMapa {
   datos: Expuestos | null;
   activo: string | null;
   onSelect: (id: string | null) => void;
+  servicioActivo: string | null;
 }
 
-function DuranteMap({ tp }: { tp: TransporteMapa }) {
+function DuranteMap({ tp, zonaTransporte }: { tp: TransporteMapa; zonaTransporte: ZonaTransporte }) {
   const { s, ranking, cadena, toggleLayer, flood } = useStore();
-  const recorridos = useRecorridos(s.layers.transporte);
+  const recorridos = useRecorridos(s.layers.transporte, zonaTransporte);
+  const recorridoCompleto = useRecorridoCompleto(s.layers.transporte ? tp.servicioActivo : null, zonaTransporte);
   const capas = useMemo(
-    () => (s.layers.transporte ? capasTransporte(tp.datos, recorridos, tp.activo, (id) => tp.onSelect(tp.activo === id ? null : id)) : null),
+    () => (s.layers.transporte ? capasTransporte(tp.datos, recorridos, tp.activo, (id) => tp.onSelect(tp.activo === id ? null : id), tp.servicioActivo) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [s.layers.transporte, tp.datos, recorridos, tp.activo],
+    [s.layers.transporte, tp.datos, recorridos, tp.activo, tp.servicioActivo],
   );
   const bounds = useMemo(() => boundsTransporte(s.layers.transporte ? tp.datos : null, tp.activo), [s.layers.transporte, tp.datos, tp.activo]);
   const L = s.layers;
@@ -189,6 +191,8 @@ function DuranteMap({ tp }: { tp: TransporteMapa }) {
       padding={{ top: 40, bottom: 40, left: 40, right: 40 }}
       paraderos={capas?.paraderos}
       recorridos={capas?.recorridos}
+      recorridosDestacados={capas?.recorridosDestacados}
+      recorridoCompleto={recorridoCompleto}
       caminatas={capas?.caminatas}
       pins={L.prioridad ? pins : pins.filter((p) => p.id === "flood")}
       labels={[...labels, ...celdaLabel]}
@@ -211,25 +215,34 @@ function DuranteMap({ tp }: { tp: TransporteMapa }) {
   );
 }
 
-export default function Durante() {
+export default function Durante({ zonaTransporte = "mut" }: { zonaTransporte?: ZonaTransporte }) {
   const { s, fuente } = useStore();
   // Con datos de ejemplo el escenario no existe en el servidor: el agua observada se cruza igual con "base"
   const escenario = fuente === "api" ? s.scenario : "base";
   const { datos, calculadoAt, estado } = useExpuestos(escenario, s.layers.transporte);
   const [elegido, setElegido] = useState<string | null>(null);
+  const [servicio, setServicio] = useState<string | null>(null);
+  const elegirParadero = (id: string | null) => {
+    setElegido(id);
+    setServicio(null);
+  };
+  const elegirServicio = (id: string, clave: string) => {
+    setElegido(id);
+    setServicio(elegido === id && servicio === clave ? null : clave);
+  };
   // Si el paradero elegido deja de estar en la respuesta, se suelta la selección
   const activo = elegido && datos && [...datos.expuestos, ...datos.en_riesgo].some((p) => p.id === elegido) ? elegido : null;
-  const tp = { datos, activo, onSelect: setElegido };
+  const tp = { datos, activo, onSelect: elegirParadero, servicioActivo: activo ? servicio : null };
   return (
     <main className="bento">
       <div className="col col--l is-narrow">
         <SensorCard />
         <Feed />
         <Cadena />
-        {s.layers.transporte && <Transporte datos={datos} calculadoAt={calculadoAt} estado={estado} activo={activo} onSelect={setElegido} />}
+        {s.layers.transporte && <Transporte datos={datos} calculadoAt={calculadoAt} estado={estado} activo={activo} onSelect={elegirParadero} servicioActivo={tp.servicioActivo} onServicio={elegirServicio} />}
       </div>
       <div className="col col--r">
-        <DuranteMap tp={tp} />
+        <DuranteMap tp={tp} zonaTransporte={zonaTransporte} />
       </div>
     </main>
   );

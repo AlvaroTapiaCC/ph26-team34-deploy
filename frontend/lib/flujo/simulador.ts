@@ -6,11 +6,12 @@
 // Flujo estimado; no es una simulación hidráulica ni una medición.
 import type { LngLat, ScenarioId } from "../data";
 import { ESTADOS, FLUJO_CONFIG, type EstadoRejilla } from "./config";
-import type { ObservacionPunto } from "./fuentes";
+import type { FuenteObservaciones, ObservacionPunto } from "./fuentes";
 import { agregarAlGrafo, grafoVacio, leerTesela, type TeselaCruda } from "./grafo";
 import { MotorFlujo, type Lecturas } from "./motor";
 
 export type MensajeAlMotor =
+  | { tipo: "fuente"; id: FuenteObservaciones["id"] }
   | { tipo: "red"; totalTramos: number; totalSumideros: number }
   | { tipo: "tesela"; clave: string; texto: string }
   | { tipo: "escenario"; scenario: ScenarioId; intensidadMmH: number }
@@ -57,6 +58,10 @@ export function nivelCaudal(q: number, cfg = FLUJO_CONFIG): number {
 export function crearSimulador(enviar: (m: MensajeDelMotor, transferir?: Transferable[]) => void) {
   const cfg = FLUJO_CONFIG;
   let motor: MotorFlujo | null = null;
+  let fuente: FuenteObservaciones["id"] = "simulada";
+  // Las fuentes inactivas conservan su estado sin avanzar el reloj; comparten la geometría.
+  const motores = new Map<FuenteObservaciones["id"], MotorFlujo>();
+  let puntos: { id: string; coord: LngLat }[] = [];
   let corriendo = false;
   let velocidad = 10;
   let oculto = false;
@@ -106,9 +111,27 @@ export function crearSimulador(enviar: (m: MensajeDelMotor, transferir?: Transfe
 
   function manejar(msg: MensajeAlMotor) {
     switch (msg.tipo) {
+      case "fuente": {
+        if (fuente === msg.id) return;
+        fuente = msg.id;
+        if (!motor) return;
+        const anterior = motor;
+        motor = motores.get(fuente) ?? new MotorFlujo(grafo.actual);
+        if (!motores.has(fuente)) {
+          motor.setEscenario(anterior.scenario);
+          motor.intensidadMmH = anterior.intensidadMmH;
+          motor.asociarPuntos(puntos);
+        }
+        motores.set(fuente, motor);
+        asociacionCambio = true;
+        ultimo = performance.now();
+        break;
+      }
       case "red":
         grafo.actual = grafoVacio(msg.totalTramos, msg.totalSumideros);
         motor = null;
+        motores.clear();
+        puntos = [];
         reloj ??= setInterval(tic, cfg.pasoRelojMs);
         return;
       case "tesela": {
@@ -116,12 +139,15 @@ export function crearSimulador(enviar: (m: MensajeDelMotor, transferir?: Transfe
         const nuevos = agregarAlGrafo(grafo.actual, msg.clave, parte);
         if (!motor) {
           motor = new MotorFlujo(grafo.actual);
+          motores.set(fuente, motor);
           if (pendiente.puntos) motor.asociarPuntos(pendiente.puntos);
           if (pendiente.scenario) motor.setEscenario(pendiente.scenario);
           if (pendiente.intensidad !== undefined) motor.intensidadMmH = pendiente.intensidad;
           if (pendiente.estados) motor.setEstadosManuales(pendiente.estados);
           pendiente = {};
-        } else motor.agregar(nuevos);
+        } else {
+          for (const m of motores.values()) m.agregar(nuevos);
+        }
         asociacionCambio = true;
         motor.recalcular();
         enviar({ tipo: "tesela", clave: msg.clave });
@@ -129,6 +155,8 @@ export function crearSimulador(enviar: (m: MensajeDelMotor, transferir?: Transfe
         return;
       }
       case "escenario":
+        motores.clear();
+        if (motor) motores.set(fuente, motor);
         if (!motor) {
           pendiente.scenario = msg.scenario;
           pendiente.intensidad = msg.intensidadMmH;
@@ -138,6 +166,9 @@ export function crearSimulador(enviar: (m: MensajeDelMotor, transferir?: Transfe
         motor.intensidadMmH = msg.intensidadMmH;
         break;
       case "puntos":
+        puntos = msg.puntos;
+        motores.clear();
+        if (motor) motores.set(fuente, motor);
         if (!motor) {
           pendiente.puntos = msg.puntos;
           return;

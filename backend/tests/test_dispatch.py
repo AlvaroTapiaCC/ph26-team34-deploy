@@ -53,6 +53,24 @@ def test_la_carga_reparte_entre_cuadrillas_cercanas():
     assert len(a.paradas) == 2 and len(b.paradas) == 1
 
 
+def test_un_reporte_no_reparte_de_nuevo_las_misiones_pendientes_de_otras_cuadrillas():
+    a = Cuadrilla("a", -33.42, -70.60, hidrojet=False, is_simulated=True)
+    b = Cuadrilla("b", -33.42, -70.60, hidrojet=False, is_simulated=True)
+    t = _tiempo({"crew:a": 0, "crew:b": 1000, "s:1": 900, "s:2": 100, "s:nueva": 0})
+    previas = [_p("s:1", 0.9, crew_id="a", mission_id="m1"), _p("s:2", 0.8, crew_id="b", mission_id="m2")]
+    dispatch.asignar([*previas, _p("s:nueva", 0.95)], [a, b], t, INTERV)
+    assert [p.clave for p in a.paradas] == ["s:1", "s:nueva"]
+    assert [p.clave for p in b.paradas] == ["s:2"]
+
+
+def test_mision_pendiente_sin_el_equipo_que_pide_se_reasigna():
+    manual = Cuadrilla("manual", -33.42, -70.60, hidrojet=False, is_simulated=True)
+    hidro = Cuadrilla("hidro", -33.42, -70.60, hidrojet=True, is_simulated=True)
+    t = _tiempo({"crew:manual": 0, "crew:hidro": 500, "s:A": 0})
+    dispatch.asignar([_p("s:A", hidrojet=True, crew_id="manual", mission_id="m1")], [manual, hidro], t, INTERV)
+    assert manual.paradas == [] and [p.clave for p in hidro.paradas] == ["s:A"]
+
+
 def test_cuadrilla_sin_posicion_ni_mision_iniciada_no_recibe_misiones():
     sin_pos = Cuadrilla("sin", None, None, hidrojet=True, is_simulated=True)
     con_pos = Cuadrilla("con", -33.42, -70.60, hidrojet=False, is_simulated=True)

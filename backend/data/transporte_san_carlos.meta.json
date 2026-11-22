@@ -1,0 +1,3249 @@
+{
+  "fuente": "GTFS de DTPM",
+  "url": "https://www.dtpm.cl/descargas/gtfs/GTFS_20261114_v2.zip",
+  "fecha_descarga": "2026-11-21",
+  "sha256_zip": "ff0cda445cc4652013e159a133fcf863278ec55f6146e48c5a2416bf41c0b155",
+  "centro_lonlat": [
+    -70.541,
+    -33.418
+  ],
+  "radio_m": 1600,
+  "paraderos_a_menos_de_80m": [
+    {
+      "paradero": "PC662",
+      "rejilla": "AL13SU014958",
+      "distancia_m": 3.1,
+      "rank": 153,
+      "prioridad": 0.306149
+    },
+    {
+      "paradero": "PC677",
+      "rejilla": "AL13SU008198",
+      "distancia_m": 4.4,
+      "rank": 460,
+      "prioridad": 0.056784
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU008209",
+      "distancia_m": 6.3,
+      "rank": 94,
+      "prioridad": 0.390924
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU008134",
+      "distancia_m": 6.4,
+      "rank": 249,
+      "prioridad": 0.198201
+    },
+    {
+      "paradero": "PC662",
+      "rejilla": "AL13SU014957",
+      "distancia_m": 6.9,
+      "rank": 282,
+      "prioridad": 0.172321
+    },
+    {
+      "paradero": "PC523",
+      "rejilla": "AL13SU008160",
+      "distancia_m": 7.4,
+      "rank": 366,
+      "prioridad": 0.112767
+    },
+    {
+      "paradero": "PC446",
+      "rejilla": "AL13SU012752",
+      "distancia_m": 8.9,
+      "rank": 98,
+      "prioridad": 0.375207
+    },
+    {
+      "paradero": "PC677",
+      "rejilla": "AL13SU008203",
+      "distancia_m": 9.1,
+      "rank": 396,
+      "prioridad": 0.094483
+    },
+    {
+      "paradero": "PC528",
+      "rejilla": "AL13SU013065",
+      "distancia_m": 9.2,
+      "rank": 130,
+      "prioridad": 0.332149
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU013113",
+      "distancia_m": 9.6,
+      "rank": 342,
+      "prioridad": 0.132316
+    },
+    {
+      "paradero": "PC677",
+      "rejilla": "AL13SU008197",
+      "distancia_m": 10.2,
+      "rank": 424,
+      "prioridad": 0.07658
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU013114",
+      "distancia_m": 10.4,
+      "rank": 206,
+      "prioridad": 0.247217
+    },
+    {
+      "paradero": "PC543",
+      "rejilla": "AL13SU008190",
+      "distancia_m": 10.7,
+      "rank": 103,
+      "prioridad": 0.363586
+    },
+    {
+      "paradero": "PC544",
+      "rejilla": "AL13SU008176",
+      "distancia_m": 11.0,
+      "rank": 271,
+      "prioridad": 0.180448
+    },
+    {
+      "paradero": "PC545",
+      "rejilla": "AL13SU008168",
+      "distancia_m": 11.0,
+      "rank": 377,
+      "prioridad": 0.109262
+    },
+    {
+      "paradero": "PC458",
+      "rejilla": "AL13SU013150",
+      "distancia_m": 11.2,
+      "rank": 554,
+      "prioridad": 0.000659
+    },
+    {
+      "paradero": "PC528",
+      "rejilla": "AL13SU008194",
+      "distancia_m": 11.3,
+      "rank": 154,
+      "prioridad": 0.306109
+    },
+    {
+      "paradero": "PC130",
+      "rejilla": "AL13SU013126",
+      "distancia_m": 11.4,
+      "rank": 369,
+      "prioridad": 0.111381
+    },
+    {
+      "paradero": "PC169",
+      "rejilla": "AL13SU014991",
+      "distancia_m": 11.9,
+      "rank": 279,
+      "prioridad": 0.174547
+    },
+    {
+      "paradero": "PC524",
+      "rejilla": "AL13SU013074",
+      "distancia_m": 12.1,
+      "rank": 506,
+      "prioridad": 0.028478
+    },
+    {
+      "paradero": "PC130",
+      "rejilla": "AL13SU008119",
+      "distancia_m": 12.4,
+      "rank": 350,
+      "prioridad": 0.12811
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU013119",
+      "distancia_m": 12.8,
+      "rank": 20,
+      "prioridad": 0.668028
+    },
+    {
+      "paradero": "PC457",
+      "rejilla": "AL13SU013155",
+      "distancia_m": 13.1,
+      "rank": 82,
+      "prioridad": 0.415891
+    },
+    {
+      "paradero": "PC523",
+      "rejilla": "AL13SU013076",
+      "distancia_m": 13.2,
+      "rank": 263,
+      "prioridad": 0.185235
+    },
+    {
+      "paradero": "PC542",
+      "rejilla": "AL13SU008200",
+      "distancia_m": 13.4,
+      "rank": 530,
+      "prioridad": 0.015997
+    },
+    {
+      "paradero": "PC542",
+      "rejilla": "AL13SU008201",
+      "distancia_m": 13.4,
+      "rank": 531,
+      "prioridad": 0.015997
+    },
+    {
+      "paradero": "PC523",
+      "rejilla": "AL13SU008159",
+      "distancia_m": 14.2,
+      "rank": 480,
+      "prioridad": 0.04263
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU013112",
+      "distancia_m": 14.3,
+      "rank": 256,
+      "prioridad": 0.194772
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU008135",
+      "distancia_m": 14.3,
+      "rank": 276,
+      "prioridad": 0.174978
+    },
+    {
+      "paradero": "PC527",
+      "rejilla": "AL13SU008187",
+      "distancia_m": 14.3,
+      "rank": 324,
+      "prioridad": 0.141336
+    },
+    {
+      "paradero": "PC679",
+      "rejilla": "AL13SU014829",
+      "distancia_m": 14.3,
+      "rank": 299,
+      "prioridad": 0.159763
+    },
+    {
+      "paradero": "PC677",
+      "rejilla": "AL13SU008196",
+      "distancia_m": 15.1,
+      "rank": 413,
+      "prioridad": 0.084313
+    },
+    {
+      "paradero": "PC523",
+      "rejilla": "AL13SU008158",
+      "distancia_m": 15.2,
+      "rank": 472,
+      "prioridad": 0.051111
+    },
+    {
+      "paradero": "PC134",
+      "rejilla": "AL13SU013099",
+      "distancia_m": 15.3,
+      "rank": 88,
+      "prioridad": 0.404114
+    },
+    {
+      "paradero": "PC544",
+      "rejilla": "AL13SU013070",
+      "distancia_m": 15.6,
+      "rank": 179,
+      "prioridad": 0.270164
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU013081",
+      "distancia_m": 15.6,
+      "rank": 403,
+      "prioridad": 0.089116
+    },
+    {
+      "paradero": "PC130",
+      "rejilla": "AL13SU013125",
+      "distancia_m": 15.7,
+      "rank": 426,
+      "prioridad": 0.075542
+    },
+    {
+      "paradero": "PC524",
+      "rejilla": "AL13SU008166",
+      "distancia_m": 15.8,
+      "rank": 486,
+      "prioridad": 0.039492
+    },
+    {
+      "paradero": "PC133",
+      "rejilla": "AL13SU013102",
+      "distancia_m": 16.1,
+      "rank": 223,
+      "prioridad": 0.223264
+    },
+    {
+      "paradero": "PC456",
+      "rejilla": "AL13SU013007",
+      "distancia_m": 16.1,
+      "rank": 108,
+      "prioridad": 0.354317
+    },
+    {
+      "paradero": "PC525",
+      "rejilla": "AL13SU008172",
+      "distancia_m": 16.1,
+      "rank": 151,
+      "prioridad": 0.307749
+    },
+    {
+      "paradero": "PC312",
+      "rejilla": "AL13SU014903",
+      "distancia_m": 16.2,
+      "rank": 203,
+      "prioridad": 0.251175
+    },
+    {
+      "paradero": "PC312",
+      "rejilla": "AL13SU014842",
+      "distancia_m": 16.8,
+      "rank": 526,
+      "prioridad": 0.01726
+    },
+    {
+      "paradero": "PC525",
+      "rejilla": "AL13SU008175",
+      "distancia_m": 16.8,
+      "rank": 491,
+      "prioridad": 0.035738
+    },
+    {
+      "paradero": "PC174",
+      "rejilla": "AL13SU014997",
+      "distancia_m": 17.0,
+      "rank": 492,
+      "prioridad": 0.035566
+    },
+    {
+      "paradero": "PC678",
+      "rejilla": "AL13SU013275",
+      "distancia_m": 17.2,
+      "rank": 463,
+      "prioridad": 0.056544
+    },
+    {
+      "paradero": "PC457",
+      "rejilla": "AL13SU013030",
+      "distancia_m": 17.3,
+      "rank": 90,
+      "prioridad": 0.398813
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU013117",
+      "distancia_m": 17.4,
+      "rank": 117,
+      "prioridad": 0.348293
+    },
+    {
+      "paradero": "PC525",
+      "rejilla": "AL13SU008174",
+      "distancia_m": 18.1,
+      "rank": 170,
+      "prioridad": 0.278514
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU013080",
+      "distancia_m": 18.1,
+      "rank": 80,
+      "prioridad": 0.416443
+    },
+    {
+      "paradero": "PC1115",
+      "rejilla": "AL13SU012931",
+      "distancia_m": 18.2,
+      "rank": 376,
+      "prioridad": 0.109456
+    },
+    {
+      "paradero": "PC525",
+      "rejilla": "AL13SU008173",
+      "distancia_m": 18.2,
+      "rank": 199,
+      "prioridad": 0.25619
+    },
+    {
+      "paradero": "PC526",
+      "rejilla": "AL13SU008180",
+      "distancia_m": 18.2,
+      "rank": 425,
+      "prioridad": 0.075822
+    },
+    {
+      "paradero": "PC545",
+      "rejilla": "AL13SU008167",
+      "distancia_m": 18.5,
+      "rank": 344,
+      "prioridad": 0.131598
+    },
+    {
+      "paradero": "PC525",
+      "rejilla": "AL13SU013071",
+      "distancia_m": 19.1,
+      "rank": 534,
+      "prioridad": 0.012582
+    },
+    {
+      "paradero": "PC542",
+      "rejilla": "AL13SU008199",
+      "distancia_m": 19.3,
+      "rank": 503,
+      "prioridad": 0.029038
+    },
+    {
+      "paradero": "PC137",
+      "rejilla": "AL13SU014981",
+      "distancia_m": 19.5,
+      "rank": 368,
+      "prioridad": 0.112149
+    },
+    {
+      "paradero": "PC121",
+      "rejilla": "AL13SU014991",
+      "distancia_m": 19.9,
+      "rank": 279,
+      "prioridad": 0.174547
+    },
+    {
+      "paradero": "PC662",
+      "rejilla": "AL13SU014946",
+      "distancia_m": 20.0,
+      "rank": 185,
+      "prioridad": 0.265155
+    },
+    {
+      "paradero": "PC679",
+      "rejilla": "AL13SU014950",
+      "distancia_m": 20.1,
+      "rank": 280,
+      "prioridad": 0.172493
+    },
+    {
+      "paradero": "PC546",
+      "rejilla": "AL13SU013076",
+      "distancia_m": 20.2,
+      "rank": 263,
+      "prioridad": 0.185235
+    },
+    {
+      "paradero": "PC527",
+      "rejilla": "AL13SU008188",
+      "distancia_m": 20.7,
+      "rank": 232,
+      "prioridad": 0.215139
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU008204",
+      "distancia_m": 20.8,
+      "rank": 126,
+      "prioridad": 0.338257
+    },
+    {
+      "paradero": "PC542",
+      "rejilla": "AL13SU008202",
+      "distancia_m": 20.9,
+      "rank": 520,
+      "prioridad": 0.021621
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU013112",
+      "distancia_m": 21.2,
+      "rank": 256,
+      "prioridad": 0.194772
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU008135",
+      "distancia_m": 21.2,
+      "rank": 276,
+      "prioridad": 0.174978
+    },
+    {
+      "paradero": "PC457",
+      "rejilla": "AL13SU013029",
+      "distancia_m": 21.2,
+      "rank": 270,
+      "prioridad": 0.181182
+    },
+    {
+      "paradero": "PC525",
+      "rejilla": "AL13SU013072",
+      "distancia_m": 21.2,
+      "rank": 83,
+      "prioridad": 0.414784
+    },
+    {
+      "paradero": "PC136",
+      "rejilla": "AL13SU015000",
+      "distancia_m": 21.5,
+      "rank": 337,
+      "prioridad": 0.135159
+    },
+    {
+      "paradero": "PC169",
+      "rejilla": "AL13SU014992",
+      "distancia_m": 21.6,
+      "rank": 128,
+      "prioridad": 0.336112
+    },
+    {
+      "paradero": "PC528",
+      "rejilla": "AL13SU008195",
+      "distancia_m": 21.6,
+      "rank": 55,
+      "prioridad": 0.499745
+    },
+    {
+      "paradero": "PC1045",
+      "rejilla": "AL13SU013380",
+      "distancia_m": 22.1,
+      "rank": 40,
+      "prioridad": 0.550133
+    },
+    {
+      "paradero": "PC544",
+      "rejilla": "AL13SU008174",
+      "distancia_m": 22.3,
+      "rank": 170,
+      "prioridad": 0.278514
+    },
+    {
+      "paradero": "PC1137",
+      "rejilla": "AL13SU013152",
+      "distancia_m": 22.4,
+      "rank": 29,
+      "prioridad": 0.583427
+    },
+    {
+      "paradero": "PC121",
+      "rejilla": "AL13SU014891",
+      "distancia_m": 22.4,
+      "rank": 436,
+      "prioridad": 0.071744
+    },
+    {
+      "paradero": "PC526",
+      "rejilla": "AL13SU013069",
+      "distancia_m": 22.5,
+      "rank": 137,
+      "prioridad": 0.323994
+    },
+    {
+      "paradero": "PC313",
+      "rejilla": "AL13SU014837",
+      "distancia_m": 22.7,
+      "rank": 41,
+      "prioridad": 0.547638
+    },
+    {
+      "paradero": "PC443",
+      "rejilla": "AL13SU013116",
+      "distancia_m": 23.0,
+      "rank": 147,
+      "prioridad": 0.311824
+    },
+    {
+      "paradero": "PC303",
+      "rejilla": "AL13SU014843",
+      "distancia_m": 23.1,
+      "rank": 180,
+      "prioridad": 0.269846
+    },
+    {
+      "paradero": "PC168",
+      "rejilla": "AL13SU015001",
+      "distancia_m": 23.2,
+      "rank": 277,
+      "prioridad": 0.174877
+    },
+    {
+      "paradero": "PC662",
+      "rejilla": "AL13SU014949",
+      "distancia_m": 23.2,
+      "rank": 132,
+      "prioridad": 0.329053
+    },
+    {
+      "paradero": "PC662",
+      "rejilla": "AL13SU014948",
+      "distancia_m": 23.2,
+      "rank": 169,
+      "prioridad": 0.280391
+    },
+    {
+      "paradero": "PC1068",
+      "rejilla": "AL13SU014824",
+      "distancia_m": 23.3,
+      "rank": 294,
+      "prioridad": 0.164933
+    },
+    {
+      "paradero": "PC133",
+      "rejilla": "AL13SU013101",
+      "distancia_m": 23.5,
+      "rank": 542,
+      "prioridad": 0.008208
+    },
+    {
+      "paradero": "PC1124",
+      "rejilla": "AL13SU013373",
+      "distancia_m": 23.6,
+      "rank": 243,
+      "prioridad": 0.205276
+    },
+    {
+      "paradero": "PC1137",
+      "rejilla": "AL13SU013153",
+      "distancia_m": 23.7,
+      "rank": 92,
+      "prioridad": 0.393398
+    },
+    {
+      "paradero": "PC443",
+      "rejilla": "AL13SU008130",
+      "distancia_m": 23.8,
+      "rank": 397,
+      "prioridad": 0.092864
+    },
+    {
+      "paradero": "PC544",
+      "rejilla": "AL13SU013071",
+      "distancia_m": 23.9,
+      "rank": 534,
+      "prioridad": 0.012582
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU012754",
+      "distancia_m": 24.1,
+      "rank": 379,
+      "prioridad": 0.108121
+    },
+    {
+      "paradero": "PC445",
+      "rejilla": "AL13SU012759",
+      "distancia_m": 24.2,
+      "rank": 533,
+      "prioridad": 0.013918
+    },
+    {
+      "paradero": "PC136",
+      "rejilla": "AL13SU015001",
+      "distancia_m": 24.5,
+      "rank": 277,
+      "prioridad": 0.174877
+    },
+    {
+      "paradero": "PC672",
+      "rejilla": "AL13SU012950",
+      "distancia_m": 24.6,
+      "rank": 67,
+      "prioridad": 0.451055
+    },
+    {
+      "paradero": "PC546",
+      "rejilla": "AL13SU008160",
+      "distancia_m": 26.0,
+      "rank": 366,
+      "prioridad": 0.112767
+    },
+    {
+      "paradero": "PC134",
+      "rejilla": "AL13SU013098",
+      "distancia_m": 26.3,
+      "rank": 84,
+      "prioridad": 0.41209
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU008133",
+      "distancia_m": 26.5,
+      "rank": 161,
+      "prioridad": 0.295892
+    },
+    {
+      "paradero": "PC312",
+      "rejilla": "AL13SU014902",
+      "distancia_m": 26.5,
+      "rank": 478,
+      "prioridad": 0.045444
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU013113",
+      "distancia_m": 26.6,
+      "rank": 342,
+      "prioridad": 0.132316
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU012755",
+      "distancia_m": 26.8,
+      "rank": 124,
+      "prioridad": 0.341655
+    },
+    {
+      "paradero": "PC303",
+      "rejilla": "AL13SU014841",
+      "distancia_m": 27.3,
+      "rank": 39,
+      "prioridad": 0.551786
+    },
+    {
+      "paradero": "PC313",
+      "rejilla": "AL13SU014909",
+      "distancia_m": 27.4,
+      "rank": 72,
+      "prioridad": 0.443432
+    },
+    {
+      "paradero": "PC662",
+      "rejilla": "AL13SU014947",
+      "distancia_m": 27.4,
+      "rank": 191,
+      "prioridad": 0.259142
+    },
+    {
+      "paradero": "PC1115",
+      "rejilla": "AL13SU012929",
+      "distancia_m": 27.5,
+      "rank": 515,
+      "prioridad": 0.024415
+    },
+    {
+      "paradero": "PC672",
+      "rejilla": "AL13SU012951",
+      "distancia_m": 27.6,
+      "rank": 114,
+      "prioridad": 0.350761
+    },
+    {
+      "paradero": "PC663",
+      "rejilla": "AL13SU013274",
+      "distancia_m": 28.2,
+      "rank": 498,
+      "prioridad": 0.031896
+    },
+    {
+      "paradero": "PC455",
+      "rejilla": "AL13SU012954",
+      "distancia_m": 28.5,
+      "rank": 332,
+      "prioridad": 0.136356
+    },
+    {
+      "paradero": "PC544",
+      "rejilla": "AL13SU008173",
+      "distancia_m": 29.1,
+      "rank": 199,
+      "prioridad": 0.25619
+    },
+    {
+      "paradero": "PC443",
+      "rejilla": "AL13SU013118",
+      "distancia_m": 29.3,
+      "rank": 311,
+      "prioridad": 0.148619
+    },
+    {
+      "paradero": "PC126",
+      "rejilla": "AL13SU013379",
+      "distancia_m": 29.4,
+      "rank": 317,
+      "prioridad": 0.144452
+    },
+    {
+      "paradero": "PC1350",
+      "rejilla": "AL13SU015001",
+      "distancia_m": 29.4,
+      "rank": 277,
+      "prioridad": 0.174877
+    },
+    {
+      "paradero": "PC457",
+      "rejilla": "AL13SU013156",
+      "distancia_m": 29.4,
+      "rank": 54,
+      "prioridad": 0.502952
+    },
+    {
+      "paradero": "PC1068",
+      "rejilla": "AL13SU014990",
+      "distancia_m": 29.7,
+      "rank": 309,
+      "prioridad": 0.153606
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU013116",
+      "distancia_m": 29.7,
+      "rank": 147,
+      "prioridad": 0.311824
+    },
+    {
+      "paradero": "PC524",
+      "rejilla": "AL13SU008167",
+      "distancia_m": 29.7,
+      "rank": 344,
+      "prioridad": 0.131598
+    },
+    {
+      "paradero": "PC542",
+      "rejilla": "AL13SU008203",
+      "distancia_m": 29.7,
+      "rank": 396,
+      "prioridad": 0.094483
+    },
+    {
+      "paradero": "PC1038",
+      "rejilla": "AL13SU013108",
+      "distancia_m": 29.8,
+      "rank": 246,
+      "prioridad": 0.200954
+    },
+    {
+      "paradero": "PC1064",
+      "rejilla": "AL13SU012988",
+      "distancia_m": 29.8,
+      "rank": 17,
+      "prioridad": 0.687611
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU008136",
+      "distancia_m": 29.8,
+      "rank": 364,
+      "prioridad": 0.116673
+    },
+    {
+      "paradero": "PC168",
+      "rejilla": "AL13SU014999",
+      "distancia_m": 29.9,
+      "rank": 527,
+      "prioridad": 0.017258
+    },
+    {
+      "paradero": "PC527",
+      "rejilla": "AL13SU013066",
+      "distancia_m": 30.1,
+      "rank": 220,
+      "prioridad": 0.226385
+    },
+    {
+      "paradero": "PC543",
+      "rejilla": "AL13SU008189",
+      "distancia_m": 30.4,
+      "rank": 109,
+      "prioridad": 0.352395
+    },
+    {
+      "paradero": "PC546",
+      "rejilla": "AL13SU008159",
+      "distancia_m": 30.6,
+      "rank": 480,
+      "prioridad": 0.04263
+    },
+    {
+      "paradero": "PC174",
+      "rejilla": "AL13SU014998",
+      "distancia_m": 30.7,
+      "rank": 476,
+      "prioridad": 0.047203
+    },
+    {
+      "paradero": "PC126",
+      "rejilla": "AL13SU008121",
+      "distancia_m": 30.8,
+      "rank": 334,
+      "prioridad": 0.136228
+    },
+    {
+      "paradero": "PC678",
+      "rejilla": "AL13SU013274",
+      "distancia_m": 30.8,
+      "rank": 498,
+      "prioridad": 0.031896
+    },
+    {
+      "paradero": "PC1109",
+      "rejilla": "AL13SU012755",
+      "distancia_m": 30.9,
+      "rank": 124,
+      "prioridad": 0.341655
+    },
+    {
+      "paradero": "PC130",
+      "rejilla": "AL13SU013124",
+      "distancia_m": 30.9,
+      "rank": 289,
+      "prioridad": 0.168074
+    },
+    {
+      "paradero": "PC130",
+      "rejilla": "AL13SU008208",
+      "distancia_m": 30.9,
+      "rank": 307,
+      "prioridad": 0.154516
+    },
+    {
+      "paradero": "PC543",
+      "rejilla": "AL13SU008191",
+      "distancia_m": 31.1,
+      "rank": 50,
+      "prioridad": 0.515211
+    },
+    {
+      "paradero": "PC171",
+      "rejilla": "AL13SU014890",
+      "distancia_m": 31.2,
+      "rank": 176,
+      "prioridad": 0.272511
+    },
+    {
+      "paradero": "PC544",
+      "rejilla": "AL13SU008175",
+      "distancia_m": 31.5,
+      "rank": 491,
+      "prioridad": 0.035738
+    },
+    {
+      "paradero": "PC677",
+      "rejilla": "AL13SU008199",
+      "distancia_m": 31.7,
+      "rank": 503,
+      "prioridad": 0.029038
+    },
+    {
+      "paradero": "PC126",
+      "rejilla": "AL13SU013124",
+      "distancia_m": 31.9,
+      "rank": 289,
+      "prioridad": 0.168074
+    },
+    {
+      "paradero": "PC126",
+      "rejilla": "AL13SU008208",
+      "distancia_m": 31.9,
+      "rank": 307,
+      "prioridad": 0.154516
+    },
+    {
+      "paradero": "PC443",
+      "rejilla": "AL13SU008204",
+      "distancia_m": 31.9,
+      "rank": 126,
+      "prioridad": 0.338257
+    },
+    {
+      "paradero": "PC445",
+      "rejilla": "AL13SU013028",
+      "distancia_m": 32.0,
+      "rank": 347,
+      "prioridad": 0.130222
+    },
+    {
+      "paradero": "PC136",
+      "rejilla": "AL13SU014999",
+      "distancia_m": 32.1,
+      "rank": 527,
+      "prioridad": 0.017258
+    },
+    {
+      "paradero": "PC525",
+      "rejilla": "AL13SU013070",
+      "distancia_m": 32.1,
+      "rank": 179,
+      "prioridad": 0.270164
+    },
+    {
+      "paradero": "PC546",
+      "rejilla": "AL13SU008161",
+      "distancia_m": 32.1,
+      "rank": 409,
+      "prioridad": 0.086368
+    },
+    {
+      "paradero": "PC1115",
+      "rejilla": "AL13SU012930",
+      "distancia_m": 32.2,
+      "rank": 254,
+      "prioridad": 0.195147
+    },
+    {
+      "paradero": "PC525",
+      "rejilla": "AL13SU008171",
+      "distancia_m": 32.2,
+      "rank": 392,
+      "prioridad": 0.096691
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU008130",
+      "distancia_m": 32.5,
+      "rank": 397,
+      "prioridad": 0.092864
+    },
+    {
+      "paradero": "PC1124",
+      "rejilla": "AL13SU013374",
+      "distancia_m": 32.7,
+      "rank": 244,
+      "prioridad": 0.203694
+    },
+    {
+      "paradero": "PC130",
+      "rejilla": "AL13SU008120",
+      "distancia_m": 32.7,
+      "rank": 112,
+      "prioridad": 0.351435
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU008139",
+      "distancia_m": 32.9,
+      "rank": 348,
+      "prioridad": 0.129447
+    },
+    {
+      "paradero": "PC168",
+      "rejilla": "AL13SU015000",
+      "distancia_m": 33.0,
+      "rank": 337,
+      "prioridad": 0.135159
+    },
+    {
+      "paradero": "PC169",
+      "rejilla": "AL13SU014891",
+      "distancia_m": 33.0,
+      "rank": 436,
+      "prioridad": 0.071744
+    },
+    {
+      "paradero": "PC526",
+      "rejilla": "AL13SU008181",
+      "distancia_m": 33.0,
+      "rank": 165,
+      "prioridad": 0.287063
+    },
+    {
+      "paradero": "PC1020",
+      "rejilla": "AL13SU014945",
+      "distancia_m": 33.1,
+      "rank": 143,
+      "prioridad": 0.315823
+    },
+    {
+      "paradero": "PC313",
+      "rejilla": "AL13SU014908",
+      "distancia_m": 33.3,
+      "rank": 71,
+      "prioridad": 0.443969
+    },
+    {
+      "paradero": "PC546",
+      "rejilla": "AL13SU008158",
+      "distancia_m": 33.4,
+      "rank": 472,
+      "prioridad": 0.051111
+    },
+    {
+      "paradero": "PC456",
+      "rejilla": "AL13SU012751",
+      "distancia_m": 33.7,
+      "rank": 218,
+      "prioridad": 0.227416
+    },
+    {
+      "paradero": "PC445",
+      "rejilla": "AL13SU012758",
+      "distancia_m": 33.8,
+      "rank": 466,
+      "prioridad": 0.054238
+    },
+    {
+      "paradero": "PC136",
+      "rejilla": "AL13SU014998",
+      "distancia_m": 33.9,
+      "rank": 476,
+      "prioridad": 0.047203
+    },
+    {
+      "paradero": "PC527",
+      "rejilla": "AL13SU008189",
+      "distancia_m": 33.9,
+      "rank": 109,
+      "prioridad": 0.352395
+    },
+    {
+      "paradero": "PC1038",
+      "rejilla": "AL13SU013109",
+      "distancia_m": 34.0,
+      "rank": 349,
+      "prioridad": 0.129158
+    },
+    {
+      "paradero": "PC130",
+      "rejilla": "AL13SU013379",
+      "distancia_m": 34.0,
+      "rank": 317,
+      "prioridad": 0.144452
+    },
+    {
+      "paradero": "PC1350",
+      "rejilla": "AL13SU015000",
+      "distancia_m": 34.0,
+      "rank": 337,
+      "prioridad": 0.135159
+    },
+    {
+      "paradero": "PC1034",
+      "rejilla": "AL13SU012771",
+      "distancia_m": 34.1,
+      "rank": 75,
+      "prioridad": 0.424839
+    },
+    {
+      "paradero": "PC544",
+      "rejilla": "AL13SU008172",
+      "distancia_m": 34.1,
+      "rank": 151,
+      "prioridad": 0.307749
+    },
+    {
+      "paradero": "PC1038",
+      "rejilla": "AL13SU013386",
+      "distancia_m": 34.2,
+      "rank": 295,
+      "prioridad": 0.162834
+    },
+    {
+      "paradero": "PC443",
+      "rejilla": "AL13SU008132",
+      "distancia_m": 34.2,
+      "rank": 148,
+      "prioridad": 0.310972
+    },
+    {
+      "paradero": "PC126",
+      "rejilla": "AL13SU008120",
+      "distancia_m": 34.5,
+      "rank": 112,
+      "prioridad": 0.351435
+    },
+    {
+      "paradero": "PC544",
+      "rejilla": "AL13SU013072",
+      "distancia_m": 34.7,
+      "rank": 83,
+      "prioridad": 0.414784
+    },
+    {
+      "paradero": "PC457",
+      "rejilla": "AL13SU013028",
+      "distancia_m": 35.0,
+      "rank": 347,
+      "prioridad": 0.130222
+    },
+    {
+      "paradero": "PC677",
+      "rejilla": "AL13SU008202",
+      "distancia_m": 35.1,
+      "rank": 520,
+      "prioridad": 0.021621
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU013118",
+      "distancia_m": 35.2,
+      "rank": 311,
+      "prioridad": 0.148619
+    },
+    {
+      "paradero": "PC443",
+      "rejilla": "AL13SU013117",
+      "distancia_m": 35.3,
+      "rank": 117,
+      "prioridad": 0.348293
+    },
+    {
+      "paradero": "PC1038",
+      "rejilla": "AL13SU012770",
+      "distancia_m": 35.6,
+      "rank": 398,
+      "prioridad": 0.092607
+    },
+    {
+      "paradero": "PC543",
+      "rejilla": "AL13SU013066",
+      "distancia_m": 35.7,
+      "rank": 220,
+      "prioridad": 0.226385
+    },
+    {
+      "paradero": "PC122",
+      "rejilla": "AL13SU015004",
+      "distancia_m": 35.9,
+      "rank": 86,
+      "prioridad": 0.407759
+    },
+    {
+      "paradero": "PC545",
+      "rejilla": "AL13SU013074",
+      "distancia_m": 35.9,
+      "rank": 506,
+      "prioridad": 0.028478
+    },
+    {
+      "paradero": "PC447",
+      "rejilla": "AL13SU012953",
+      "distancia_m": 36.2,
+      "rank": 438,
+      "prioridad": 0.069786
+    },
+    {
+      "paradero": "PC455",
+      "rejilla": "AL13SU012953",
+      "distancia_m": 36.4,
+      "rank": 438,
+      "prioridad": 0.069786
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU008134",
+      "distancia_m": 36.5,
+      "rank": 249,
+      "prioridad": 0.198201
+    },
+    {
+      "paradero": "PC528",
+      "rejilla": "AL13SU008196",
+      "distancia_m": 36.8,
+      "rank": 413,
+      "prioridad": 0.084313
+    },
+    {
+      "paradero": "PC123",
+      "rejilla": "AL13SU013097",
+      "distancia_m": 37.0,
+      "rank": 27,
+      "prioridad": 0.604518
+    },
+    {
+      "paradero": "PC447",
+      "rejilla": "AL13SU012954",
+      "distancia_m": 37.2,
+      "rank": 332,
+      "prioridad": 0.136356
+    },
+    {
+      "paradero": "PC443",
+      "rejilla": "AL13SU008131",
+      "distancia_m": 37.4,
+      "rank": 227,
+      "prioridad": 0.21994
+    },
+    {
+      "paradero": "PC527",
+      "rejilla": "AL13SU008185",
+      "distancia_m": 37.4,
+      "rank": 338,
+      "prioridad": 0.134707
+    },
+    {
+      "paradero": "PC313",
+      "rejilla": "AL13SU014907",
+      "distancia_m": 37.5,
+      "rank": 47,
+      "prioridad": 0.518843
+    },
+    {
+      "paradero": "PC664",
+      "rejilla": "AL13SU008194",
+      "distancia_m": 37.5,
+      "rank": 154,
+      "prioridad": 0.306109
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU013395",
+      "distancia_m": 37.6,
+      "rank": 57,
+      "prioridad": 0.485669
+    },
+    {
+      "paradero": "PC457",
+      "rejilla": "AL13SU012758",
+      "distancia_m": 37.8,
+      "rank": 466,
+      "prioridad": 0.054238
+    },
+    {
+      "paradero": "PC1034",
+      "rejilla": "AL13SU012747",
+      "distancia_m": 37.9,
+      "rank": 399,
+      "prioridad": 0.091457
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU013111",
+      "distancia_m": 37.9,
+      "rank": 274,
+      "prioridad": 0.176326
+    },
+    {
+      "paradero": "PC545",
+      "rejilla": "AL13SU008166",
+      "distancia_m": 37.9,
+      "rank": 486,
+      "prioridad": 0.039492
+    },
+    {
+      "paradero": "PC303",
+      "rejilla": "AL13SU014902",
+      "distancia_m": 38.1,
+      "rank": 478,
+      "prioridad": 0.045444
+    },
+    {
+      "paradero": "PC1068",
+      "rejilla": "AL13SU014825",
+      "distancia_m": 38.5,
+      "rank": 135,
+      "prioridad": 0.326945
+    },
+    {
+      "paradero": "PC122",
+      "rejilla": "AL13SU014981",
+      "distancia_m": 38.6,
+      "rank": 368,
+      "prioridad": 0.112149
+    },
+    {
+      "paradero": "PC124",
+      "rejilla": "AL13SU013102",
+      "distancia_m": 38.6,
+      "rank": 223,
+      "prioridad": 0.223264
+    },
+    {
+      "paradero": "PC135",
+      "rejilla": "AL13SU013096",
+      "distancia_m": 38.6,
+      "rank": 38,
+      "prioridad": 0.55842
+    },
+    {
+      "paradero": "PC1109",
+      "rejilla": "AL13SU013080",
+      "distancia_m": 38.8,
+      "rank": 80,
+      "prioridad": 0.416443
+    },
+    {
+      "paradero": "PC168",
+      "rejilla": "AL13SU014984",
+      "distancia_m": 38.8,
+      "rank": 489,
+      "prioridad": 0.037339
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU008137",
+      "distancia_m": 39.2,
+      "rank": 495,
+      "prioridad": 0.034105
+    },
+    {
+      "paradero": "PC544",
+      "rejilla": "AL13SU008177",
+      "distancia_m": 39.2,
+      "rank": 386,
+      "prioridad": 0.103662
+    },
+    {
+      "paradero": "PC447",
+      "rejilla": "AL13SU012958",
+      "distancia_m": 39.3,
+      "rank": 101,
+      "prioridad": 0.371803
+    },
+    {
+      "paradero": "PC1045",
+      "rejilla": "AL13SU013011",
+      "distancia_m": 39.5,
+      "rank": 19,
+      "prioridad": 0.67664
+    },
+    {
+      "paradero": "PC121",
+      "rejilla": "AL13SU014992",
+      "distancia_m": 39.6,
+      "rank": 128,
+      "prioridad": 0.336112
+    },
+    {
+      "paradero": "PC1034",
+      "rejilla": "AL13SU013374",
+      "distancia_m": 39.7,
+      "rank": 244,
+      "prioridad": 0.203694
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU013114",
+      "distancia_m": 39.7,
+      "rank": 206,
+      "prioridad": 0.247217
+    },
+    {
+      "paradero": "PC1067",
+      "rejilla": "AL13SU014824",
+      "distancia_m": 39.8,
+      "rank": 294,
+      "prioridad": 0.164933
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU013110",
+      "distancia_m": 40.0,
+      "rank": 335,
+      "prioridad": 0.13603
+    },
+    {
+      "paradero": "PC677",
+      "rejilla": "AL13SU008200",
+      "distancia_m": 40.0,
+      "rank": 530,
+      "prioridad": 0.015997
+    },
+    {
+      "paradero": "PC677",
+      "rejilla": "AL13SU008201",
+      "distancia_m": 40.0,
+      "rank": 531,
+      "prioridad": 0.015997
+    },
+    {
+      "paradero": "PC525",
+      "rejilla": "AL13SU008176",
+      "distancia_m": 40.1,
+      "rank": 271,
+      "prioridad": 0.180448
+    },
+    {
+      "paradero": "PD1007",
+      "rejilla": "AL13SU013138",
+      "distancia_m": 40.1,
+      "rank": 278,
+      "prioridad": 0.174704
+    },
+    {
+      "paradero": "PC124",
+      "rejilla": "AL13SU013101",
+      "distancia_m": 40.3,
+      "rank": 542,
+      "prioridad": 0.008208
+    },
+    {
+      "paradero": "PC528",
+      "rejilla": "AL13SU008197",
+      "distancia_m": 40.4,
+      "rank": 424,
+      "prioridad": 0.07658
+    },
+    {
+      "paradero": "PC457",
+      "rejilla": "AL13SU013157",
+      "distancia_m": 40.6,
+      "rank": 93,
+      "prioridad": 0.392369
+    },
+    {
+      "paradero": "PC542",
+      "rejilla": "AL13SU008198",
+      "distancia_m": 40.6,
+      "rank": 460,
+      "prioridad": 0.056784
+    },
+    {
+      "paradero": "PC168",
+      "rejilla": "AL13SU015016",
+      "distancia_m": 41.1,
+      "rank": 387,
+      "prioridad": 0.103389
+    },
+    {
+      "paradero": "PC1350",
+      "rejilla": "AL13SU014999",
+      "distancia_m": 41.2,
+      "rank": 527,
+      "prioridad": 0.017258
+    },
+    {
+      "paradero": "PC546",
+      "rejilla": "AL13SU008162",
+      "distancia_m": 41.5,
+      "rank": 258,
+      "prioridad": 0.193621
+    },
+    {
+      "paradero": "PC445",
+      "rejilla": "AL13SU013029",
+      "distancia_m": 41.6,
+      "rank": 270,
+      "prioridad": 0.181182
+    },
+    {
+      "paradero": "PC1109",
+      "rejilla": "AL13SU013081",
+      "distancia_m": 42.0,
+      "rank": 403,
+      "prioridad": 0.089116
+    },
+    {
+      "paradero": "PC446",
+      "rejilla": "AL13SU013009",
+      "distancia_m": 42.1,
+      "rank": 96,
+      "prioridad": 0.381844
+    },
+    {
+      "paradero": "PC312",
+      "rejilla": "AL13SU014843",
+      "distancia_m": 42.8,
+      "rank": 180,
+      "prioridad": 0.269846
+    },
+    {
+      "paradero": "PC528",
+      "rejilla": "AL13SU008203",
+      "distancia_m": 43.1,
+      "rank": 396,
+      "prioridad": 0.094483
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU008129",
+      "distancia_m": 43.2,
+      "rank": 7,
+      "prioridad": 0.812268
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU008138",
+      "distancia_m": 43.6,
+      "rank": 327,
+      "prioridad": 0.13944
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU013363",
+      "distancia_m": 43.7,
+      "rank": 229,
+      "prioridad": 0.2178
+    },
+    {
+      "paradero": "PC542",
+      "rejilla": "AL13SU008197",
+      "distancia_m": 44.0,
+      "rank": 424,
+      "prioridad": 0.07658
+    },
+    {
+      "paradero": "PC524",
+      "rejilla": "AL13SU008165",
+      "distancia_m": 44.4,
+      "rank": 273,
+      "prioridad": 0.176995
+    },
+    {
+      "paradero": "PC1068",
+      "rejilla": "AL13SU014989",
+      "distancia_m": 44.6,
+      "rank": 437,
+      "prioridad": 0.07115
+    },
+    {
+      "paradero": "PC528",
+      "rejilla": "AL13SU008198",
+      "distancia_m": 45.0,
+      "rank": 460,
+      "prioridad": 0.056784
+    },
+    {
+      "paradero": "PC1034",
+      "rejilla": "AL13SU013373",
+      "distancia_m": 45.3,
+      "rank": 243,
+      "prioridad": 0.205276
+    },
+    {
+      "paradero": "PC312",
+      "rejilla": "AL13SU014904",
+      "distancia_m": 45.3,
+      "rank": 44,
+      "prioridad": 0.541012
+    },
+    {
+      "paradero": "PC664",
+      "rejilla": "AL13SU013065",
+      "distancia_m": 45.3,
+      "rank": 130,
+      "prioridad": 0.332149
+    },
+    {
+      "paradero": "PC137",
+      "rejilla": "AL13SU015004",
+      "distancia_m": 45.4,
+      "rank": 86,
+      "prioridad": 0.407759
+    },
+    {
+      "paradero": "PC1109",
+      "rejilla": "AL13SU013077",
+      "distancia_m": 45.5,
+      "rank": 322,
+      "prioridad": 0.141723
+    },
+    {
+      "paradero": "PC527",
+      "rejilla": "AL13SU008186",
+      "distancia_m": 45.5,
+      "rank": 449,
+      "prioridad": 0.06112
+    },
+    {
+      "paradero": "PC313",
+      "rejilla": "AL13SU014906",
+      "distancia_m": 45.6,
+      "rank": 99,
+      "prioridad": 0.372843
+    },
+    {
+      "paradero": "PC312",
+      "rejilla": "AL13SU014841",
+      "distancia_m": 46.0,
+      "rank": 39,
+      "prioridad": 0.551786
+    },
+    {
+      "paradero": "PC135",
+      "rejilla": "AL13SU013097",
+      "distancia_m": 46.2,
+      "rank": 27,
+      "prioridad": 0.604518
+    },
+    {
+      "paradero": "PC443",
+      "rejilla": "AL13SU013115",
+      "distancia_m": 46.3,
+      "rank": 237,
+      "prioridad": 0.211356
+    },
+    {
+      "paradero": "PC526",
+      "rejilla": "AL13SU008179",
+      "distancia_m": 46.6,
+      "rank": 162,
+      "prioridad": 0.295137
+    },
+    {
+      "paradero": "PC136",
+      "rejilla": "AL13SU014997",
+      "distancia_m": 46.8,
+      "rank": 492,
+      "prioridad": 0.035566
+    },
+    {
+      "paradero": "PC457",
+      "rejilla": "AL13SU012759",
+      "distancia_m": 46.8,
+      "rank": 533,
+      "prioridad": 0.013918
+    },
+    {
+      "paradero": "PC1137",
+      "rejilla": "AL13SU013151",
+      "distancia_m": 46.9,
+      "rank": 111,
+      "prioridad": 0.351755
+    },
+    {
+      "paradero": "PC126",
+      "rejilla": "AL13SU013125",
+      "distancia_m": 47.1,
+      "rank": 426,
+      "prioridad": 0.075542
+    },
+    {
+      "paradero": "PC445",
+      "rejilla": "AL13SU013030",
+      "distancia_m": 47.1,
+      "rank": 90,
+      "prioridad": 0.398813
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU012772",
+      "distancia_m": 47.1,
+      "rank": 393,
+      "prioridad": 0.096479
+    },
+    {
+      "paradero": "PC1109",
+      "rejilla": "AL13SU008152",
+      "distancia_m": 47.3,
+      "rank": 375,
+      "prioridad": 0.109627
+    },
+    {
+      "paradero": "PC542",
+      "rejilla": "AL13SU008196",
+      "distancia_m": 47.3,
+      "rank": 413,
+      "prioridad": 0.084313
+    },
+    {
+      "paradero": "PC1045",
+      "rejilla": "AL13SU013141",
+      "distancia_m": 47.6,
+      "rank": 159,
+      "prioridad": 0.30104
+    },
+    {
+      "paradero": "PC1034",
+      "rejilla": "AL13SU012772",
+      "distancia_m": 47.7,
+      "rank": 393,
+      "prioridad": 0.096479
+    },
+    {
+      "paradero": "PC458",
+      "rejilla": "AL13SU013321",
+      "distancia_m": 47.8,
+      "rank": 459,
+      "prioridad": 0.056847
+    },
+    {
+      "paradero": "PC456",
+      "rejilla": "AL13SU013008",
+      "distancia_m": 48.0,
+      "rank": 70,
+      "prioridad": 0.445611
+    },
+    {
+      "paradero": "PC456",
+      "rejilla": "AL13SU013142",
+      "distancia_m": 48.1,
+      "rank": 73,
+      "prioridad": 0.442139
+    },
+    {
+      "paradero": "PC442",
+      "rejilla": "AL13SU013150",
+      "distancia_m": 48.3,
+      "rank": 554,
+      "prioridad": 0.000659
+    },
+    {
+      "paradero": "PC824",
+      "rejilla": "AL13SU012929",
+      "distancia_m": 48.4,
+      "rank": 515,
+      "prioridad": 0.024415
+    },
+    {
+      "paradero": "PC663",
+      "rejilla": "AL13SU013275",
+      "distancia_m": 48.5,
+      "rank": 463,
+      "prioridad": 0.056544
+    },
+    {
+      "paradero": "PC543",
+      "rejilla": "AL13SU008187",
+      "distancia_m": 48.8,
+      "rank": 324,
+      "prioridad": 0.141336
+    },
+    {
+      "paradero": "PC662",
+      "rejilla": "AL13SU014829",
+      "distancia_m": 49.0,
+      "rank": 299,
+      "prioridad": 0.159763
+    },
+    {
+      "paradero": "PC446",
+      "rejilla": "AL13SU013142",
+      "distancia_m": 49.3,
+      "rank": 73,
+      "prioridad": 0.442139
+    },
+    {
+      "paradero": "PC443",
+      "rejilla": "AL13SU008209",
+      "distancia_m": 50.0,
+      "rank": 94,
+      "prioridad": 0.390924
+    },
+    {
+      "paradero": "PC824",
+      "rejilla": "AL13SU012931",
+      "distancia_m": 50.1,
+      "rank": 376,
+      "prioridad": 0.109456
+    },
+    {
+      "paradero": "PC174",
+      "rejilla": "AL13SU014984",
+      "distancia_m": 50.3,
+      "rank": 489,
+      "prioridad": 0.037339
+    },
+    {
+      "paradero": "PC526",
+      "rejilla": "AL13SU008178",
+      "distancia_m": 50.3,
+      "rank": 447,
+      "prioridad": 0.061254
+    },
+    {
+      "paradero": "PC1038",
+      "rejilla": "AL13SU013106",
+      "distancia_m": 50.4,
+      "rank": 261,
+      "prioridad": 0.190358
+    },
+    {
+      "paradero": "PC136",
+      "rejilla": "AL13SU014984",
+      "distancia_m": 50.4,
+      "rank": 489,
+      "prioridad": 0.037339
+    },
+    {
+      "paradero": "PC524",
+      "rejilla": "AL13SU008168",
+      "distancia_m": 50.4,
+      "rank": 377,
+      "prioridad": 0.109262
+    },
+    {
+      "paradero": "PC679",
+      "rejilla": "AL13SU014956",
+      "distancia_m": 50.9,
+      "rank": 291,
+      "prioridad": 0.167728
+    },
+    {
+      "paradero": "PC123",
+      "rejilla": "AL13SU013096",
+      "distancia_m": 51.1,
+      "rank": 38,
+      "prioridad": 0.55842
+    },
+    {
+      "paradero": "PC1109",
+      "rejilla": "AL13SU013078",
+      "distancia_m": 51.4,
+      "rank": 429,
+      "prioridad": 0.07433
+    },
+    {
+      "paradero": "PC126",
+      "rejilla": "AL13SU008119",
+      "distancia_m": 51.4,
+      "rank": 350,
+      "prioridad": 0.12811
+    },
+    {
+      "paradero": "PC135",
+      "rejilla": "AL13SU014827",
+      "distancia_m": 51.4,
+      "rank": 68,
+      "prioridad": 0.449966
+    },
+    {
+      "paradero": "PC316",
+      "rejilla": "AL13SU012991",
+      "distancia_m": 51.5,
+      "rank": 25,
+      "prioridad": 0.61081
+    },
+    {
+      "paradero": "PC1045",
+      "rejilla": "AL13SU013013",
+      "distancia_m": 51.8,
+      "rank": 21,
+      "prioridad": 0.650319
+    },
+    {
+      "paradero": "PC1067",
+      "rejilla": "AL13SU014990",
+      "distancia_m": 51.8,
+      "rank": 309,
+      "prioridad": 0.153606
+    },
+    {
+      "paradero": "PC303",
+      "rejilla": "AL13SU014904",
+      "distancia_m": 51.9,
+      "rank": 44,
+      "prioridad": 0.541012
+    },
+    {
+      "paradero": "PC174",
+      "rejilla": "AL13SU014999",
+      "distancia_m": 52.1,
+      "rank": 527,
+      "prioridad": 0.017258
+    },
+    {
+      "paradero": "PC174",
+      "rejilla": "AL13SU015000",
+      "distancia_m": 52.2,
+      "rank": 337,
+      "prioridad": 0.135159
+    },
+    {
+      "paradero": "PC445",
+      "rejilla": "AL13SU013155",
+      "distancia_m": 52.5,
+      "rank": 82,
+      "prioridad": 0.415891
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU008133",
+      "distancia_m": 52.6,
+      "rank": 161,
+      "prioridad": 0.295892
+    },
+    {
+      "paradero": "PC312",
+      "rejilla": "AL13SU014832",
+      "distancia_m": 52.9,
+      "rank": 28,
+      "prioridad": 0.599815
+    },
+    {
+      "paradero": "PC524",
+      "rejilla": "AL13SU008164",
+      "distancia_m": 53.1,
+      "rank": 262,
+      "prioridad": 0.188756
+    },
+    {
+      "paradero": "PC1350",
+      "rejilla": "AL13SU014998",
+      "distancia_m": 53.3,
+      "rank": 476,
+      "prioridad": 0.047203
+    },
+    {
+      "paradero": "PC303",
+      "rejilla": "AL13SU014832",
+      "distancia_m": 53.4,
+      "rank": 28,
+      "prioridad": 0.599815
+    },
+    {
+      "paradero": "PC664",
+      "rejilla": "AL13SU008203",
+      "distancia_m": 53.6,
+      "rank": 396,
+      "prioridad": 0.094483
+    },
+    {
+      "paradero": "PC168",
+      "rejilla": "AL13SU014998",
+      "distancia_m": 53.8,
+      "rank": 476,
+      "prioridad": 0.047203
+    },
+    {
+      "paradero": "PC543",
+      "rejilla": "AL13SU008188",
+      "distancia_m": 53.9,
+      "rank": 232,
+      "prioridad": 0.215139
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU013082",
+      "distancia_m": 53.9,
+      "rank": 9,
+      "prioridad": 0.776961
+    },
+    {
+      "paradero": "PC458",
+      "rejilla": "AL13SU013320",
+      "distancia_m": 54.0,
+      "rank": 456,
+      "prioridad": 0.0588
+    },
+    {
+      "paradero": "PC545",
+      "rejilla": "AL13SU013073",
+      "distancia_m": 54.1,
+      "rank": 78,
+      "prioridad": 0.419358
+    },
+    {
+      "paradero": "PC303",
+      "rejilla": "AL13SU014903",
+      "distancia_m": 54.5,
+      "rank": 203,
+      "prioridad": 0.251175
+    },
+    {
+      "paradero": "PC1137",
+      "rejilla": "AL13SU013176",
+      "distancia_m": 54.6,
+      "rank": 267,
+      "prioridad": 0.182889
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU008128",
+      "distancia_m": 55.1,
+      "rank": 22,
+      "prioridad": 0.64077
+    },
+    {
+      "paradero": "PC677",
+      "rejilla": "AL13SU013065",
+      "distancia_m": 55.2,
+      "rank": 130,
+      "prioridad": 0.332149
+    },
+    {
+      "paradero": "PC523",
+      "rejilla": "AL13SU008157",
+      "distancia_m": 55.5,
+      "rank": 402,
+      "prioridad": 0.089424
+    },
+    {
+      "paradero": "PC1350",
+      "rejilla": "AL13SU015016",
+      "distancia_m": 56.0,
+      "rank": 387,
+      "prioridad": 0.103389
+    },
+    {
+      "paradero": "PC1038",
+      "rejilla": "AL13SU013364",
+      "distancia_m": 56.7,
+      "rank": 275,
+      "prioridad": 0.176156
+    },
+    {
+      "paradero": "PC664",
+      "rejilla": "AL13SU008195",
+      "distancia_m": 56.8,
+      "rank": 55,
+      "prioridad": 0.499745
+    },
+    {
+      "paradero": "PC1038",
+      "rejilla": "AL13SU013107",
+      "distancia_m": 56.9,
+      "rank": 205,
+      "prioridad": 0.248064
+    },
+    {
+      "paradero": "PC1045",
+      "rejilla": "AL13SU013012",
+      "distancia_m": 57.1,
+      "rank": 207,
+      "prioridad": 0.245216
+    },
+    {
+      "paradero": "PC1067",
+      "rejilla": "AL13SU014989",
+      "distancia_m": 57.2,
+      "rank": 437,
+      "prioridad": 0.07115
+    },
+    {
+      "paradero": "PC1034",
+      "rejilla": "AL13SU013082",
+      "distancia_m": 57.4,
+      "rank": 9,
+      "prioridad": 0.776961
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU013361",
+      "distancia_m": 57.6,
+      "rank": 316,
+      "prioridad": 0.145309
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU012747",
+      "distancia_m": 57.6,
+      "rank": 399,
+      "prioridad": 0.091457
+    },
+    {
+      "paradero": "PC523",
+      "rejilla": "AL13SU008161",
+      "distancia_m": 57.9,
+      "rank": 409,
+      "prioridad": 0.086368
+    },
+    {
+      "paradero": "PC523",
+      "rejilla": "AL13SU008162",
+      "distancia_m": 58.0,
+      "rank": 258,
+      "prioridad": 0.193621
+    },
+    {
+      "paradero": "PC1067",
+      "rejilla": "AL13SU014825",
+      "distancia_m": 58.1,
+      "rank": 135,
+      "prioridad": 0.326945
+    },
+    {
+      "paradero": "PC137",
+      "rejilla": "AL13SU014994",
+      "distancia_m": 58.4,
+      "rank": 357,
+      "prioridad": 0.122962
+    },
+    {
+      "paradero": "PC677",
+      "rejilla": "AL13SU008194",
+      "distancia_m": 58.5,
+      "rank": 154,
+      "prioridad": 0.306109
+    },
+    {
+      "paradero": "PC1350",
+      "rejilla": "AL13SU014984",
+      "distancia_m": 58.8,
+      "rank": 489,
+      "prioridad": 0.037339
+    },
+    {
+      "paradero": "PC545",
+      "rejilla": "AL13SU013086",
+      "distancia_m": 58.8,
+      "rank": 544,
+      "prioridad": 0.006816
+    },
+    {
+      "paradero": "PC664",
+      "rejilla": "AL13SU008200",
+      "distancia_m": 59.0,
+      "rank": 530,
+      "prioridad": 0.015997
+    },
+    {
+      "paradero": "PC664",
+      "rejilla": "AL13SU008201",
+      "distancia_m": 59.0,
+      "rank": 531,
+      "prioridad": 0.015997
+    },
+    {
+      "paradero": "PC446",
+      "rejilla": "AL13SU013010",
+      "distancia_m": 59.4,
+      "rank": 511,
+      "prioridad": 0.027344
+    },
+    {
+      "paradero": "PC544",
+      "rejilla": "AL13SU013383",
+      "distancia_m": 59.6,
+      "rank": 330,
+      "prioridad": 0.136974
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU012771",
+      "distancia_m": 59.6,
+      "rank": 75,
+      "prioridad": 0.424839
+    },
+    {
+      "paradero": "PC447",
+      "rejilla": "AL13SU012950",
+      "distancia_m": 59.8,
+      "rank": 67,
+      "prioridad": 0.451055
+    },
+    {
+      "paradero": "PC679",
+      "rejilla": "AL13SU014958",
+      "distancia_m": 60.2,
+      "rank": 153,
+      "prioridad": 0.306149
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU013362",
+      "distancia_m": 60.6,
+      "rank": 266,
+      "prioridad": 0.184415
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU013306",
+      "distancia_m": 60.7,
+      "rank": 428,
+      "prioridad": 0.075413
+    },
+    {
+      "paradero": "PC664",
+      "rejilla": "AL13SU008196",
+      "distancia_m": 60.7,
+      "rank": 413,
+      "prioridad": 0.084313
+    },
+    {
+      "paradero": "PC303",
+      "rejilla": "AL13SU014842",
+      "distancia_m": 60.8,
+      "rank": 526,
+      "prioridad": 0.01726
+    },
+    {
+      "paradero": "PC459",
+      "rejilla": "AL13SU013379",
+      "distancia_m": 60.9,
+      "rank": 317,
+      "prioridad": 0.144452
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU013385",
+      "distancia_m": 60.9,
+      "rank": 471,
+      "prioridad": 0.05206
+    },
+    {
+      "paradero": "PC525",
+      "rejilla": "AL13SU008170",
+      "distancia_m": 61.0,
+      "rank": 136,
+      "prioridad": 0.325622
+    },
+    {
+      "paradero": "PC824",
+      "rejilla": "AL13SU012930",
+      "distancia_m": 61.0,
+      "rank": 254,
+      "prioridad": 0.195147
+    },
+    {
+      "paradero": "PC443",
+      "rejilla": "AL13SU013119",
+      "distancia_m": 61.1,
+      "rank": 20,
+      "prioridad": 0.668028
+    },
+    {
+      "paradero": "PC174",
+      "rejilla": "AL13SU015001",
+      "distancia_m": 61.2,
+      "rank": 277,
+      "prioridad": 0.174877
+    },
+    {
+      "paradero": "PC664",
+      "rejilla": "AL13SU008197",
+      "distancia_m": 61.3,
+      "rank": 424,
+      "prioridad": 0.07658
+    },
+    {
+      "paradero": "PC679",
+      "rejilla": "AL13SU014957",
+      "distancia_m": 61.4,
+      "rank": 282,
+      "prioridad": 0.172321
+    },
+    {
+      "paradero": "PC457",
+      "rejilla": "AL13SU013003",
+      "distancia_m": 61.5,
+      "rank": 192,
+      "prioridad": 0.258949
+    },
+    {
+      "paradero": "PC123",
+      "rejilla": "AL13SU013098",
+      "distancia_m": 62.0,
+      "rank": 84,
+      "prioridad": 0.41209
+    },
+    {
+      "paradero": "PC1061",
+      "rejilla": "AL13SU012953",
+      "distancia_m": 62.1,
+      "rank": 438,
+      "prioridad": 0.069786
+    },
+    {
+      "paradero": "PC664",
+      "rejilla": "AL13SU008198",
+      "distancia_m": 62.6,
+      "rank": 460,
+      "prioridad": 0.056784
+    },
+    {
+      "paradero": "PC1062",
+      "rejilla": "AL13SU012968",
+      "distancia_m": 63.2,
+      "rank": 448,
+      "prioridad": 0.061228
+    },
+    {
+      "paradero": "PC302",
+      "rejilla": "AL13SU014837",
+      "distancia_m": 63.5,
+      "rank": 41,
+      "prioridad": 0.547638
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU013360",
+      "distancia_m": 63.5,
+      "rank": 562,
+      "prioridad": 0.0
+    },
+    {
+      "paradero": "PC543",
+      "rejilla": "AL13SU013067",
+      "distancia_m": 63.7,
+      "rank": 34,
+      "prioridad": 0.564788
+    },
+    {
+      "paradero": "PC664",
+      "rejilla": "AL13SU008199",
+      "distancia_m": 63.8,
+      "rank": 503,
+      "prioridad": 0.029038
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU008139",
+      "distancia_m": 64.2,
+      "rank": 348,
+      "prioridad": 0.129447
+    },
+    {
+      "paradero": "PC527",
+      "rejilla": "AL13SU008190",
+      "distancia_m": 64.4,
+      "rank": 103,
+      "prioridad": 0.363586
+    },
+    {
+      "paradero": "PC677",
+      "rejilla": "AL13SU008195",
+      "distancia_m": 64.4,
+      "rank": 55,
+      "prioridad": 0.499745
+    },
+    {
+      "paradero": "PC124",
+      "rejilla": "AL13SU012757",
+      "distancia_m": 64.6,
+      "rank": 285,
+      "prioridad": 0.169093
+    },
+    {
+      "paradero": "PC545",
+      "rejilla": "AL13SU008169",
+      "distancia_m": 64.6,
+      "rank": 30,
+      "prioridad": 0.578313
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU008136",
+      "distancia_m": 64.9,
+      "rank": 364,
+      "prioridad": 0.116673
+    },
+    {
+      "paradero": "PC672",
+      "rejilla": "AL13SU012954",
+      "distancia_m": 65.2,
+      "rank": 332,
+      "prioridad": 0.136356
+    },
+    {
+      "paradero": "PC542",
+      "rejilla": "AL13SU008194",
+      "distancia_m": 65.3,
+      "rank": 154,
+      "prioridad": 0.306109
+    },
+    {
+      "paradero": "PC1038",
+      "rejilla": "AL13SU013385",
+      "distancia_m": 65.4,
+      "rank": 471,
+      "prioridad": 0.05206
+    },
+    {
+      "paradero": "PC123",
+      "rejilla": "AL13SU013099",
+      "distancia_m": 65.5,
+      "rank": 88,
+      "prioridad": 0.404114
+    },
+    {
+      "paradero": "PC126",
+      "rejilla": "AL13SU013126",
+      "distancia_m": 65.7,
+      "rank": 369,
+      "prioridad": 0.111381
+    },
+    {
+      "paradero": "PC459",
+      "rejilla": "AL13SU013124",
+      "distancia_m": 65.7,
+      "rank": 289,
+      "prioridad": 0.168074
+    },
+    {
+      "paradero": "PC459",
+      "rejilla": "AL13SU008208",
+      "distancia_m": 65.7,
+      "rank": 307,
+      "prioridad": 0.154516
+    },
+    {
+      "paradero": "PC544",
+      "rejilla": "AL13SU013307",
+      "distancia_m": 65.7,
+      "rank": 372,
+      "prioridad": 0.111033
+    },
+    {
+      "paradero": "PC172",
+      "rejilla": "AL13SU015046",
+      "distancia_m": 65.9,
+      "rank": 226,
+      "prioridad": 0.221711
+    },
+    {
+      "paradero": "PC664",
+      "rejilla": "AL13SU008202",
+      "distancia_m": 66.1,
+      "rank": 520,
+      "prioridad": 0.021621
+    },
+    {
+      "paradero": "PC545",
+      "rejilla": "AL13SU013085",
+      "distancia_m": 66.4,
+      "rank": 286,
+      "prioridad": 0.169042
+    },
+    {
+      "paradero": "PC1124",
+      "rejilla": "AL13SU012771",
+      "distancia_m": 66.8,
+      "rank": 75,
+      "prioridad": 0.424839
+    },
+    {
+      "paradero": "PC302",
+      "rejilla": "AL13SU014909",
+      "distancia_m": 66.8,
+      "rank": 72,
+      "prioridad": 0.443432
+    },
+    {
+      "paradero": "PC679",
+      "rejilla": "AL13SU014955",
+      "distancia_m": 67.1,
+      "rank": 552,
+      "prioridad": 0.002254
+    },
+    {
+      "paradero": "PC542",
+      "rejilla": "AL13SU013065",
+      "distancia_m": 67.5,
+      "rank": 130,
+      "prioridad": 0.332149
+    },
+    {
+      "paradero": "PC1080",
+      "rejilla": "AL13SU013300",
+      "distancia_m": 67.9,
+      "rank": 173,
+      "prioridad": 0.274472
+    },
+    {
+      "paradero": "PC445",
+      "rejilla": "AL13SU013156",
+      "distancia_m": 67.9,
+      "rank": 54,
+      "prioridad": 0.502952
+    },
+    {
+      "paradero": "PC1350",
+      "rejilla": "AL13SU014997",
+      "distancia_m": 68.0,
+      "rank": 492,
+      "prioridad": 0.035566
+    },
+    {
+      "paradero": "PC445",
+      "rejilla": "AL13SU013157",
+      "distancia_m": 68.2,
+      "rank": 93,
+      "prioridad": 0.392369
+    },
+    {
+      "paradero": "PC528",
+      "rejilla": "AL13SU008199",
+      "distancia_m": 68.2,
+      "rank": 503,
+      "prioridad": 0.029038
+    },
+    {
+      "paradero": "PC527",
+      "rejilla": "AL13SU008184",
+      "distancia_m": 68.3,
+      "rank": 281,
+      "prioridad": 0.172348
+    },
+    {
+      "paradero": "PC679",
+      "rejilla": "AL13SU014954",
+      "distancia_m": 68.3,
+      "rank": 445,
+      "prioridad": 0.063021
+    },
+    {
+      "paradero": "PC1080",
+      "rejilla": "AL13SU008123",
+      "distancia_m": 68.4,
+      "rank": 516,
+      "prioridad": 0.023412
+    },
+    {
+      "paradero": "PC525",
+      "rejilla": "AL13SU008177",
+      "distancia_m": 68.6,
+      "rank": 386,
+      "prioridad": 0.103662
+    },
+    {
+      "paradero": "PC1109",
+      "rejilla": "AL13SU012754",
+      "distancia_m": 69.0,
+      "rank": 379,
+      "prioridad": 0.108121
+    },
+    {
+      "paradero": "PC1124",
+      "rejilla": "AL13SU013082",
+      "distancia_m": 69.0,
+      "rank": 9,
+      "prioridad": 0.776961
+    },
+    {
+      "paradero": "PC1034",
+      "rejilla": "AL13SU013395",
+      "distancia_m": 69.2,
+      "rank": 57,
+      "prioridad": 0.485669
+    },
+    {
+      "paradero": "PC122",
+      "rejilla": "AL13SU014994",
+      "distancia_m": 69.4,
+      "rank": 357,
+      "prioridad": 0.122962
+    },
+    {
+      "paradero": "PC662",
+      "rejilla": "AL13SU014950",
+      "distancia_m": 69.5,
+      "rank": 280,
+      "prioridad": 0.172493
+    },
+    {
+      "paradero": "PC302",
+      "rejilla": "AL13SU014907",
+      "distancia_m": 69.6,
+      "rank": 47,
+      "prioridad": 0.518843
+    },
+    {
+      "paradero": "PC1034",
+      "rejilla": "AL13SU012754",
+      "distancia_m": 69.7,
+      "rank": 379,
+      "prioridad": 0.108121
+    },
+    {
+      "paradero": "PC528",
+      "rejilla": "AL13SU008200",
+      "distancia_m": 69.9,
+      "rank": 530,
+      "prioridad": 0.015997
+    },
+    {
+      "paradero": "PC528",
+      "rejilla": "AL13SU008201",
+      "distancia_m": 69.9,
+      "rank": 531,
+      "prioridad": 0.015997
+    },
+    {
+      "paradero": "PC459",
+      "rejilla": "AL13SU013125",
+      "distancia_m": 70.1,
+      "rank": 426,
+      "prioridad": 0.075542
+    },
+    {
+      "paradero": "PC168",
+      "rejilla": "AL13SU014997",
+      "distancia_m": 70.4,
+      "rank": 492,
+      "prioridad": 0.035566
+    },
+    {
+      "paradero": "PC547",
+      "rejilla": "AL13SU013364",
+      "distancia_m": 70.4,
+      "rank": 275,
+      "prioridad": 0.176156
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU013115",
+      "distancia_m": 70.5,
+      "rank": 237,
+      "prioridad": 0.211356
+    },
+    {
+      "paradero": "PC447",
+      "rejilla": "AL13SU012951",
+      "distancia_m": 70.6,
+      "rank": 114,
+      "prioridad": 0.350761
+    },
+    {
+      "paradero": "PC526",
+      "rejilla": "AL13SU008183",
+      "distancia_m": 70.8,
+      "rank": 283,
+      "prioridad": 0.171224
+    },
+    {
+      "paradero": "PC135",
+      "rejilla": "AL13SU014826",
+      "distancia_m": 70.9,
+      "rank": 190,
+      "prioridad": 0.259468
+    },
+    {
+      "paradero": "PC679",
+      "rejilla": "AL13SU014946",
+      "distancia_m": 71.4,
+      "rank": 185,
+      "prioridad": 0.265155
+    },
+    {
+      "paradero": "PC315",
+      "rejilla": "AL13SU012993",
+      "distancia_m": 71.7,
+      "rank": 435,
+      "prioridad": 0.072357
+    },
+    {
+      "paradero": "PC528",
+      "rejilla": "AL13SU008202",
+      "distancia_m": 71.7,
+      "rank": 520,
+      "prioridad": 0.021621
+    },
+    {
+      "paradero": "PC679",
+      "rejilla": "AL13SU014947",
+      "distancia_m": 72.1,
+      "rank": 191,
+      "prioridad": 0.259142
+    },
+    {
+      "paradero": "PC544",
+      "rejilla": "AL13SU008171",
+      "distancia_m": 72.2,
+      "rank": 392,
+      "prioridad": 0.096691
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU013110",
+      "distancia_m": 72.3,
+      "rank": 335,
+      "prioridad": 0.13603
+    },
+    {
+      "paradero": "PC124",
+      "rejilla": "AL13SU013100",
+      "distancia_m": 72.4,
+      "rank": 538,
+      "prioridad": 0.010808
+    },
+    {
+      "paradero": "PC678",
+      "rejilla": "AL13SU013276",
+      "distancia_m": 72.9,
+      "rank": 543,
+      "prioridad": 0.007444
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU013111",
+      "distancia_m": 73.1,
+      "rank": 274,
+      "prioridad": 0.176326
+    },
+    {
+      "paradero": "PC138",
+      "rejilla": "AL13SU012959",
+      "distancia_m": 73.2,
+      "rank": 389,
+      "prioridad": 0.100548
+    },
+    {
+      "paradero": "PC442",
+      "rejilla": "AL13SU013321",
+      "distancia_m": 73.3,
+      "rank": 459,
+      "prioridad": 0.056847
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU013305",
+      "distancia_m": 73.4,
+      "rank": 510,
+      "prioridad": 0.028
+    },
+    {
+      "paradero": "PC302",
+      "rejilla": "AL13SU014908",
+      "distancia_m": 73.9,
+      "rank": 71,
+      "prioridad": 0.443969
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU013120",
+      "distancia_m": 74.0,
+      "rank": 18,
+      "prioridad": 0.681024
+    },
+    {
+      "paradero": "PC678",
+      "rejilla": "AL13SU013277",
+      "distancia_m": 74.0,
+      "rank": 367,
+      "prioridad": 0.112392
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU008137",
+      "distancia_m": 74.7,
+      "rank": 495,
+      "prioridad": 0.034105
+    },
+    {
+      "paradero": "PC1124",
+      "rejilla": "AL13SU012772",
+      "distancia_m": 74.8,
+      "rank": 393,
+      "prioridad": 0.096479
+    },
+    {
+      "paradero": "PC459",
+      "rejilla": "AL13SU008119",
+      "distancia_m": 74.9,
+      "rank": 350,
+      "prioridad": 0.12811
+    },
+    {
+      "paradero": "PC526",
+      "rejilla": "AL13SU008182",
+      "distancia_m": 74.9,
+      "rank": 138,
+      "prioridad": 0.322107
+    },
+    {
+      "paradero": "PC1109",
+      "rejilla": "AL13SU013363",
+      "distancia_m": 75.0,
+      "rank": 229,
+      "prioridad": 0.2178
+    },
+    {
+      "paradero": "PC525",
+      "rejilla": "AL13SU013383",
+      "distancia_m": 75.1,
+      "rank": 330,
+      "prioridad": 0.136974
+    },
+    {
+      "paradero": "PC131",
+      "rejilla": "AL13SU013304",
+      "distancia_m": 75.3,
+      "rank": 519,
+      "prioridad": 0.021838
+    },
+    {
+      "paradero": "PC138",
+      "rejilla": "AL13SU012960",
+      "distancia_m": 75.3,
+      "rank": 69,
+      "prioridad": 0.447627
+    },
+    {
+      "paradero": "PC126",
+      "rejilla": "AL13SU008122",
+      "distancia_m": 75.4,
+      "rank": 493,
+      "prioridad": 0.034589
+    },
+    {
+      "paradero": "PC136",
+      "rejilla": "AL13SU015016",
+      "distancia_m": 75.4,
+      "rank": 387,
+      "prioridad": 0.103389
+    },
+    {
+      "paradero": "PC1124",
+      "rejilla": "AL13SU012747",
+      "distancia_m": 75.7,
+      "rank": 399,
+      "prioridad": 0.091457
+    },
+    {
+      "paradero": "PC1080",
+      "rejilla": "AL13SU008124",
+      "distancia_m": 75.8,
+      "rank": 8,
+      "prioridad": 0.790264
+    },
+    {
+      "paradero": "PC679",
+      "rejilla": "AL13SU014951",
+      "distancia_m": 76.6,
+      "rank": 51,
+      "prioridad": 0.510413
+    },
+    {
+      "paradero": "PC315",
+      "rejilla": "AL13SU012959",
+      "distancia_m": 76.8,
+      "rank": 389,
+      "prioridad": 0.100548
+    },
+    {
+      "paradero": "PC459",
+      "rejilla": "AL13SU008120",
+      "distancia_m": 77.3,
+      "rank": 112,
+      "prioridad": 0.351435
+    },
+    {
+      "paradero": "PC543",
+      "rejilla": "AL13SU008192",
+      "distancia_m": 77.5,
+      "rank": 35,
+      "prioridad": 0.564393
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU008140",
+      "distancia_m": 77.6,
+      "rank": 252,
+      "prioridad": 0.196777
+    },
+    {
+      "paradero": "PC169",
+      "rejilla": "AL13SU014993",
+      "distancia_m": 77.8,
+      "rank": 48,
+      "prioridad": 0.518156
+    },
+    {
+      "paradero": "PC523",
+      "rejilla": "AL13SU008156",
+      "distancia_m": 77.8,
+      "rank": 420,
+      "prioridad": 0.07964
+    },
+    {
+      "paradero": "PC546",
+      "rejilla": "AL13SU008163",
+      "distancia_m": 77.8,
+      "rank": 193,
+      "prioridad": 0.25819
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU012756",
+      "distancia_m": 77.9,
+      "rank": 26,
+      "prioridad": 0.607587
+    },
+    {
+      "paradero": "PC125",
+      "rejilla": "AL13SU008141",
+      "distancia_m": 77.9,
+      "rank": 62,
+      "prioridad": 0.462894
+    },
+    {
+      "paradero": "PC122",
+      "rejilla": "AL13SU015006",
+      "distancia_m": 78.3,
+      "rank": 91,
+      "prioridad": 0.395807
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU008138",
+      "distancia_m": 78.3,
+      "rank": 327,
+      "prioridad": 0.13944
+    },
+    {
+      "paradero": "PC138",
+      "rejilla": "AL13SU012993",
+      "distancia_m": 78.3,
+      "rank": 435,
+      "prioridad": 0.072357
+    },
+    {
+      "paradero": "PC442",
+      "rejilla": "AL13SU013320",
+      "distancia_m": 78.5,
+      "rank": 456,
+      "prioridad": 0.0588
+    },
+    {
+      "paradero": "PC524",
+      "rejilla": "AL13SU013086",
+      "distancia_m": 78.6,
+      "rank": 544,
+      "prioridad": 0.006816
+    },
+    {
+      "paradero": "PC457",
+      "rejilla": "AL13SU013004",
+      "distancia_m": 78.8,
+      "rank": 236,
+      "prioridad": 0.211686
+    },
+    {
+      "paradero": "PC679",
+      "rejilla": "AL13SU014949",
+      "distancia_m": 79.5,
+      "rank": 132,
+      "prioridad": 0.329053
+    },
+    {
+      "paradero": "PC679",
+      "rejilla": "AL13SU014948",
+      "distancia_m": 79.5,
+      "rank": 169,
+      "prioridad": 0.280391
+    },
+    {
+      "paradero": "PC443",
+      "rejilla": "AL13SU013306",
+      "distancia_m": 79.6,
+      "rank": 428,
+      "prioridad": 0.075413
+    },
+    {
+      "paradero": "PD1007",
+      "rejilla": "AL13SU013377",
+      "distancia_m": 79.6,
+      "rank": 59,
+      "prioridad": 0.476363
+    },
+    {
+      "paradero": "PC526",
+      "rejilla": "AL13SU013310",
+      "distancia_m": 79.7,
+      "rank": 146,
+      "prioridad": 0.315228
+    },
+    {
+      "paradero": "PC542",
+      "rejilla": "AL13SU008195",
+      "distancia_m": 79.8,
+      "rank": 55,
+      "prioridad": 0.499745
+    },
+    {
+      "paradero": "PC132",
+      "rejilla": "AL13SU008131",
+      "distancia_m": 79.9,
+      "rank": 227,
+      "prioridad": 0.21994
+    }
+  ],
+  "zona": "san-carlos",
+  "derivacion_zona": {
+    "metodo": "Centro del caso San Carlos; máxima distancia a rejillas del ranking +80 m, redondeada a 100 m",
+    "ranking": "data/validacion/prediccion_replay_julio.csv",
+    "rejillas": "data/rejillas.geojson",
+    "sha256_ranking": "7f29c8e13fb57a50d748b7a23241c709cc5f058bc24d4d3fcdc6cd7acab674f1",
+    "sha256_rejillas": "dde763af25b2afb38c8b17f9aa66c670c860fae797d1821c9191fd012c55de22",
+    "cantidad_rejillas": 562,
+    "margen_m": 80,
+    "etiqueta": "Reconstrucción · datos reproducidos (ranking de exposición; buses reales GTFS)"
+  },
+  "ajuste_geometria": {
+    "metodo": "OSRM match",
+    "servidor": "https://router.project-osrm.org",
+    "perfil": "driving",
+    "solo_cache": true,
+    "respaldo": "Geometría GTFS original para chunks sin match válido o sin caché",
+    "parametros": {
+      "overview": "full",
+      "geometries": "geojson",
+      "tidy": "true",
+      "gaps": "split",
+      "radiuses_m": 30
+    },
+    "fecha_utc": "2026-11-22T10:48:22.153720+00:00",
+    "max_coordenadas": 10,
+    "solapamiento": 1,
+    "confianza_min": 0.7,
+    "desvio_max_m": 40,
+    "variacion_longitud_max": 0.25,
+    "por_shape": {
+      "225I": {
+        "matched": 2,
+        "fallback": 131
+      },
+      "225R": {
+        "matched": 0,
+        "fallback": 92
+      },
+      "401I": {
+        "matched": 91,
+        "fallback": 5
+      },
+      "401R": {
+        "matched": 93,
+        "fallback": 2
+      },
+      "401cI": {
+        "matched": 14,
+        "fallback": 16
+      },
+      "401cR": {
+        "matched": 12,
+        "fallback": 22
+      },
+      "407I": {
+        "matched": 84,
+        "fallback": 17
+      },
+      "407R": {
+        "matched": 81,
+        "fallback": 3
+      },
+      "421I": {
+        "matched": 94,
+        "fallback": 2
+      },
+      "421R": {
+        "matched": 100,
+        "fallback": 3
+      },
+      "421cI": {
+        "matched": 19,
+        "fallback": 19
+      },
+      "501I": {
+        "matched": 0,
+        "fallback": 27
+      },
+      "501R": {
+        "matched": 0,
+        "fallback": 27
+      },
+      "503I": {
+        "matched": 79,
+        "fallback": 5
+      },
+      "503R": {
+        "matched": 87,
+        "fallback": 11
+      },
+      "504I": {
+        "matched": 7,
+        "fallback": 85
+      },
+      "504R": {
+        "matched": 6,
+        "fallback": 78
+      },
+      "517I": {
+        "matched": 36,
+        "fallback": 46
+      },
+      "517R": {
+        "matched": 4,
+        "fallback": 100
+      },
+      "518I": {
+        "matched": 6,
+        "fallback": 59
+      },
+      "518R": {
+        "matched": 26,
+        "fallback": 35
+      },
+      "541NI": {
+        "matched": 85,
+        "fallback": 5
+      },
+      "541NR": {
+        "matched": 97,
+        "fallback": 12
+      },
+      "722I": {
+        "matched": 24,
+        "fallback": 42
+      },
+      "722R": {
+        "matched": 29,
+        "fallback": 56
+      },
+      "C02I": {
+        "matched": 15,
+        "fallback": 45
+      },
+      "C02cI": {
+        "matched": 1,
+        "fallback": 17
+      },
+      "C02cR": {
+        "matched": 0,
+        "fallback": 18
+      },
+      "C03R": {
+        "matched": 109,
+        "fallback": 1
+      },
+      "C03cI": {
+        "matched": 22,
+        "fallback": 1
+      },
+      "C03cR": {
+        "matched": 21,
+        "fallback": 2
+      },
+      "C05I": {
+        "matched": 13,
+        "fallback": 43
+      },
+      "C05R": {
+        "matched": 0,
+        "fallback": 60
+      },
+      "C06I": {
+        "matched": 75,
+        "fallback": 16
+      },
+      "C06R": {
+        "matched": 44,
+        "fallback": 4
+      },
+      "C09I": {
+        "matched": 2,
+        "fallback": 103
+      },
+      "C09cI": {
+        "matched": 1,
+        "fallback": 47
+      },
+      "C13I": {
+        "matched": 8,
+        "fallback": 106
+      },
+      "C16I": {
+        "matched": 7,
+        "fallback": 59
+      },
+      "C16R": {
+        "matched": 15,
+        "fallback": 54
+      },
+      "C25I": {
+        "matched": 22,
+        "fallback": 40
+      },
+      "C25R": {
+        "matched": 9,
+        "fallback": 36
+      },
+      "C27I": {
+        "matched": 3,
+        "fallback": 58
+      },
+      "C37R": {
+        "matched": 3,
+        "fallback": 61
+      },
+      "D08I": {
+        "matched": 0,
+        "fallback": 71
+      },
+      "D11I": {
+        "matched": 4,
+        "fallback": 44
+      },
+      "D11R": {
+        "matched": 0,
+        "fallback": 79
+      }
+    },
+    "totales": {
+      "matched": 1450,
+      "fallback": 1865
+    }
+  },
+  "sha256_salida": "9c549e438f7e407715664f4260c2f421989b7c16a19609164f2de6594a9d8fd7"
+}
