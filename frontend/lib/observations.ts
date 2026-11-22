@@ -82,19 +82,30 @@ export async function registrar(obs: Observacion, foto?: Blob | null): Promise<O
 
 const ESPERA_ENVIO_MS = 60_000; // Render puede tardar ~50 s en despertar
 
-async function intentarEnviar(obs: Observacion, foto?: Blob | null): Promise<boolean> {
+type DatosEnvio = Pick<Observacion, "id" | "tipo" | "lat" | "lon" | "hora" | "archivo"> & { fuente?: "camara_fija" };
+
+export async function enviarObservacion(datos: DatosEnvio, foto?: Blob | null, signal?: AbortSignal): Promise<Response> {
   const ctl = new AbortController();
+  const cancelar = () => ctl.abort();
+  if (signal?.aborted) cancelar();
+  signal?.addEventListener("abort", cancelar, { once: true });
   const timer = setTimeout(() => ctl.abort(), ESPERA_ENVIO_MS);
   try {
     const fd = new FormData();
-    fd.append("datos", JSON.stringify(obs));
-    if (foto && obs.archivo) fd.append("foto", foto, obs.archivo);
-    const r = await fetch(`${API}/observations`, { method: "POST", body: fd, signal: ctl.signal });
-    return r.ok; // 501 (aún no implementado) u otro error: queda en la cola local
-  } catch {
-    return false; // sin red o tiempo de espera agotado
+    fd.append("datos", JSON.stringify(datos));
+    if (foto && datos.archivo) fd.append("foto", foto, datos.archivo);
+    return await fetch(`${API}/observations`, { method: "POST", body: fd, signal: ctl.signal });
   } finally {
     clearTimeout(timer);
+    signal?.removeEventListener("abort", cancelar);
+  }
+}
+
+async function intentarEnviar(obs: Observacion, foto?: Blob | null): Promise<boolean> {
+  try {
+    return (await enviarObservacion(obs, foto)).ok;
+  } catch {
+    return false;
   }
 }
 

@@ -3,20 +3,35 @@ import { API, type ClasificacionAgua, type ClasificacionRejilla, type LecturaTex
 
 const MAX_LADO = 1600;
 
+export const NIVEL_AGUA_TXT = {
+  sin_agua: "Sin agua",
+  cuneta: "Agua en la cuneta",
+  hasta_vereda: "Agua hasta la vereda",
+  sobre_vereda: "Agua sobre la vereda",
+  no_evaluable: "No se puede evaluar",
+} as const;
+
+export async function imagenJpeg(origen: CanvasImageSource, ancho: number, alto: number): Promise<Blob | null> {
+  if (!ancho || !alto) return null;
+  const escala = Math.min(1, MAX_LADO / Math.max(ancho, alto));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(ancho * escala);
+  canvas.height = Math.round(alto * escala);
+  const contexto = canvas.getContext("2d");
+  if (!contexto) return null;
+  contexto.drawImage(origen, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolver) => canvas.toBlob(resolver, "image/jpeg", 0.8));
+}
+
 /** Redimensiona a ≤1600 px de lado y recodifica a JPEG ~0,8. Si el navegador no puede leerla, devuelve la original. */
 export async function comprimirFoto(file: File): Promise<Blob> {
   try {
-    const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
-    const k = Math.min(1, MAX_LADO / Math.max(bmp.width, bmp.height));
-    const w = Math.round(bmp.width * k);
-    const h = Math.round(bmp.height * k);
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    canvas.getContext("2d")!.drawImage(bmp, 0, 0, w, h);
-    bmp.close();
-    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/jpeg", 0.8));
-    return blob ?? file;
+    const imagen = await createImageBitmap(file, { imageOrientation: "from-image" });
+    try {
+      return (await imagenJpeg(imagen, imagen.width, imagen.height)) ?? file;
+    } finally {
+      imagen.close();
+    }
   } catch {
     return file;
   }
