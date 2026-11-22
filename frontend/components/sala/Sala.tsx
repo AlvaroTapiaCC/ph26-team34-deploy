@@ -16,23 +16,33 @@ import { APORTES, CATASTRO, dos, nombreFila, puntaje, SalaProvider, useSala, typ
 import { horaSantiago, NIVEL_AGUA, useRecorridos, type EstadoConsulta, type EvidenciaAgua } from "@/lib/transporte";
 import { useCapaCadenas } from "../central/capaCadenas";
 import Transporte, { capasTransporte } from "../desktop/Transporte";
-import DrenaMap, { type MapLabel, type MapPin, type MapPunto } from "../map/DrenaMap";
+import DrenaMap, { type MapLabel, type MapPunto } from "../map/DrenaMap";
+import { ESTADOS, FLUJO_CONFIG, type EstadoRejilla } from "@/lib/flujo/config";
+import { useFlujo, type Flujo } from "@/lib/flujo/useFlujo";
 import { precargarMapLibre } from "../map/maplibre";
 import { Logo } from "../ui";
 import s from "./sala.module.css";
 
 if (typeof window !== "undefined") precargarMapLibre();
 
-type Vista = "inicio" | "antes" | "durante" | "validacion";
+type Vista = "inicio" | "antes" | "durante" | "simulacion" | "validacion";
 const vistaDe = (path: string): Vista =>
-  path.startsWith("/central/durante") ? "durante" : path.startsWith("/central/antes") ? "antes" : path.startsWith("/central/validacion") ? "validacion" : "inicio";
-const conMapa = (v: Vista) => v === "antes" || v === "durante";
+  path.startsWith("/central/durante")
+    ? "durante"
+    : path.startsWith("/central/antes")
+      ? "antes"
+      : path.startsWith("/central/simulacion")
+        ? "simulacion"
+        : path.startsWith("/central/validacion")
+          ? "validacion"
+          : "inicio";
+const conMapa = (v: Vista) => v === "antes" || v === "durante" || v === "simulacion";
 const sinMovimiento = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const ESTADO_REJILLA: Record<string, string> = { limpia: "Rejilla limpia", parcial: "Rejilla parcialmente tapada", tapada: "Rejilla tapada", no_evaluable: "Foto no evaluable" };
 const ESTADO_MISION: Record<string, string> = { pendiente: "Pendiente", en_camino: "En camino", en_sitio: "En el lugar", cerrada: "Cerrada", cancelada: "Cancelada" };
 const TIPO_REPORTE: Record<string, string> = { foto_agua: "Foto de calle", foto_rejilla: "Foto de rejilla", cuadro_camara: "Cuadro de cámara", texto: "Reporte de texto" };
-const TOP_NUMERADOS = 5;
+const TOP_DESTACADOS = 5;
 const CAMARA_3D = { pitch: 48, bearing: -12 };
 
 /* ───────────────────────── Piezas pequeñas ───────────────────────── */
@@ -123,6 +133,7 @@ const NAV: { href: string; vista: Vista | "validacion"; texto: string }[] = [
   { href: "/", vista: "inicio", texto: "Inicio" },
   { href: "/central/antes", vista: "antes", texto: "Antes" },
   { href: "/central/durante", vista: "durante", texto: "Durante" },
+  { href: "/central/simulacion", vista: "simulacion", texto: "Simulación" },
   { href: "/central/validacion", vista: "validacion", texto: "Validación" },
 ];
 
@@ -144,7 +155,7 @@ function Barra({ vista }: { vista: Vista }) {
       <span className={s.barraDer}>
         <Pulso />
         <Reloj />
-        {conMapa(vista) && cuadrilla && <SelectorCuadrilla equipos={cuadrillas} valor={cuadrilla.id} onChange={elegirCuadrilla} />}
+        {(vista === "antes" || vista === "durante") && cuadrilla && <SelectorCuadrilla equipos={cuadrillas} valor={cuadrilla.id} onChange={elegirCuadrilla} />}
       </span>
     </header>
   );
@@ -393,7 +404,7 @@ function PorQue({ p }: { p: Fila }) {
   );
 }
 
-const TOP_LISTA = 10;
+const TOP_LISTA = 5;
 
 function Ranking({ filas: todas, estado, sel, onSel, hover, onHover }: { filas: Fila[]; estado: EstadoConsulta; sel: string | null; onSel: (id: string) => void; hover: string | null; onHover: (id: string | null) => void }) {
   const [todasVisibles, setTodasVisibles] = useState(false);
@@ -649,9 +660,11 @@ function Misiones() {
 
 const SIN_AGUA: readonly EvidenciaAgua[] = [];
 
+type Capas = { cadenas: boolean; transporte: boolean; limites: boolean; catastro: boolean };
+
 const Mapa = memo(function Mapa({
   filas,
-  fase,
+  vista,
   sel,
   onSel,
   hover,
@@ -660,9 +673,12 @@ const Mapa = memo(function Mapa({
   onParadero,
   foco,
   onListo,
+  flujo,
+  capas,
+  setCapas,
 }: {
   filas: Fila[];
-  fase: Vista;
+  vista: Vista;
   sel: string | null;
   onSel: (id: string) => void;
   hover: string | null;
@@ -671,44 +687,55 @@ const Mapa = memo(function Mapa({
   onParadero: (id: string | null) => void;
   foco: { coord: LngLat; siempre: boolean } | null;
   onListo: () => void;
+  flujo: Flujo;
+  capas: Capas;
+  setCapas: (c: Capas) => void;
 }) {
   const { observaciones, transporte, cuadrilla, ruta } = useSala();
-  const [cadenasOn, setCadenasOn] = useState(true);
   const [tresD, setTresD] = useState(true);
-  const durante = fase === "durante";
+  const [menu, setMenu] = useState(false);
+  const durante = vista === "durante";
+  const simulacion = vista === "simulacion";
   const prioridades = useMemo(() => new Map(filas.flatMap((p) => (p.prioridad == null ? [] : [[p.sumidero_id, p.prio] as const]))), [filas]);
-  const cadenas = useCapaCadenas(prioridades, durante ? observaciones.datos : [], durante ? (transporte.datos?.evidencia_agua ?? SIN_AGUA) : SIN_AGUA, cadenasOn, transporte.datos?.parametros.vigencia_agua_horas ?? 6, transporte.datos?.parametros.aguas_abajo_m ?? 150);
-  const recorridos = useRecorridos(durante);
-  const tp = useMemo(() => (durante ? capasTransporte(transporte.datos, recorridos, paradero, onParadero) : { paraderos: [], recorridos: [], caminatas: [] }), [durante, transporte.datos, recorridos, paradero, onParadero]);
+  const cadenas = useCapaCadenas(prioridades, durante ? observaciones.datos : [], durante ? (transporte.datos?.evidencia_agua ?? SIN_AGUA) : SIN_AGUA, capas.cadenas && !simulacion, transporte.datos?.parametros.vigencia_agua_horas ?? 6, transporte.datos?.parametros.aguas_abajo_m ?? 150);
+  const verTransporte = capas.transporte && !simulacion;
+  const recorridos = useRecorridos(verTransporte);
+  const tp = useMemo(() => (verTransporte ? capasTransporte(transporte.datos, recorridos, paradero, onParadero) : { paraderos: [], recorridos: [], caminatas: [] }), [verTransporte, transporte.datos, recorridos, paradero, onParadero]);
 
-  const { pins, puntos } = useMemo(() => {
-    const pins: MapPin[] = [];
-    const puntos: MapPunto[] = [];
-    for (const p of filas) {
-      const sub = `Puesto ${p.puesto} · puntaje ${puntaje(p.prioridad)}`;
-      if (p.puesto <= TOP_NUMERADOS || p.sumidero_id === sel) pins.push({ id: p.sumidero_id, coord: [p.lon, p.lat], rank: p.puesto, prio: p.prio, onClick: () => onSel(p.sumidero_id), nombre: nombreFila(p), sub });
-      else puntos.push({ id: p.sumidero_id, coord: [p.lon, p.lat], prio: p.prio, nombre: nombreFila(p), sub });
-    }
-    return { pins, puntos };
-  }, [filas, sel, onSel]);
-
+  // Todas las rejillas del ranking como puntos (capa GL): las 5 primeras más grandes y con brillo, sin números
+  const puntos = useMemo<MapPunto[]>(
+    () =>
+      simulacion
+        ? []
+        : filas.map((p) => ({ id: p.sumidero_id, coord: [p.lon, p.lat], prio: p.prio, top: p.puesto <= TOP_DESTACADOS, nombre: `${p.puesto} · ${nombreFila(p)}`, sub: `Puntaje ${puntaje(p.prioridad)}` })),
+    [filas, simulacion],
+  );
   const labels = useMemo(() => {
     const out: MapLabel[] = [];
-    if (durante) for (const p of filas) if (p.detalle?.urgente) out.push({ coord: [p.lon, p.lat], text: "Urgente", tone: "danger", offset: [0, -26], anchor: "bottom" });
-    if (cuadrilla?.is_simulated && cuadrilla.lon != null && cuadrilla.lat != null) out.push({ coord: [cuadrilla.lon, cuadrilla.lat], text: `${cuadrilla.nombre} · simulada`, tone: "dark" });
+    if (simulacion) return out;
+    if (durante) for (const p of filas) if (p.detalle?.urgente) out.push({ coord: [p.lon, p.lat], text: "Urgente", tone: "danger", offset: [0, -16], anchor: "bottom" });
+    if (cuadrilla?.is_simulated && cuadrilla.lon != null && cuadrilla.lat != null) out.push({ coord: [cuadrilla.lon, cuadrilla.lat], text: `${cuadrilla.nombre} · simulada`, tone: "dark", offset: [10, 0] });
+    const e = filas.find((p) => p.sumidero_id === sel);
+    if (e) out.push({ coord: [e.lon, e.lat], text: `${e.puesto} · ${nombreFila(e)}`, tone: "card", offset: [14, 0] });
     return out;
-  }, [filas, durante, cuadrilla]);
+  }, [filas, durante, simulacion, cuadrilla, sel]);
 
-  const lineas = useMemo(() => (ruta?.geojson?.type === "LineString" ? [ruta.geojson.coordinates as LngLat[]] : []), [ruta]);
+  const lineas = useMemo(() => (!simulacion && ruta?.geojson?.type === "LineString" ? [ruta.geojson.coordinates as LngLat[]] : []), [ruta, simulacion]);
   const clave = filas.map((p) => p.sumidero_id).sort().join("|");
   const bounds = useMemo(() => boundsDe(filas.map((p) => ({ coord: [p.lon, p.lat] as LngLat }))), [clave]); // eslint-disable-line react-hooks/exhaustive-deps
   const onMapReady = useCallback(
     (m: unknown) => {
       onListo();
-      return cadenas.onMapReady(m);
+      const a = cadenas.onMapReady(m) as unknown;
+      const b = flujo.alMapaListo(m);
+      return () => {
+        if (typeof a === "function") (a as () => void)();
+        b();
+      };
     },
-    [cadenas, onListo],
+    [cadenas, flujo, onListo],
   );
+  const alternar = (k: keyof Capas) => setCapas({ ...capas, [k]: !capas[k] });
 
   return (
     <div className={s.mapa}>
@@ -716,24 +743,25 @@ const Mapa = memo(function Mapa({
         bounds={bounds}
         padding={{ top: 80, bottom: 70, left: 60, right: typeof window !== "undefined" && window.innerWidth > 1088 ? 470 : 40 }}
         className={s.mapaCanvas}
-        pins={pins}
         puntos={puntos}
         onClickPunto={onSel}
+        seleccionado={sel}
         labels={labels}
         ruta={lineas}
         foco={foco?.coord ?? null}
         focoSiempre={foco?.siempre}
         resaltado={hover}
         onHover={onHover}
-        pinSize={30}
         relieve
         tresD={tresD}
         camara3D={CAMARA_3D}
+        comunas={capas.limites}
+        rejillas={capas.catastro}
         paraderos={tp.paraderos}
         recorridos={tp.recorridos}
         caminatas={tp.caminatas}
         onMapReady={onMapReady}
-        attribution="© Esri, OpenStreetMap · Rejillas DOH · Paraderos DTPM"
+        attribution="© Esri, OpenStreetMap · Rejillas DOH · Paraderos DTPM · relieve AWS · edificios OpenFreeMap"
         attributionSide="right"
       >
         <div className={s.mapaChips}>
@@ -745,26 +773,92 @@ const Mapa = memo(function Mapa({
               3D
             </button>
           </span>
-          <button type="button" className={`${s.chipMapa} ${cadenasOn ? s.chipMapaOn : ""}`} onClick={() => setCadenasOn(!cadenasOn)} aria-pressed={cadenasOn}>
-            <i aria-hidden />
-            Cadenas calle abajo <small>estimado</small>
-          </button>
-          {cadenasOn && cadenas.estado === "cargando" && <span className={s.chipInfo}>Cargando cadenas…</span>}
-          {lineas.length > 0 && <span className={s.chipInfo}>— — orden de visita (línea recta, no trazado por calle)</span>}
+          {!simulacion && (
+            <span className={s.capasWrap}>
+              <button type="button" className={`${s.chipMapa} ${menu ? s.chipMapaOn : ""}`} onClick={() => setMenu(!menu)} aria-expanded={menu}>
+                Capas <small>{Object.values(capas).filter(Boolean).length} de 4</small>
+              </button>
+              {menu && (
+                <div className={s.capasMenu} role="group" aria-label="Capas del mapa">
+                  <CapaCheck on={capas.cadenas} onClick={() => alternar("cadenas")} titulo="Cadenas calle abajo" sub="Escurrimiento estimado por pendiente; el color se propaga con la evidencia" muestra="cadena" />
+                  <CapaCheck on={capas.transporte} onClick={() => alternar("transporte")} titulo="Transporte público" sub="Paraderos expuestos, recorridos y alternativo (GTFS DTPM)" muestra="bus" />
+                  <CapaCheck on={capas.limites} onClick={() => alternar("limites")} titulo="Límites comunales" sub="Providencia, Ñuñoa y Las Condes" muestra="limite" />
+                  <CapaCheck on={capas.catastro} onClick={() => alternar("catastro")} titulo="Catastro completo" sub="3.002 rejillas DOH; el ranking existe solo en la zona MUT" muestra="catastro" />
+                </div>
+              )}
+            </span>
+          )}
+          {capas.cadenas && !simulacion && cadenas.estado === "cargando" && <span className={s.chipInfo}>Cargando cadenas…</span>}
+          {lineas.length > 0 && <span className={s.chipInfo}>— — orden de visita (línea recta)</span>}
         </div>
+        {!simulacion && (
+          <ul className={s.leyendaMapa} aria-label="Leyenda">
+            <li>
+              <i className={s.lgTop} />5 primeras
+            </li>
+            <li>
+              <i className={s.lgAlta} />
+              Alta
+            </li>
+            <li>
+              <i className={s.lgMedia} />
+              Media
+            </li>
+            <li>
+              <i className={s.lgBaja} />
+              Baja
+            </li>
+            {durante && (
+              <li>
+                <i className={s.lgAgua} />
+                Agua observada
+              </li>
+            )}
+          </ul>
+        )}
       </DrenaMap>
     </div>
   );
 });
 
-/* Esqueleto de la central mientras el mapa termina de cargar: misma distribución, sin ruedita */
-function EsqueletoMapa() {
+function CapaCheck({ on, onClick, titulo, sub, muestra }: { on: boolean; onClick: () => void; titulo: string; sub: string; muestra: string }) {
   return (
-    <div className={s.esqMapa} aria-label="Cargando el mapa" role="status">
+    <button type="button" role="switch" aria-checked={on} className={`${s.capa} ${on ? s.capaOn : ""}`} onClick={onClick}>
+      <i className={s.capaMuestra} data-m={muestra} aria-hidden />
+      <span>
+        <b>{titulo}</b>
+        <small>{sub}</small>
+      </span>
+      <span className={s.capaSwitch} aria-hidden />
+    </button>
+  );
+}
+
+/* Esqueleto de la central mientras el mapa carga: misma distribución, sin ruedita. Se queda un mínimo de tiempo
+   y se desvanece, para que el cambio se lea y no parpadee. */
+function EsqueletoMapa({ listo }: { listo: boolean }) {
+  const [montado, setMontado] = useState(true);
+  const [saliendo, setSaliendo] = useState(false);
+  const inicio = useRef(performance.now());
+  // Si el mapa ya estaba listo (cambio entre vistas) la cortina es breve; en la primera carga dura un poco más
+  const minimo = useRef(listo ? 360 : 650);
+  useEffect(() => {
+    if (!listo) return;
+    const resta = Math.max(0, minimo.current - (performance.now() - inicio.current));
+    const t1 = setTimeout(() => setSaliendo(true), resta);
+    const t2 = setTimeout(() => setMontado(false), resta + 320);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [listo]);
+  if (!montado) return null;
+  return (
+    <div className={`${s.esqMapa} ${saliendo ? s.esqSale : ""}`} aria-label="Cargando el mapa" role="status">
       <div className={s.esqCalles} aria-hidden />
       <div className={s.esqChips} aria-hidden>
         <Skel h={36} w="6rem" />
-        <Skel h={36} w="13rem" />
+        <Skel h={36} w="9rem" />
       </div>
       {[
         [38, 30],
@@ -772,14 +866,104 @@ function EsqueletoMapa() {
         [52, 33],
         [33, 52],
         [58, 58],
+        [44, 62],
+        [27, 40],
       ].map(([x, y], i) => (
-        <span key={i} className={s.esqPin} style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${i * 120}ms` }} aria-hidden />
+        <span key={i} className={s.esqPin} style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${i * 110}ms` }} aria-hidden />
       ))}
     </div>
   );
 }
 
-/* ───────────────────────── Sala ───────────────────────── */
+/* ───────────────────────── Simulación ───────────────────────── */
+
+function Simulacion({ flujo, estados, setEstados }: { flujo: Flujo; estados: Record<string, EstadoRejilla>; setEstados: (e: Record<string, EstadoRejilla>) => void }) {
+  const ui = flujo.ui;
+  const tapar20 = () => {
+    const todas = flujo.rejillas();
+    const n = Math.round(todas.length * 0.2);
+    const elegidas = [...todas].sort(() => Math.random() - 0.5).slice(0, n);
+    setEstados({ ...Object.fromEntries(todas.map((r) => [r.id, "limpia" as EstadoRejilla])), ...Object.fromEntries(elegidas.map((r) => [r.id, "tapada" as EstadoRejilla])) });
+  };
+  const limpiar = () => setEstados(Object.fromEntries(flujo.rejillas().map((r) => [r.id, "limpia" as EstadoRejilla])));
+  const nTap = ui.tapadas.Todas ?? 0;
+  const nTot = ui.total.Todas ?? 0;
+  void estados;
+  return (
+    <>
+      <section className={`${s.tarjeta} ${s.rielTop}`}>
+        <p className={s.tarjetaT}>
+          Modo predicción<span>simulación, no es un modelo hidráulico</span>
+        </p>
+        <h2 className={s.tarjetaLugar}>¿Qué pasa si se tapan estas rejillas?</h2>
+        <p className={s.lectura}>Tapa rejillas con un clic en el mapa (limpia → parcial → tapada) o al azar, sube la lluvia y mira por dónde escurre el agua por las calles. El escurrimiento es estimado con la pendiente del terreno.</p>
+      </section>
+      <section className={`${s.tarjeta} ${s.simPanel}`}>
+        {!ui.cargado && !ui.error && (
+          <div className={s.skelPila}>
+            <Skel h={44} />
+            <Skel h={20} />
+            <Skel h={60} />
+          </div>
+        )}
+        {ui.error && <p className={s.vacio}>No se pudo cargar la red de calles. Recarga la página para reintentar.</p>}
+        {ui.cargado && (
+          <>
+            <div className={s.simFila}>
+              <button type="button" className={s.simPlay} onClick={flujo.alternar} aria-label={ui.corriendo ? "Pausar la simulación" : "Reproducir la simulación"}>
+                {ui.corriendo ? "❚❚" : "▶"}
+              </button>
+              <span className={s.segmento} role="radiogroup" aria-label="Velocidad">
+                {FLUJO_CONFIG.velocidades.map((v) => (
+                  <button key={v} type="button" role="radio" aria-checked={ui.velocidad === v} className={ui.velocidad === v ? s.segOn : ""} onClick={() => flujo.setVelocidad(v)}>
+                    {v}×
+                  </button>
+                ))}
+              </span>
+              <button type="button" className={s.simReiniciar} onClick={flujo.reiniciar}>
+                Reiniciar
+              </button>
+            </div>
+            <label className={s.simLluvia}>
+              <span>
+                Lluvia supuesta <b>{ui.lluviaMmH} mm/h</b>
+              </span>
+              <input type="range" min={0} max={FLUJO_CONFIG.lluviaMaxMmH} step={1} value={ui.lluviaMmH} onChange={(e) => flujo.setLluvia(Number(e.target.value))} />
+            </label>
+            <div className={s.simCifras}>
+              <div>
+                <b>
+                  {nTap} <small>de {nTot.toLocaleString("es-CL")}</small>
+                </b>
+                <span>rejillas tapadas</span>
+              </div>
+              <div>
+                <b>{ui.lecturas.desbordados}</b>
+                <span>puntos con agua (estimado)</span>
+              </div>
+            </div>
+            <div className={s.simAcciones}>
+              <button type="button" className={s.btnSec} onClick={tapar20}>
+                Tapar 20 % al azar
+              </button>
+              <button type="button" className={s.btnSec} onClick={limpiar}>
+                Limpiar todas
+              </button>
+            </div>
+            {ui.elegida && (
+              <p className={s.hint}>
+                <b>{ui.elegida.nombre}</b>: rejilla {ui.elegida.estado} · {ui.elegida.conAgua ? "acumula agua (estimado)" : "sin agua acumulada (estimado)"}
+              </p>
+            )}
+            <p className={s.nota}>Red de 544 rejillas y 1.606 tramos (OSM y elevación Copernicus). No calcula profundidades ni tiempos de llegada.</p>
+          </>
+        )}
+      </section>
+    </>
+  );
+}
+
+/* ───────────────────────── Riel ───────────────────────── */
 
 function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, nuevo, pestana, setPestana }: {
   fase: "antes" | "durante";
@@ -804,16 +988,14 @@ function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, nuevo, p
       <Tabs.Root className={s.tabs} value={pestana} onValueChange={setPestana}>
         <Tabs.List className={s.tabLista} aria-label="Detalle">
           <Tabs.Trigger value="prioridad" className={s.tab}>
-            Prioridad <span className={s.cuenta}>{datos.filas.length || "–"}</span>
+            Limpieza <span className={s.cuenta}>{datos.filas.length || "–"}</span>
           </Tabs.Trigger>
           <Tabs.Trigger value="cuadrilla" className={s.tab}>
             Cuadrilla <span className={s.cuenta}>{sala.ruta?.misiones.length ?? "–"}</span>
           </Tabs.Trigger>
-          {fase === "durante" && (
-            <Tabs.Trigger value="paraderos" className={s.tab}>
-              Paraderos <span className={`${s.cuenta} ${nPar ? s.cuentaOn : ""}`}>{nPar ?? "–"}</span>
-            </Tabs.Trigger>
-          )}
+          <Tabs.Trigger value="transporte" className={s.tab}>
+            Transporte <span className={`${s.cuenta} ${nPar ? s.cuentaOn : ""}`}>{nPar ?? "–"}</span>
+          </Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="prioridad" className={s.tabPanel}>
           {fase === "durante" && sala.durante.esInicial && datos.filas.length > 0 && <p className={s.hint}>Todavía sin evidencia de la lluvia: se muestra el ranking inicial.</p>}
@@ -823,15 +1005,23 @@ function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, nuevo, p
         <Tabs.Content value="cuadrilla" className={s.tabPanel}>
           <Misiones />
         </Tabs.Content>
-        {fase === "durante" && (
-          <Tabs.Content value="paraderos" className={s.tabPanel}>
-            <Transporte {...sala.transporte} activo={paradero} onSelect={onParadero} className={s.transporte} />
-          </Tabs.Content>
-        )}
+        <Tabs.Content value="transporte" className={s.tabPanel}>
+          <p className={s.hint}>
+            {fase === "antes"
+              ? "Paraderos cerca de rejillas de prioridad alta: en riesgo si llueve. Drena no desvía recorridos; el desvío lo confirma Red."
+              : "Paraderos con agua observada cerca y su alternativo para el mismo servicio y sentido. El desvío lo confirma Red."}
+          </p>
+          <Transporte {...sala.transporte} activo={paradero} onSelect={onParadero} className={s.transporte} />
+        </Tabs.Content>
       </Tabs.Root>
     </>
   );
 }
+
+/* ───────────────────────── Sala ───────────────────────── */
+
+const CAPAS_ANTES: Capas = { cadenas: true, transporte: false, limites: true, catastro: false };
+const CAPAS_DURANTE: Capas = { cadenas: true, transporte: true, limites: true, catastro: false };
 
 function SalaInterior({ children }: { children: ReactNode }) {
   const vista = vistaDe(usePathname() ?? "/");
@@ -846,6 +1036,37 @@ function SalaInterior({ children }: { children: ReactNode }) {
   const [presentacion, setPresentacion] = useState(false);
   const [foco, setFoco] = useState<{ coord: LngLat; siempre: boolean } | null>(null);
   const [nuevo, setNuevo] = useState(false);
+  const [capas, setCapas] = useState<Capas>(CAPAS_ANTES);
+  const [estados, setEstados] = useState<Record<string, EstadoRejilla>>({});
+
+  // Las capas por defecto cambian con la fase (Durante muestra transporte); el usuario puede ajustarlas después
+  useEffect(() => {
+    setCapas(vista === "durante" ? CAPAS_DURANTE : CAPAS_ANTES);
+  }, [vista]);
+
+  // Motor de flujo: solo pide la red (690 KB) y dibuja en la vista Simulación
+  const puntosFlujo = useMemo(() => sala.antes.filas.map((p) => ({ id: p.sumidero_id, nombre: nombreFila(p), coord: [p.lon, p.lat] as LngLat })), [sala.antes.filas]);
+  const simulando = vista === "simulacion";
+  const flujoRef = useRef<Flujo | null>(null);
+  const flujo = useFlujo({
+    scenario: "base",
+    puntos: puntosFlujo,
+    estados,
+    visible: simulando,
+    activo: simulando,
+    onClickRejilla: (id) => {
+      const actual: EstadoRejilla = flujoRef.current?.estadoDe(id) ?? "limpia";
+      setEstados((e) => ({ ...e, [id]: ESTADOS[(ESTADOS.indexOf(actual) + 1) % ESTADOS.length] }));
+      flujoRef.current?.pulsar(id);
+    },
+  });
+  flujoRef.current = flujo;
+  // Al entrar a la simulación, el agua parte sola
+  useEffect(() => {
+    if (simulando && flujo.ui.cargado && !flujo.ui.corriendo) flujo.reproducir();
+    if (!simulando && flujo.ui.corriendo) flujo.alternar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simulando, flujo.ui.cargado]);
 
   const elegir = useCallback(
     (id: string) => {
@@ -858,12 +1079,9 @@ function SalaInterior({ children }: { children: ReactNode }) {
   );
   const elegirParadero = useCallback((id: string | null) => {
     setParadero((p) => (id == null || p === id ? null : id));
-    if (id) setPestana("paraderos");
+    if (id) setPestana("transporte");
   }, []);
   const listo = useCallback(() => setMapaListo(true), []);
-  useEffect(() => {
-    if (fase === "antes" && pestana === "paraderos") setPestana("prioridad");
-  }, [fase, pestana]);
 
   // Llegada de un reporte en Durante: el mapa va al lugar, la fila se abre y la tarjeta se destaca una vez
   const ultimoId = sala.observaciones.datos[0]?.id;
@@ -898,22 +1116,25 @@ function SalaInterior({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", k);
   }, []);
 
+  const sello = vista === "antes" ? "Antes de la lluvia" : vista === "durante" ? "Durante la lluvia" : "Simulación · escurrimiento estimado";
   return (
     <div className={`${s.sala} ${presentacion ? s.presentacion : ""}`} data-vista={vista}>
       <Barra vista={vista} />
       <main className={s.escena}>
-        <Mapa filas={filas} fase={vista} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} foco={foco} onListo={listo} />
-        {conMapa(vista) && !mapaListo && <EsqueletoMapa />}
+        <Mapa filas={filas} vista={vista} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} foco={foco} onListo={listo} flujo={flujo} capas={capas} setCapas={setCapas} />
+        {conMapa(vista) && <EsqueletoMapa key={`esq-${vista}`} listo={mapaListo && (!simulando || flujo.ui.cargado || flujo.ui.error)} />}
         <Inicio activo={vista === "inicio"} mapaListo={mapaListo} />
         {vista === "validacion" && <div className={s.pagina}>{children}</div>}
         <aside className={s.riel} aria-hidden={!conMapa(vista)} inert={!conMapa(vista)}>
-          {conMapa(vista) && (
-            <Riel fase={fase} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} nuevo={nuevo} pestana={pestana} setPestana={setPestana} />
+          {simulando ? (
+            <Simulacion flujo={flujo} estados={estados} setEstados={setEstados} />
+          ) : (
+            conMapa(vista) && <Riel fase={fase} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} nuevo={nuevo} pestana={pestana} setPestana={setPestana} />
           )}
         </aside>
         {conMapa(vista) && (
-          <div className={s.faseSello} key={fase}>
-            {fase === "antes" ? "Antes de la lluvia" : "Durante la lluvia"}
+          <div className={s.faseSello} key={`sello-${vista}`}>
+            {sello}
           </div>
         )}
       </main>

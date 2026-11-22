@@ -32,6 +32,7 @@ export interface MapPunto {
   id: string;
   coord: LngLat;
   prio: Prioridad;
+  top?: boolean; // de las primeras: más grande y con brillo
   nombre?: string;
   sub?: string;
 }
@@ -60,6 +61,7 @@ export interface DrenaMapProps {
   chain?: LngLat[] | null; // Durante: cadena aguas abajo del punto anegado
   celda?: { poly: LngLat[]; rayos: LngLat[]; link: [LngLat, LngLat] } | null; // Durante: celda convectiva ilustrativa
   camara3D?: { pitch: number; bearing: number }; // inclinación y rumbo de la vista 3D (por defecto, los del flujo)
+  seleccionado?: string | null; // id del punto elegido (anillo fijo)
   resaltado?: string | null; // id de pin o punto a resaltar (p. ej. la fila bajo el mouse en la lista)
   onHover?: (id: string | null) => void; // mouse sobre un pin o punto del mapa
   focoSiempre?: boolean; // con foco: centrar aunque ya esté a la vista (llegada de un reporte)
@@ -179,6 +181,8 @@ const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
   ["ruta-halo", "line-color", "principal"],
   ["ruta-line", "line-color", "principal"],
   ["puntos-hover", "circle-stroke-color", "secundario"],
+  ["puntos-sel", "circle-stroke-color", "principal"],
+  ["puntos", "circle-stroke-color", "secundario"],
   ["chain-line", "line-color", "principal"],
 ];
 
@@ -354,6 +358,13 @@ export default function DrenaMap(props: DrenaMapProps) {
           map.addLayer({ id: "ruta-line", type: "line", source: "ruta", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 3, "line-dasharray": [2, 1.5] } });
           map.addSource("puntos", { type: "geojson", data: fc([]) });
           map.addLayer({
+            id: "puntos-sel",
+            type: "circle",
+            source: "puntos",
+            filter: ["==", ["get", "id"], ""],
+            paint: { "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 11, 16, 17], "circle-color": "rgba(0,0,0,0)", "circle-stroke-width": 3 }, // paleta-ok: relleno transparente
+          });
+          map.addLayer({
             id: "puntos-hover",
             type: "circle",
             source: "puntos",
@@ -365,9 +376,9 @@ export default function DrenaMap(props: DrenaMapProps) {
             type: "circle",
             source: "puntos",
             paint: {
-              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 9, 16, 16],
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["get", "top"], 16, 9], 16, ["case", ["get", "top"], 30, 16]],
               "circle-blur": 1,
-              "circle-opacity": ["match", ["get", "prio"], "alta", 0.55, "media", 0.35, 0.18],
+              "circle-opacity": ["case", ["get", "top"], 0.75, ["match", ["get", "prio"], "alta", 0.5, "media", 0.3, 0.15]],
             },
           });
           map.addLayer({
@@ -375,8 +386,8 @@ export default function DrenaMap(props: DrenaMapProps) {
             type: "circle",
             source: "puntos",
             paint: {
-              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 3, 16, 5.5],
-              "circle-stroke-width": 0,
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, ["case", ["get", "top"], 6, 3], 16, ["case", ["get", "top"], 10, 5.5]],
+              "circle-stroke-width": ["case", ["get", "top"], 2, 0],
               "circle-opacity": ["match", ["get", "prio"], "baja", 0.7, 1],
             },
           });
@@ -457,7 +468,7 @@ export default function DrenaMap(props: DrenaMapProps) {
     set("rec", fc((props.recorridos ?? []).map(line)));
     set("caminata", fc((props.caminatas ?? []).map(line)));
     set("ruta", fc((props.ruta ?? []).map(line)));
-    set("puntos", fc((props.puntos ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, prio: p.prio, nombre: p.nombre ?? "", sub: p.sub ?? "" }, geometry: { type: "Point", coordinates: p.coord } }))));
+    set("puntos", fc((props.puntos ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, prio: p.prio, top: !!p.top, nombre: p.nombre ?? "", sub: p.sub ?? "" }, geometry: { type: "Point", coordinates: p.coord } }))));
     set("gore", fc((props.gore ?? []).map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }))));
   }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.caminatas, props.puntos, props.ruta]);
 
@@ -514,6 +525,13 @@ export default function DrenaMap(props: DrenaMapProps) {
       globo.current?.remove();
     };
   }, [ready]);
+
+  // Punto elegido: anillo fijo
+  useEffect(() => {
+    if (!ready) return;
+    const map = mapRef.current;
+    if (map.getLayer("puntos-sel")) map.setFilter("puntos-sel", ["==", ["get", "id"], props.seleccionado ?? ""]);
+  }, [ready, props.seleccionado]);
 
   // Resaltado que viene de afuera (fila de la lista bajo el mouse)
   useEffect(() => {
