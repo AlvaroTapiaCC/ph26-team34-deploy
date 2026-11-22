@@ -1,9 +1,9 @@
 {
-  "generado_utc": "2026-11-22T07:55:17.693977+00:00",
+  "generado_utc": "2026-11-22T08:01:35.954734+00:00",
   "etiqueta": "Reconstrucción · datos reproducidos",
   "metodo": "Curaduría manual de las fuentes enlazadas; sin verificación independiente.",
   "salida": {
     "ruta": "data/validacion/san_carlos/antecedentes.json",
-    "sha256": "70f86eb7c31356034eb635c1407f6bd1377693f2f483548d84a8c06b6cfa106b"
+    "sha256": "8ee342d3525f422f39bf5fe6201672858d8dd0d13012b359212e53b8450cb5e1"
   }
 }

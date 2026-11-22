@@ -58,6 +58,8 @@ def test_reconstruccion_reutiliza_ranking_b():
     assert resultado["lluvia_8_oct"] == {"pronostico_mm": 22.5, "observado_mm": 37.5, "centro_latlon": [-33.418, -70.541]}
     assert all(f["properties"]["nivel_riesgo"] == "Alto" for f in resultado["puntos_criticos"])
     assert all(a["fuente_url"].startswith("https://") for a in resultado["antecedentes"])
+    hipotesis = next(a for a in resultado["antecedentes"] if a["titulo"] == "Causa no confirmada")
+    assert hipotesis["fuente_url"] == "https://www.biobiochile.cl/noticias/nacional/region-metropolitana/2026/10/08/codina-apunta-a-obstruccion-de-ductos-como-causa-de-grave-aluvion-que-afecta-a-san-carlos-de-apoquindo.shtml"
 
 
 def test_serie_vacia_o_sin_alerta_falla():
