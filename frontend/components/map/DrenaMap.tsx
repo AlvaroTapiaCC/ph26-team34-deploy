@@ -73,6 +73,7 @@ export interface DrenaMapProps {
   paraderos?: MapParadero[] | null; // transporte: expuestos, en riesgo y alternativos (#92)
   recorridos?: LngLat[][] | null; // trazado de los servicios afectados
   recorridosFondo?: LngLat[][] | null; // todos los recorridos de la zona, tenues
+  recorridosDestacados?: LngLat[][] | null;
   calor?: boolean; // mapa de calor de riesgo a partir de `puntos` (peso)
   caminatas?: [LngLat, LngLat][] | null; // paradero expuesto → paradero alternativo
   bounds: [LngLat, LngLat];
@@ -179,6 +180,7 @@ const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
   ["gore", "circle-color", "contexto"],
   ["gore", "circle-stroke-color", "surface"],
   ["rec-line", "line-color", "bus"],
+  ["rec-destacado", "line-color", "bus"],
   ["caminata", "line-color", "bus"],
   ["chain-halo", "line-color", "principal"],
   ["ruta-halo", "line-color", "principal"],
@@ -297,7 +299,7 @@ export default function DrenaMap(props: DrenaMapProps) {
         mapRef.current = map;
         map.once("style.load", () => {
           const add = (id: string) => map.addSource(id, { type: "geojson", data: fc([]) });
-          ["esc", "chain", "lim", "area", "celda", "celda-link", "gore", "rec", "caminata"].forEach(add);
+          ["esc", "chain", "lim", "area", "celda", "celda-link", "gore", "rec", "rec-destacado", "caminata"].forEach(add);
           map.addSource("comunas-rm", { type: "geojson", data: "/data/comunas_rm.geojson" });
           // El catastro completo (420 KB) se pide la primera vez que se enciende su capa
           map.addSource("rejillas", { type: "geojson", data: fc([]), cluster: true, clusterMaxZoom: 16, clusterRadius: 30 });
@@ -440,6 +442,7 @@ export default function DrenaMap(props: DrenaMapProps) {
               "circle-opacity": ["match", ["get", "prio"], "baja", 0.7, 1],
             },
           });
+          map.addLayer({ id: "rec-destacado", type: "line", source: "rec-destacado", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 6, "line-opacity": 1 } });
           pintarMapa(map);
           // Si cambia el esquema de color del sistema, se vuelven a leer los colores
           const repintar = () => pintarMapa(map);
@@ -522,12 +525,17 @@ export default function DrenaMap(props: DrenaMapProps) {
     set("celda", fc(props.celda ? [poly(props.celda.poly)] : []));
     set("celda-link", fc(props.celda ? [line(props.celda.link)] : []));
     set("rec", fc((props.recorridos ?? []).map(line)));
+    set("rec-destacado", fc((props.recorridosDestacados ?? []).map(line)));
+    const destacado = !!props.recorridosDestacados?.length;
+    map.setPaintProperty("rec-line", "line-opacity", destacado ? 0.2 : 0.55);
+    map.setPaintProperty("rec-flecha", "icon-opacity", destacado ? 0.2 : 0.9);
+    map.moveLayer("rec-destacado");
     set("caminata", fc((props.caminatas ?? []).map(line)));
     set("ruta", fc((props.ruta ?? []).map(line)));
     set("rec-fondo", fc((props.recorridosFondo ?? []).map(line)));
     set("puntos", fc((props.puntos ?? []).map((p) => ({ type: "Feature", properties: { id: p.id, prio: p.prio, top: !!p.top, w: p.peso ?? 0, nombre: p.nombre ?? "", sub: p.sub ?? "" }, geometry: { type: "Point", coordinates: p.coord } }))));
     set("gore", fc((props.gore ?? []).map((c) => ({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: c } }))));
-  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.caminatas, props.puntos, props.ruta, props.recorridosFondo]);
+  }, [ready, props.lines, props.chain, props.limites, props.area, props.celda, props.gore, props.recorridos, props.recorridosDestacados, props.caminatas, props.puntos, props.ruta, props.recorridosFondo]);
 
   useEffect(() => {
     if (!ready) return;

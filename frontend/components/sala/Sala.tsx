@@ -567,6 +567,7 @@ const Mapa = memo(function Mapa({
   onHover,
   paradero,
   onParadero,
+  servicio,
   foco,
   onListo,
   flujo,
@@ -584,6 +585,7 @@ const Mapa = memo(function Mapa({
   onHover: (id: string | null) => void;
   paradero: string | null;
   onParadero: (id: string | null) => void;
+  servicio: string | null;
   foco: { coord: LngLat; siempre: boolean } | null;
   onListo: () => void;
   flujo: Flujo;
@@ -604,7 +606,7 @@ const Mapa = memo(function Mapa({
   const contexto = useCapaContexto({ infra: capas.infra && !simulacion, colectores: capas.colectores && !simulacion, criticos: capas.criticos && !simulacion });
   const recorridos = useRecorridos(verTransporte);
   const recorridosFondo = useMemo(() => (verTransporte ? recorridos.flatMap((r) => r.tramos) : []), [verTransporte, recorridos]);
-  const tp = useMemo(() => (verTransporte ? capasTransporte(transporte.datos, recorridos, paradero, onParadero) : { paraderos: [], recorridos: [], caminatas: [] }), [verTransporte, transporte.datos, recorridos, paradero, onParadero]);
+  const tp = useMemo(() => (verTransporte ? capasTransporte(transporte.datos, recorridos, paradero, onParadero, servicio) : { paraderos: [], recorridos: [], recorridosDestacados: [], caminatas: [] }), [verTransporte, transporte.datos, recorridos, paradero, onParadero, servicio]);
 
   // Todas las rejillas del ranking como puntos (capa GL): las 5 primeras más grandes y con brillo, sin números
   const puntos = useMemo<MapPunto[]>(
@@ -676,6 +678,7 @@ const Mapa = memo(function Mapa({
         rejillas={capas.catastro}
         paraderos={tp.paraderos}
         recorridos={tp.recorridos}
+        recorridosDestacados={tp.recorridosDestacados}
         recorridosFondo={recorridosFondo}
         calor={capas.calor && !simulacion}
         caminatas={tp.caminatas}
@@ -950,7 +953,7 @@ function Simulacion({ flujo, estados, setEstados }: { flujo: Flujo; estados: Rec
 
 /* ───────────────────────── Riel ───────────────────────── */
 
-function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, nuevo, pestana, setPestana }: {
+function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, servicio, onServicio, nuevo, pestana, setPestana }: {
   fase: "antes" | "durante";
   sel: string | null;
   onSel: (id: string) => void;
@@ -958,6 +961,8 @@ function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, nuevo, p
   onHover: (id: string | null) => void;
   paradero: string | null;
   onParadero: (id: string | null) => void;
+  servicio: string | null;
+  onServicio: (paradero: string, servicio: string) => void;
   nuevo: boolean;
   pestana: string;
   setPestana: (v: string) => void;
@@ -1002,7 +1007,7 @@ function Riel({ fase, sel, onSel, hover, onHover, paradero, onParadero, nuevo, p
               ? "Paraderos cerca de rejillas de prioridad alta: en riesgo si llueve. Drena no desvía recorridos; el desvío lo confirma Red."
               : "Paraderos con agua observada cerca y su alternativo para el mismo servicio y sentido. El desvío lo confirma Red."}
           </p>
-          <Transporte {...sala.transporte} activo={paradero} onSelect={onParadero} className={s.transporte} />
+          <Transporte {...sala.transporte} activo={paradero} onSelect={onParadero} servicioActivo={servicio} onServicio={onServicio} className={s.transporte} />
         </Tabs.Content>
       </Tabs.Root>
     </>
@@ -1022,6 +1027,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
   const [sel, setSel] = useState<string | null>(null);
   const [hover, setHover] = useState<string | null>(null);
   const [paradero, setParadero] = useState<string | null>(null);
+  const [servicio, setServicio] = useState<string | null>(null);
   const [pestana, setPestana] = useState("prioridad");
   const [mapaListo, setMapaListo] = useState(false);
   const [presentacion, setPresentacion] = useState(false);
@@ -1091,9 +1097,14 @@ function SalaInterior({ children }: { children: ReactNode }) {
     [filas],
   );
   const elegirParadero = useCallback((id: string | null) => {
+    setServicio(null);
     setParadero((p) => (id == null || p === id ? null : id));
     if (id) setPestana("transporte");
   }, []);
+  const elegirServicio = (id: string, clave: string) => {
+    setParadero(id);
+    setServicio(paradero === id && servicio === clave ? null : clave);
+  };
   const listo = useCallback(() => setMapaListo(true), []);
 
   // Llegada de un reporte en Durante: el mapa va al lugar, la fila se abre y la tarjeta se destaca una vez
@@ -1134,7 +1145,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
     <div className={`${s.sala} ${presentacion ? s.presentacion : ""}`} data-vista={vista}>
       <Barra vista={vista} />
       <main className={s.escena}>
-        <Mapa filas={filas} vista={vista} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} foco={foco} onListo={listo} flujo={flujo} capas={capas} setCapas={setCapas} modoAgua={modoAgua} setModoAgua={setModoAgua} sinLluvia={mmhReal < 0.1} />
+        <Mapa filas={filas} vista={vista} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} servicio={servicio} foco={foco} onListo={listo} flujo={flujo} capas={capas} setCapas={setCapas} modoAgua={modoAgua} setModoAgua={setModoAgua} sinLluvia={mmhReal < 0.1} />
         {conMapa(vista) && <EsqueletoMapa key={`esq-${vista}`} listo={mapaListo && (!simulando || flujo.ui.cargado || flujo.ui.error)} />}
         <Inicio activo={vista === "inicio"} mapaListo={mapaListo} />
         {(vista === "validacion" || vista === "san-carlos") && <div className={s.pagina}>{children}</div>}
@@ -1142,7 +1153,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
           {simulando ? (
             <Simulacion flujo={flujo} estados={estados} setEstados={setEstados} />
           ) : (
-            conMapa(vista) && <Riel fase={fase} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} nuevo={nuevo} pestana={pestana} setPestana={setPestana} />
+            conMapa(vista) && <Riel fase={fase} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} servicio={servicio} onServicio={elegirServicio} nuevo={nuevo} pestana={pestana} setPestana={setPestana} />
           )}
         </aside>
         {conMapa(vista) && (

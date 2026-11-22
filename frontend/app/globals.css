@@ -2739,6 +2739,19 @@ p {
   font-family: var(--font-mono);
   font-weight: 700;
   color: var(--bus);
+  padding: 2px 6px;
+  border: 1px solid var(--bus);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+.tp__svc[aria-pressed="true"] {
+  background: var(--bus);
+  color: var(--sobre-color);
+}
+.tp__svc:focus-visible {
+  outline: 2px solid var(--bus);
+  outline-offset: 2px;
 }
 .tp__dir {
   color: var(--text-2);
