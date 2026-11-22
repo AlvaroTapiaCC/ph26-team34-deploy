@@ -82,6 +82,7 @@ export function useCapaCadenas(
   observaciones: ObservacionPublica[],
   evidenciaAgua: readonly EvidenciaAgua[],
   visible: boolean,
+  vigenciaAguaH: number,
   alcanceAguaM: number,
 ) {
   const [mapa, setMapa] = useState<MapLibre>(null);
@@ -90,9 +91,9 @@ export function useCapaCadenas(
   const [ahora, setAhora] = useState(Date.now);
   const datos = useMemo(
     () => visible && tramos
-      ? capaCadenas(tramos, prioridades, observaciones, evidenciaAgua, Math.max(ahora, Date.now()), alcanceAguaM)
+      ? capaCadenas(tramos, prioridades, observaciones, evidenciaAgua, Math.max(ahora, Date.now()), vigenciaAguaH, alcanceAguaM)
       : null,
-    [visible, tramos, prioridades, observaciones, evidenciaAgua, ahora, alcanceAguaM],
+    [visible, tramos, prioridades, observaciones, evidenciaAgua, ahora, vigenciaAguaH, alcanceAguaM],
   );
 
   const onMapReady = useCallback((mapaListo: MapLibre) => {
@@ -110,13 +111,17 @@ export function useCapaCadenas(
     }).catch(() => {
       if (vigente) setEstado("error");
     });
-    // La evidencia de obstrucción caduca aunque el feed de observaciones no cambie.
-    const reloj = setInterval(() => setAhora(Date.now()), 30_000);
-    return () => {
-      vigente = false;
-      clearInterval(reloj);
-    };
+    return () => { vigente = false; };
   }, [visible]);
+
+  useEffect(() => {
+    if (!datos) return;
+    // Mantiene la revisión de obstrucciones cada 30 s y retira el agua justo al vencer.
+    const hastaVencimiento = Math.ceil(datos.proximoVencimientoAgua - Date.now());
+    const espera = Math.min(30_000, Math.max(0, hastaVencimiento));
+    const reloj = setTimeout(() => setAhora(Date.now()), espera);
+    return () => clearTimeout(reloj);
+  }, [datos]);
 
   useEffect(() => {
     mapa?.getSource(FUENTE)?.setData(datos?.geojson ?? VACIA);

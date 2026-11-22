@@ -8,6 +8,7 @@ import type { ObservacionPublica } from "./central.ts";
 import { capaCadenas, type Tramo } from "./cadenas.ts";
 import type { EvidenciaAgua } from "./transporte.ts";
 
+const HORA_MS = 60 * 60_000;
 const AHORA = Date.parse("2026-11-22T12:00:00Z");
 const COORD: Record<string, [number, number]> = { A: [-70.6, -33.418], B: [-70.6, -33.4185], C: [-70.6, -33.419] };
 
@@ -20,14 +21,14 @@ function tramo(desde: string, hasta: string, distancia_m: number): Tramo {
 }
 
 function obs(sumidero_id: string, nivel: EvidenciaAgua["nivel"]): EvidenciaAgua {
-  return { sumidero_id, nivel, ts: new Date(AHORA - 60 * 60_000).toISOString(), is_simulated: false };
+  return { sumidero_id, nivel, ts: new Date(AHORA - HORA_MS).toISOString(), is_simulated: false };
 }
 
 // A → B → C dentro de 150 m
 const CADENA = [tramo("A", "B", 50), tramo("B", "C", 70)];
 
 function tramosConAgua(tramos: Tramo[], evidenciaAgua: EvidenciaAgua[], observaciones: ObservacionPublica[] = []) {
-  const { geojson } = capaCadenas(tramos, new Map(), observaciones, evidenciaAgua, AHORA, 150);
+  const { geojson } = capaCadenas(tramos, new Map(), observaciones, evidenciaAgua, AHORA, 6, 150);
   return geojson.features
     .filter(({ properties }) => properties.tipo === "agua_abajo")
     .map(({ geometry }) => {
@@ -62,4 +63,26 @@ test("el agua de transporte sigue visible después de 100 reportes de texto", ()
     clasificacion: { nivel_agua: "no_evaluable" },
   }));
   assert.deepEqual(tramosConAgua(CADENA, [obs("A", "cuneta")], textos), ["A→B", "B→C"]);
+});
+
+test("la misma respuesta de transporte pierde el agua observada y la inferida al vencer", () => {
+  const captura = AHORA - 5 * HORA_MS;
+  const evidencia = [{ ...obs("A", "cuneta"), ts: new Date(captura).toISOString() }];
+  const prioridades = new Map([["A", "alta"]] as const);
+  const capaEn = (ahora: number, vigenciaH = 6) =>
+    capaCadenas(CADENA, prioridades, [], evidencia, ahora, vigenciaH, 150);
+  const tiposAgua = (datos: ReturnType<typeof capaCadenas>) => datos.geojson.features
+    .map(({ properties }) => properties.tipo)
+    .filter((tipo) => tipo.startsWith("agua_"));
+
+  const alRecibir = capaEn(AHORA);
+  assert.deepEqual(tiposAgua(alRecibir), ["agua_abajo", "agua_abajo", "agua_observada"]);
+  assert.equal(alRecibir.proximoVencimientoAgua, captura + 6 * HORA_MS);
+  assert.equal(tiposAgua(capaEn(captura + 6 * HORA_MS - 1)).length, 3);
+  for (const edadH of [6, 7, 24]) {
+    const datos = capaEn(captura + edadH * HORA_MS);
+    assert.deepEqual(tiposAgua(datos), []);
+    assert.ok(datos.geojson.features.some(({ properties }) => properties.tipo === "alta"));
+  }
+  assert.deepEqual(tiposAgua(capaEn(AHORA, 4)), []);
 });

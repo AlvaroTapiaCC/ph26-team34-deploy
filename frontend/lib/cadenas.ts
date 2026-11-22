@@ -80,6 +80,7 @@ export function capaCadenas(
   observaciones: ObservacionPublica[],
   evidenciaAgua: readonly EvidenciaAgua[],
   ahora: number,
+  vigenciaAguaH: number,
   alcanceAguaM: number,
 ) {
   const salidas = new Map<string, Tramo[]>();
@@ -95,10 +96,15 @@ export function capaCadenas(
   }
 
   const obstruccion = obstruccionesVigentes(observaciones, ahora);
-  // Transporte ya eligió la última lectura vigente por rejilla para esta respuesta.
+  // Transporte elige la última lectura por rejilla. La respuesta en caché sigue envejeciendo.
   const agua = new Map<string, Evidencia>();
+  let proximoVencimientoAgua = Infinity;
   for (const o of evidenciaAgua) {
+    const captura = Date.parse(o.ts);
+    const vencimiento = captura + vigenciaAguaH * HORA_MS;
+    if (captura > ahora || !(vencimiento > ahora)) continue;
     agua.set(o.sumidero_id, { simulado: o.is_simulated, activa: o.nivel !== "sin_agua" });
+    proximoVencimientoAgua = Math.min(proximoVencimientoAgua, vencimiento);
   }
   const bajoObstruccion = tramosAguasAbajo(obstruccion, salidas, Infinity);
   // Una rejilla observada seca corta el agua inferida desde calle arriba: ni ella ni las
@@ -127,6 +133,7 @@ export function capaCadenas(
   }
   return {
     geojson: { type: "FeatureCollection" as const, features },
+    proximoVencimientoAgua,
     haySimulados: features.some(({ properties }) => properties.simulado),
   };
 }
