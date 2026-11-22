@@ -27,7 +27,7 @@ import s from "./sala.module.css";
 
 if (typeof window !== "undefined") precargarMapLibre();
 
-type Vista = "inicio" | "antes" | "durante" | "simulacion" | "validacion";
+type Vista = "inicio" | "antes" | "durante" | "simulacion" | "validacion" | "san-carlos";
 const vistaDe = (path: string): Vista =>
   path.startsWith("/central/durante")
     ? "durante"
@@ -37,7 +37,7 @@ const vistaDe = (path: string): Vista =>
         ? "simulacion"
         : path.startsWith("/central/validacion")
           ? "validacion"
-          : "inicio";
+          : path.startsWith("/central/san-carlos") ? "san-carlos" : "inicio";
 const conMapa = (v: Vista) => v === "antes" || v === "durante" || v === "simulacion";
 const sinMovimiento = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -137,6 +137,7 @@ const NAV: { href: string; vista: Vista | "validacion"; texto: string }[] = [
   { href: "/central/durante", vista: "durante", texto: "Durante" },
   { href: "/central/simulacion", vista: "simulacion", texto: "Simulación" },
   { href: "/central/validacion", vista: "validacion", texto: "Validación" },
+  { href: "/central/san-carlos", vista: "san-carlos", texto: "Caso San Carlos" },
 ];
 
 function Barra({ vista }: { vista: Vista }) {
@@ -1247,7 +1248,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
         <Mapa filas={filas} vista={vista} sel={sel} onSel={elegir} hover={hover} onHover={setHover} paradero={paradero} onParadero={elegirParadero} foco={foco} onListo={listo} flujo={flujo} capas={capas} setCapas={setCapas} modoAgua={modoAgua} setModoAgua={setModoAgua} sinLluvia={mmhReal < 0.1} />
         {conMapa(vista) && <EsqueletoMapa key={`esq-${vista}`} listo={mapaListo && (!simulando || flujo.ui.cargado || flujo.ui.error)} />}
         <Inicio activo={vista === "inicio"} mapaListo={mapaListo} />
-        {vista === "validacion" && <div className={s.pagina}>{children}</div>}
+        {(vista === "validacion" || vista === "san-carlos") && <div className={s.pagina}>{children}</div>}
         <aside className={s.riel} aria-hidden={!conMapa(vista)} inert={!conMapa(vista)}>
           {simulando ? (
             <Simulacion flujo={flujo} estados={estados} setEstados={setEstados} />
@@ -1262,7 +1263,7 @@ function SalaInterior({ children }: { children: ReactNode }) {
         )}
       </main>
       {presentacion && <span className={s.presTag}>Modo presentación · P para salir</span>}
-      {vista !== "validacion" && children}
+      {vista !== "validacion" && vista !== "san-carlos" && children}
     </div>
   );
 }
