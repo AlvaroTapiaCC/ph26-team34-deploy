@@ -2,11 +2,12 @@
 
 import { forwardRef, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { PRIO_LABEL, type Prioridad } from "@/lib/data";
+import { DROP_PATH } from "@/lib/drop";
 
 export function Drop({ size = 27 }: { size?: number }) {
   return (
     <svg width={(size * 20) / 27} height={size} viewBox="0 0 20 27" aria-hidden>
-      <path d="M10 0.5C10 0.5 0 11.6 0 17.2C0 22.6 4.5 27 10 27C15.5 27 20 22.6 20 17.2C20 11.6 10 0.5 10 0.5Z" fill="var(--principal)" />
+      <path d={DROP_PATH} fill="var(--principal)" />
     </svg>
   );
 }
