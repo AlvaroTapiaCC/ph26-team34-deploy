@@ -218,7 +218,7 @@ function FichaM() {
           </div>
           <div>
             <div className="mficha__title">{p.nombre}</div>
-            <div className="mficha__sub" style={{ color: p.prio === "alta" ? "var(--lime)" : "var(--text-2)" }}>
+            <div className="mficha__sub" style={{ color: p.prio === "alta" ? "var(--acento)" : "var(--text-2)" }}>
               {p.comuna} · {{ alta: "▲ Alta", media: "◆ Media", baja: "● Baja" }[p.prio]}
             </div>
           </div>

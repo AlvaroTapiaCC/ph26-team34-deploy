@@ -1,31 +1,41 @@
 /* Drena · tokens (colección Figma "Drena Naranja") */
 :root {
-  --bg: #ededeb;
-  --surface: #ffffff;
-  --surface-2: #f3f3f1;
-  --surface-3: #dcdcd9;
-  --line: #e2e2df;
-  --text: #1b1b1b;
-  --text-2: #5a5a57;
-  --text-3: #7c7c78;
-  --lime: #ff3d0a; /* acento */
-  --lime-ink: #ffffff;
-  --lime-dim: #ffd6ca;
-  --prio-alta: #ff3d0a;
-  --prio-media: #1b1b1b;
-  --prio-baja: #767672;
-  --danger: #b3261e;
-  --map-bg: #e8e8e6;
+  /* paleta:inicio — colores editables (#131). Fuente: lib/paleta.json; se verifica antes del build */
+  --bg: #ededeb; /* Fondo de la página */
+  --surface: #ffffff; /* Tarjeta */
+  --surface-2: #f3f3f1; /* Tarjeta secundaria */
+  --surface-3: #dcdcd9; /* Relieve */
+  --line: #e2e2df; /* Línea */
+  --text: #1b1b1b; /* Texto principal */
+  --text-2: #5a5a57; /* Texto secundario */
+  --text-3: #7c7c78; /* Texto tenue */
+  --texto-inv: #ffffff; /* Texto sobre color */
+  --acento: #ff3d0a; /* Acento */
+  --acento-ink: #ffffff; /* Texto sobre el acento */
+  --acento-dim: #ffd6ca; /* Acento suave */
+  --prio-alta: #ff3d0a; /* Prioridad alta */
+  --prio-media: #1b1b1b; /* Prioridad media */
+  --prio-baja: #767672; /* Prioridad baja */
+  --danger: #b3261e; /* Peligro */
+  --ok: #2e7d32; /* Correcto */
+  --aviso: #b26a00; /* Advertencia */
+  --map-bg: #e8e8e6; /* Fondo del mapa */
+  --bus: #1f5fbf; /* Transporte */
+  --bus-dim: #dce7f7; /* Transporte suave */
+  --metro: #1e5fd8; /* Metro */
+  /* paleta:fin */
 
   --r-10: 10px;
   --r-16: 16px;
   --r-24: 24px;
 
+  /* Sombras: negro y blanco con transparencia son sombra y brillo neutros (no son colores de la paleta);
+     el brillo del acento se deriva de --acento. */
   --sh-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --sh-accent: 0 6px 14px rgba(255, 61, 10, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  --sh-accent: 0 6px 14px color-mix(in srgb, var(--acento) 28%, transparent), inset 0 1px 1px rgba(255, 255, 255, 0.3);
   --sh-inset-deep: inset 3px 3px 8px rgba(0, 0, 0, 0.8), inset -2px -2px 6px rgba(255, 255, 255, 0.06);
   --sh-inset-soft: inset 0 1px 3px rgba(0, 0, 0, 0.07);
-  --sh-seg-on: 6px 6px 14px rgba(0, 0, 0, 0.7), -3px -3px 10px rgba(204, 255, 0, 0.18), inset 0 2px 2px rgba(255, 255, 255, 0.45), inset 0 -3px 4px rgba(0, 0, 0, 0.25);
+  --sh-seg-on: 6px 6px 14px rgba(0, 0, 0, 0.7), -3px -3px 10px color-mix(in srgb, var(--acento) 18%, transparent), inset 0 2px 2px rgba(255, 255, 255, 0.45), inset 0 -3px 4px rgba(0, 0, 0, 0.25);
 
   --font-display: var(--ff-space), "Space Grotesk", system-ui, sans-serif;
   --font-body: var(--ff-geist), "Geist", system-ui, sans-serif;
@@ -83,7 +93,7 @@ p {
   color: var(--text-3);
 }
 .kicker--accent {
-  color: var(--lime);
+  color: var(--acento);
 }
 .kicker--danger {
   color: var(--danger);
@@ -92,7 +102,7 @@ p {
   color: var(--prio-media);
 }
 .kicker--light {
-  color: var(--lime-ink);
+  color: var(--acento-ink);
 }
 
 /* ---------- Logo ---------- */
@@ -126,8 +136,8 @@ p {
   transform: translateY(1px);
 }
 .btn--primary {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--acento);
+  color: var(--acento-ink);
   box-shadow: var(--sh-accent);
 }
 .btn--primary:hover {
@@ -139,7 +149,7 @@ p {
   box-shadow: var(--sh-soft);
 }
 .btn--secondary:hover {
-  background: #ececea;
+  background: color-mix(in srgb, var(--surface-2) 70%, var(--surface-3));
 }
 .btn--danger {
   background: var(--surface-2);
@@ -181,8 +191,8 @@ p {
   white-space: nowrap;
 }
 .seg__item.is-on {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--acento);
+  color: var(--acento-ink);
   box-shadow: var(--sh-seg-on);
 }
 .seg--lg {
@@ -220,7 +230,7 @@ p {
   white-space: nowrap;
 }
 .selector.is-active {
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--acento);
 }
 .selector__chev {
   font-weight: 700;
@@ -260,7 +270,7 @@ p {
 }
 .menu__item.is-on {
   background: var(--surface-2);
-  color: var(--lime);
+  color: var(--acento);
   font-weight: 600;
 }
 .menu__label {
@@ -273,7 +283,7 @@ p {
   color: var(--text-3);
 }
 .menu__check {
-  color: var(--lime);
+  color: var(--acento);
   font-weight: 700;
   font-size: 14px;
 }
@@ -292,7 +302,7 @@ p {
   font-weight: 700;
   font-size: 13px;
   line-height: 17px;
-  color: var(--lime-ink);
+  color: var(--acento-ink);
   white-space: nowrap;
   flex: none;
 }
@@ -325,7 +335,7 @@ p {
   color: var(--danger);
 }
 .echip--enruta {
-  color: var(--lime);
+  color: var(--acento);
 }
 
 /* ---------- Stat ---------- */
@@ -353,7 +363,7 @@ p {
   white-space: pre-line;
 }
 .stat__v.is-accent {
-  color: var(--lime);
+  color: var(--acento);
 }
 .stat__l {
   font-size: 12px;
@@ -387,8 +397,8 @@ p {
   box-shadow: inset 0 0 0 1.5px var(--text-3);
 }
 .check.is-on .check__box {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--acento);
+  color: var(--acento-ink);
   box-shadow: none;
 }
 
@@ -417,7 +427,7 @@ p {
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background: var(--lime);
+  background: var(--acento);
   flex: none;
 }
 @keyframes toast-in {
@@ -432,7 +442,7 @@ p {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(27, 27, 27, 0.5);
+  background: color-mix(in srgb, var(--text) 50%, transparent);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -526,7 +536,7 @@ p {
   font-weight: 700;
   font-size: 15px;
   line-height: 20px;
-  color: var(--lime-ink);
+  color: var(--acento-ink);
 }
 .pin--faded > * {
   opacity: 0.3;
@@ -541,7 +551,7 @@ p {
   position: absolute;
   inset: -18px;
   border-radius: 50%;
-  border: 2px dashed var(--lime);
+  border: 2px dashed var(--acento);
   pointer-events: none;
 }
 .pin__flood {
@@ -565,7 +575,7 @@ p {
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  border: 2.5px solid var(--lime);
+  border: 2.5px solid var(--acento);
   display: grid;
   place-items: center;
   pointer-events: none;
@@ -590,7 +600,7 @@ p {
   padding: 6px 10px;
   border-radius: 8px;
   background: var(--bg);
-  box-shadow: inset 0 0 0 1.5px var(--lime);
+  box-shadow: inset 0 0 0 1.5px var(--acento);
   font-weight: 600;
   font-size: 13px;
   line-height: 17px;
@@ -607,15 +617,15 @@ p {
 .map-label--pill {
   padding: 4px 10px;
   border-radius: 999px;
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--acento);
+  color: var(--acento-ink);
   font-weight: 700;
   box-shadow: none;
 }
 .map-label--area {
   padding: 8px 12px;
   border-radius: 10px;
-  color: var(--lime);
+  color: var(--acento);
   font-size: 14px;
   line-height: 18px;
 }
@@ -697,7 +707,7 @@ p {
   color: var(--text);
 }
 .banda-clima--alerta {
-  background: var(--lime-dim);
+  background: var(--acento-dim);
 }
 .banda-clima__esc {
   font-family: var(--font-mono);
@@ -754,7 +764,7 @@ p {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--acento);
   flex: none;
 }
 .hero__head {
@@ -769,12 +779,12 @@ p {
   flex: none;
   display: grid;
   place-items: center;
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--acento);
+  color: var(--acento-ink);
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 30px;
-  box-shadow: 0 6px 14px rgba(255, 61, 10, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  box-shadow: var(--sh-accent);
 }
 .hero__txt {
   display: flex;
@@ -857,7 +867,7 @@ p {
   flex: none;
 }
 .rrow:hover {
-  background: #fafaf9;
+  background: color-mix(in srgb, var(--surface) 50%, var(--surface-2));
 }
 .rrow__rank {
   width: 40px;
@@ -871,7 +881,7 @@ p {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 16px;
-  color: var(--lime);
+  color: var(--acento);
 }
 .rrow__txt {
   flex: 1;
@@ -905,7 +915,7 @@ p {
   line-height: 21px;
 }
 .rrow__num b.is-accent {
-  color: var(--lime);
+  color: var(--acento);
 }
 .rrow__num small {
   font-size: 11px;
@@ -928,7 +938,7 @@ p {
   font-family: var(--font-mono);
   font-weight: 500;
   font-size: 12px;
-  color: var(--lime);
+  color: var(--acento);
   white-space: nowrap;
   flex: none;
 }
@@ -937,7 +947,7 @@ p {
   content: "";
   flex: 1;
   height: 2px;
-  background: var(--lime);
+  background: var(--acento);
 }
 
 /* Fila inferior (Antes) */
@@ -972,8 +982,8 @@ p {
   line-height: 20px;
 }
 .tile--accent {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--acento);
+  color: var(--acento-ink);
 }
 .tile--dark {
   background: var(--text);
@@ -1009,7 +1019,7 @@ p {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--acento);
   overflow-y: auto;
 }
 .ficha__head {
@@ -1024,12 +1034,12 @@ p {
   flex: none;
   display: grid;
   place-items: center;
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--acento);
+  color: var(--acento-ink);
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 22px;
-  box-shadow: 0 6px 14px rgba(255, 61, 10, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  box-shadow: var(--sh-accent);
 }
 .ficha__title {
   font-family: var(--font-display);
@@ -1047,7 +1057,7 @@ p {
   position: relative;
   border-radius: 16px;
   overflow: hidden;
-  background: #6b6b68 center / cover no-repeat;
+  background: color-mix(in srgb, var(--text-2), var(--text-3)) center / cover no-repeat;
   flex: none;
 }
 .photo__tag {
@@ -1070,7 +1080,7 @@ p {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 13px;
-  color: var(--lime);
+  color: var(--acento);
 }
 .origin__bar {
   height: 14px;
@@ -1081,7 +1091,7 @@ p {
   margin: 8px 0;
 }
 .origin__bar span {
-  background: var(--lime);
+  background: var(--acento);
 }
 .origin__legend {
   display: flex;
@@ -1091,7 +1101,7 @@ p {
   color: var(--text-2);
 }
 .origin__legend .is-accent {
-  color: var(--lime);
+  color: var(--acento);
 }
 .pills {
   display: flex;
@@ -1117,8 +1127,8 @@ p {
   height: 14px;
   margin-right: 4px;
   border-radius: 50%;
-  background: #1e5fd8;
-  color: #fff;
+  background: var(--metro);
+  color: var(--texto-inv);
   font-size: 9px;
   font-weight: 700;
 }
@@ -1178,7 +1188,7 @@ p {
   flex: none;
 }
 .sensor__dot.is-live {
-  background: var(--lime);
+  background: var(--acento);
   animation: pulse 1.6s infinite;
 }
 .sensor__dot.is-danger {
@@ -1225,7 +1235,7 @@ p {
   color: var(--text-3);
 }
 .sensor.is-marking {
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--acento);
 }
 .feed {
   padding: 20px;
@@ -1290,7 +1300,7 @@ p {
   overflow-y: auto;
 }
 .chain.is-active {
-  box-shadow: inset 0 0 0 1.5px var(--lime);
+  box-shadow: inset 0 0 0 1.5px var(--acento);
 }
 .crow {
   display: flex;
@@ -1313,11 +1323,11 @@ p {
   flex: none;
   display: grid;
   place-items: center;
-  box-shadow: inset 0 0 0 2.5px var(--lime);
+  box-shadow: inset 0 0 0 2.5px var(--acento);
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 15px;
-  color: var(--lime);
+  color: var(--acento);
 }
 .crow__name {
   font-weight: 600;
@@ -1398,7 +1408,7 @@ p {
 .radio.is-on {
   height: 50px;
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--acento);
 }
 .radio__dot {
   width: 22px;
@@ -1410,14 +1420,14 @@ p {
   place-items: center;
 }
 .radio.is-on .radio__dot {
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--acento);
 }
 .radio.is-on .radio__dot::after {
   content: "";
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background: var(--lime);
+  background: var(--acento);
 }
 .radio__name {
   flex: 1;
@@ -1461,8 +1471,8 @@ p {
   font-size: 14px;
 }
 .ruta__n.is-first {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--acento);
+  color: var(--acento-ink);
 }
 .ruta__name {
   flex: 1;
@@ -1550,7 +1560,7 @@ p {
   font-size: 96px;
   line-height: 122px;
   letter-spacing: -0.03em;
-  color: var(--lime);
+  color: var(--acento);
 }
 .result__y {
   font-family: var(--font-display);
@@ -1593,7 +1603,7 @@ p {
   color: var(--text-2);
 }
 .cmp__row .mono.is-accent {
-  color: var(--lime);
+  color: var(--acento);
 }
 .sources {
   flex: 1;
@@ -1642,10 +1652,10 @@ p {
   width: 18px;
   height: 18px;
   border-radius: 9px;
-  background: var(--lime-ink);
+  background: var(--acento-ink);
 }
 .toggle.is-on {
-  background: var(--lime);
+  background: var(--acento);
   justify-content: flex-end;
 }
 .lg-row {
@@ -1664,7 +1674,7 @@ p {
   width: 18px;
   height: 18px;
   border-radius: 9px;
-  border: 2.5px solid var(--lime);
+  border: 2.5px solid var(--acento);
   flex: none;
 }
 .lg-ring--miss {
@@ -1710,7 +1720,7 @@ p {
   font-weight: 700;
   font-size: 34px;
   line-height: 44px;
-  color: var(--lime);
+  color: var(--acento);
 }
 .formula__term {
   display: flex;
@@ -1724,7 +1734,7 @@ p {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 16px;
-  color: var(--lime);
+  color: var(--acento);
 }
 .formula__ia {
   font-weight: 500;
@@ -1775,7 +1785,7 @@ p {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 13px;
-  color: var(--lime);
+  color: var(--acento);
   flex: none;
 }
 .datos {
@@ -1821,8 +1831,8 @@ p {
   height: 56px;
   border-radius: 50%;
   border: 6px solid var(--surface-3);
-  border-right-color: var(--lime);
-  border-bottom-color: var(--lime);
+  border-right-color: var(--acento);
+  border-bottom-color: var(--acento);
   animation: spin 0.9s linear infinite;
 }
 @keyframes spin {
@@ -1858,7 +1868,7 @@ p {
   height: 72px;
   border-radius: 36px;
   background: var(--danger);
-  color: var(--lime-ink);
+  color: var(--acento-ink);
   display: grid;
   place-items: center;
   font-family: var(--font-display);
@@ -1956,10 +1966,10 @@ p {
   border-radius: 2px;
 }
 .mob__tab.is-on {
-  color: var(--lime);
+  color: var(--acento);
 }
 .mob__tab.is-on::before {
-  background: var(--lime);
+  background: var(--acento);
 }
 .mob__head {
   display: flex;
@@ -2003,7 +2013,7 @@ p {
 }
 .mrow.is-first {
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--acento);
   min-height: 72px;
 }
 .mrow__rank {
@@ -2019,8 +2029,8 @@ p {
   font-size: 16px;
 }
 .mrow.is-first .mrow__rank {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--acento);
+  color: var(--acento-ink);
 }
 .mrow > div:nth-child(2) {
   flex: 1;
@@ -2121,8 +2131,8 @@ p {
   flex: none;
   display: grid;
   place-items: center;
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--acento);
+  color: var(--acento-ink);
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 20px;
@@ -2150,7 +2160,7 @@ p {
   position: absolute;
   inset: 0;
   z-index: 30;
-  background: rgba(27, 27, 27, 0.45);
+  background: color-mix(in srgb, var(--text) 45%, transparent);
   display: flex;
   align-items: flex-end;
 }
@@ -2183,8 +2193,8 @@ p {
   font-size: 15px;
 }
 .fchip.is-on {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--acento);
+  color: var(--acento-ink);
   box-shadow: none;
 }
 .stepper {
@@ -2260,7 +2270,7 @@ p {
 .mficha__sub {
   font-weight: 600;
   font-size: 14px;
-  color: var(--lime);
+  color: var(--acento);
 }
 .mstats {
   display: grid;
@@ -2325,7 +2335,7 @@ p {
 .progress__bar span {
   display: block;
   height: 100%;
-  background: var(--lime);
+  background: var(--acento);
 }
 .progress small {
   font-family: var(--font-mono);
@@ -2349,7 +2359,7 @@ p {
 }
 .stop.is-next {
   background: var(--surface-2);
-  box-shadow: inset 0 0 0 2px var(--lime);
+  box-shadow: inset 0 0 0 2px var(--acento);
 }
 .stop__n {
   width: 48px;
@@ -2366,13 +2376,13 @@ p {
 .stop.is-done .stop__n {
   background: var(--surface-3);
   box-shadow: none;
-  color: var(--lime);
+  color: var(--acento);
   font-family: var(--font-body);
   font-size: 20px;
 }
 .stop.is-next .stop__n {
-  background: var(--lime);
-  color: var(--lime-ink);
+  background: var(--acento);
+  color: var(--acento-ink);
   box-shadow: var(--sh-accent);
 }
 .stop > div:nth-child(2) {
@@ -2382,7 +2392,7 @@ p {
   gap: 2px;
 }
 .stop.is-next .mrow__meta {
-  color: var(--lime);
+  color: var(--acento);
 }
 .share {
   margin: 8px 16px;
@@ -2526,17 +2536,14 @@ p {
 .vars__bar span {
   display: block;
   height: 100%;
-  background: var(--lime);
+  background: var(--acento);
 }
 
 /* ==========================================================
    TRANSPORTE · paraderos expuestos (#92)
    Azul de transporte fuera de la paleta de prioridad: un paradero no es una rejilla.
    ========================================================== */
-:root {
-  --bus: #1f5fbf;
-  --bus-dim: #dce7f7;
-}
+/* --bus y --bus-dim están en la paleta (:root, arriba) */
 .tp {
   flex: 0 1 auto;
   min-height: 120px;
@@ -2621,7 +2628,7 @@ p {
 }
 .tp__badge--expuesto {
   background: var(--bus);
-  color: #fff;
+  color: var(--texto-inv);
 }
 .tp__badge--riesgo {
   background: transparent;
@@ -2706,7 +2713,7 @@ p {
 }
 .paradero--expuesto {
   background: var(--bus);
-  color: #fff;
+  color: var(--texto-inv);
 }
 .paradero--alternativo {
   background: var(--bus-dim);

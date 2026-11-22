@@ -52,7 +52,7 @@ export const BASE_STYLE = {
     },
   },
   layers: [
-    { id: "bg", type: "background", paint: { "background-color": "#E8E8E6" } },
+    { id: "bg", type: "background", paint: { "background-color": "#e8e8e6" } }, // se repinta con --map-bg (pintarMapa en DrenaMap)
     { id: "base", type: "raster", source: "base", paint: { "raster-saturation": -1, "raster-opacity": 0.95 } },
     { id: "ref", type: "raster", source: "ref", paint: { "raster-opacity": 0.75 } },
   ],

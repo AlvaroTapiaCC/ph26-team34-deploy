@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { LngLat, Prioridad } from "@/lib/data";
 import { BASE_STYLE, loadMapLibre, type MapLibre } from "./maplibre";
+import { colorDe, EVENTO_PALETA } from "@/lib/paleta";
 
 export interface MapPin {
   id: string;
@@ -133,6 +134,35 @@ const fc = (features: unknown[]) => ({ type: "FeatureCollection", features });
 const line = (c: LngLat[]) => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: c } });
 const poly = (c: LngLat[]) => ({ type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[...c, c[0]]] } });
 
+// Colores de las capas propias, desde la paleta (#131). MapLibre no lee variables CSS: se leen con
+// colorDe() al crear el mapa y otra vez cada vez que cambia la paleta (evento EVENTO_PALETA).
+const COLORES_CAPAS: [capa: string, propiedad: string, color: string][] = [
+  ["bg", "background-color", "map-bg"],
+  ["area-fill", "fill-color", "acento"],
+  ["area-line", "line-color", "acento"],
+  ["celda-fill", "fill-color", "text"],
+  ["celda-line", "line-color", "text"],
+  ["celda-link", "line-color", "text"],
+  ["lim", "line-color", "text-2"],
+  ["comunas-line", "line-color", "text-2"],
+  ["rej-cluster", "circle-color", "surface"],
+  ["rej-cluster", "circle-stroke-color", "text-2"],
+  ["rej-point", "circle-color", "prio-baja"],
+  ["rej-point", "circle-stroke-color", "surface"],
+  ["rec-line", "line-color", "bus"],
+  ["caminata", "line-color", "bus"],
+  ["esc-halo", "line-color", "acento"],
+  ["esc-line", "line-color", "acento"],
+  ["chain-halo", "line-color", "acento"],
+  ["chain-line", "line-color", "acento"],
+  ["gore", "circle-color", "text-2"],
+  ["gore", "circle-stroke-color", "surface"],
+];
+
+function pintarMapa(map: MapLibre) {
+  for (const [capa, prop, color] of COLORES_CAPAS) if (map.getLayer(capa)) map.setPaintProperty(capa, prop, colorDe(color));
+}
+
 export default function DrenaMap(props: DrenaMapProps) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibre>(null);
@@ -165,15 +195,14 @@ export default function DrenaMap(props: DrenaMapProps) {
           ["esc", "chain", "lim", "area", "celda", "celda-link", "gore", "rec", "caminata"].forEach(add);
           map.addSource("comunas", { type: "geojson", data: "/data/comunas.geojson" });
           map.addSource("rejillas", { type: "geojson", data: "/data/rejillas.geojson", cluster: true, clusterMaxZoom: 15, clusterRadius: 40 });
-          map.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-color": "#FF3D0A", "fill-opacity": 0.16 } });
-          map.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-color": "#FF3D0A", "line-width": 2, "line-opacity": 0.9, "line-dasharray": [3, 2] } });
-          map.addLayer({ id: "celda-fill", type: "fill", source: "celda", paint: { "fill-color": "#1B1B1B", "fill-opacity": 0.14 } });
-          map.addLayer({ id: "celda-line", type: "line", source: "celda", paint: { "line-color": "#1B1B1B", "line-width": 2, "line-dasharray": [3, 2] } });
-          map.addLayer({ id: "celda-link", type: "line", source: "celda-link", paint: { "line-color": "#1B1B1B", "line-width": 3, "line-opacity": 0.8, "line-dasharray": [1.5, 1.5] } });
-          map.addLayer({ id: "lim", type: "line", source: "lim", paint: { "line-color": "#5A5A57", "line-width": 2, "line-opacity": 0.8, "line-dasharray": [4, 3] } });
-          // Colores = tokens de globals.css (--text-2, --prio-baja, --surface-3, --surface); MapLibre no lee variables CSS.
+          map.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-opacity": 0.16 } });
+          map.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-width": 2, "line-opacity": 0.9, "line-dasharray": [3, 2] } });
+          map.addLayer({ id: "celda-fill", type: "fill", source: "celda", paint: { "fill-opacity": 0.14 } });
+          map.addLayer({ id: "celda-line", type: "line", source: "celda", paint: { "line-width": 2, "line-dasharray": [3, 2] } });
+          map.addLayer({ id: "celda-link", type: "line", source: "celda-link", paint: { "line-width": 3, "line-opacity": 0.8, "line-dasharray": [1.5, 1.5] } });
+          map.addLayer({ id: "lim", type: "line", source: "lim", paint: { "line-width": 2, "line-opacity": 0.8, "line-dasharray": [4, 3] } });
           const hidden = { visibility: "none" };
-          map.addLayer({ id: "comunas-line", type: "line", source: "comunas", layout: hidden, paint: { "line-color": "#5A5A57", "line-width": 1.75, "line-opacity": 0.9 } });
+          map.addLayer({ id: "comunas-line", type: "line", source: "comunas", layout: hidden, paint: { "line-width": 1.75, "line-opacity": 0.9 } });
           map.addLayer({
             id: "rej-cluster",
             type: "circle",
@@ -182,9 +211,7 @@ export default function DrenaMap(props: DrenaMapProps) {
             layout: hidden,
             // Anillo hueco: no se confunde con los pines de prioridad, que son figuras rellenas con número.
             paint: {
-              "circle-color": "#FFFFFF",
               "circle-opacity": 0.25,
-              "circle-stroke-color": "#5A5A57",
               "circle-stroke-width": 2,
               "circle-radius": ["step", ["get", "point_count"], 9, 10, 12, 50, 16, 200, 21],
             },
@@ -195,16 +222,17 @@ export default function DrenaMap(props: DrenaMapProps) {
             source: "rejillas",
             filter: ["!", ["has", "point_count"]],
             layout: hidden,
-            paint: { "circle-radius": 2.5, "circle-color": "#767672", "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 0.75 },
+            paint: { "circle-radius": 2.5, "circle-stroke-width": 0.75 },
           });
           // Transporte: azul fuera de la paleta de prioridad para no confundir un recorrido con escurrimiento.
-          map.addLayer({ id: "rec-line", type: "line", source: "rec", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#1F5FBF", "line-width": 3, "line-opacity": 0.55 } });
-          map.addLayer({ id: "caminata", type: "line", source: "caminata", layout: { "line-cap": "round" }, paint: { "line-color": "#1F5FBF", "line-width": 2.5, "line-dasharray": [0.5, 2] } });
-          map.addLayer({ id: "esc-halo", type: "line", source: "esc", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#FF3D0A", "line-width": 9, "line-opacity": 0.14 } });
-          map.addLayer({ id: "esc-line", type: "line", source: "esc", paint: { "line-color": "#FF3D0A", "line-width": 2, "line-opacity": 0.85, "line-dasharray": [2.5, 2.5] } });
-          map.addLayer({ id: "chain-halo", type: "line", source: "chain", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#FF3D0A", "line-width": 14, "line-opacity": 0.2 } });
-          map.addLayer({ id: "chain-line", type: "line", source: "chain", paint: { "line-color": "#FF3D0A", "line-width": 3, "line-dasharray": [1.5, 1.5] } });
-          map.addLayer({ id: "gore", type: "circle", source: "gore", paint: { "circle-radius": 4, "circle-color": "#5A5A57", "circle-stroke-color": "#FFFFFF", "circle-stroke-width": 1.5 } });
+          map.addLayer({ id: "rec-line", type: "line", source: "rec", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 3, "line-opacity": 0.55 } });
+          map.addLayer({ id: "caminata", type: "line", source: "caminata", layout: { "line-cap": "round" }, paint: { "line-width": 2.5, "line-dasharray": [0.5, 2] } });
+          map.addLayer({ id: "esc-halo", type: "line", source: "esc", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 9, "line-opacity": 0.14 } });
+          map.addLayer({ id: "esc-line", type: "line", source: "esc", paint: { "line-width": 2, "line-opacity": 0.85, "line-dasharray": [2.5, 2.5] } });
+          map.addLayer({ id: "chain-halo", type: "line", source: "chain", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-width": 14, "line-opacity": 0.2 } });
+          map.addLayer({ id: "chain-line", type: "line", source: "chain", paint: { "line-width": 3, "line-dasharray": [1.5, 1.5] } });
+          map.addLayer({ id: "gore", type: "circle", source: "gore", paint: { "circle-radius": 4, "circle-stroke-width": 1.5 } });
+          pintarMapa(map);
           setReady(true);
         });
       })
@@ -217,6 +245,14 @@ export default function DrenaMap(props: DrenaMapProps) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Paleta editable (#131): repinta las capas sin recrear el mapa
+  useEffect(() => {
+    if (!ready) return;
+    const repintar = () => mapRef.current && pintarMapa(mapRef.current);
+    window.addEventListener(EVENTO_PALETA, repintar);
+    return () => window.removeEventListener(EVENTO_PALETA, repintar);
+  }, [ready]);
 
   // Encuadre
   useEffect(() => {
