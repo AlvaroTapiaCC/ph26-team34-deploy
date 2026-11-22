@@ -23,8 +23,8 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from app.db import get_conn
 from app.routers.clasificar import _leer, clasificar_bytes
+from app.services import dispatch, storage
 from app.services import observations as svc
-from app.services import storage
 from app.services.claude_text import NUMEROS_EMERGENCIA, leer_texto
 from app.services.claude_vision import clasificar_camara, clasificar_rejilla
 from app.services.scoring import recalcular_todo
@@ -48,7 +48,7 @@ class ObservacionIn(BaseModel):
     precision_m: float | None = Field(default=None, ge=0, le=100_000)
     hora: datetime | None = None
     sumidero_id: str | None = Field(default=None, max_length=64)
-    fuente: Literal["vecino", "cuadrilla"] = "vecino"
+    fuente: Literal["vecino", "cuadrilla", "camara_fija"] = "vecino"
     # Modo prueba de campo (§8.1). `id_ide` es el ID del catastro que elige /reportar.
     campo: bool = False
     rejilla_n: int | None = Field(default=None, ge=0, le=10_000)
@@ -81,6 +81,8 @@ class ObservacionIn(BaseModel):
             raise ValueError("lat y lon van juntos")
         if self.tipo == "texto" and (self.texto is None or len(self.texto.strip()) < 3):
             raise ValueError("tipo=texto requiere `texto` de al menos 3 caracteres")
+        if self.fuente == "camara_fija" and (self.tipo != "agua" or not self.hay_gps):
+            raise ValueError("fuente=camara_fija requiere tipo=agua y las coordenadas del tramo")
         return self
 
     @property
@@ -134,15 +136,18 @@ def _candidatos(filas: list[dict[str, Any]]) -> list[dict[str, Any]]:
              "lat": c["lat"], "lon": c["lon"]} for c in filas]
 
 
-def solicitar_despacho(caso_id: str | None, sumidero_id: str | None, urgente: bool) -> dict[str, Any]:
-    """Punto de enganche del despacho (§7.2 paso 4, issue #32).
+def solicitar_despacho(obs_id: str, caso_id: str | None, sumidero_id: str | None) -> dict[str, Any]:
+    """Re-planifica las cuadrillas con la prioridad recién recalculada (§7.2 paso 4, issue #32).
 
-    TODO(#32, PR #80): `services/dispatch.py` sigue vacío y el PR #80 (endpoints de cuadrillas,
-    misiones y rutas) aún no está en main. Cuando exista, llamar aquí a la asignación de la
-    misión del caso/sumidero y a la re-planificación de rutas (nueva versión por Realtime).
-    No debe lanzar: un fallo del despacho no puede perder el reporte.
+    Devuelve `{despachado, crew_id, en_plan, siguiente_antes, siguiente_despues, ruta_version}`.
+    No lanza: si el despacho falla, el reporte ya quedó guardado y se responde `despachado: false`.
+    Un reporte sin rejilla ni caso (texto sin GPS) no cambia ninguna prioridad: no se re-planifica.
     """
-    return {"despachado": False, "motivo": "pendiente_dispatch_32"}
+    if sumidero_id is None and caso_id is None:
+        return {"despachado": False, "motivo": "sin_ubicacion", "crew_id": None, "en_plan": False,
+                "siguiente_antes": None, "siguiente_despues": None, "ruta_version": None}
+    return dispatch.replanificar_seguro("observacion", observation_id=obs_id, sumidero_id=sumidero_id,
+                                        caso_id=caso_id)
 
 
 def _respuesta_existente(fila: dict[str, Any]) -> dict[str, Any]:
@@ -193,6 +198,7 @@ def create_observation(
          "rejilla_n": rejilla_n, "id_ide": id_ide, "id": id},
         datos,
     )
+    fuente_guardada = "camara" if entrada.fuente == "camara_fija" else entrada.fuente
     if entrada.tipo != "texto" and foto is None:
         raise HTTPException(422, f"tipo={entrada.tipo} requiere `foto`")
     bytes_foto = _leer(foto) if (foto is not None and entrada.tipo != "texto") else None
@@ -247,7 +253,7 @@ def create_observation(
     with get_conn() as conn:
         obs = svc.insertar_observacion(
             conn, obs_id=obs_id, sumidero_id=sumidero_id_final, lat=entrada.lat, lon=entrada.lon,
-            fuente=entrada.fuente, tipo=svc.TIPO_OBS[entrada.tipo], media_url=media_url, texto=entrada.texto, ts=ts,
+            fuente=fuente_guardada, tipo=svc.TIPO_OBS[entrada.tipo], media_url=media_url, texto=entrada.texto, ts=ts,
         )
         if r_foto is not None or r_texto is not None:
             # Una sola clasificación por observación: la fórmula usa la última de cada una. Con foto y
@@ -262,7 +268,7 @@ def create_observation(
                 caso_id = svc.crear_caso(conn, ubic[0], ubic[1], sumidero_id_final, urgente, ts)
             svc.vincular_caso(conn, caso_id, obs)
         svc.registrar_evento(conn, "observacion", {
-            "observation_id": obs, "tipo": entrada.tipo, "fuente": entrada.fuente, "caso_id": caso_id,
+            "observation_id": obs, "tipo": entrada.tipo, "fuente": fuente_guardada, "caso_id": caso_id,
             "sumidero_id": sumidero_id_final, "precision_m": entrada.precision_m, "urgente": urgente,
             "campo": entrada.campo, "rejilla_n": entrada.rejilla_n, "id_ide": entrada.id_ide,
             "con_foto": media_url is not None, "hora_reporte": ts.isoformat(),
@@ -281,7 +287,7 @@ def create_observation(
         recalculado = True
     except Exception:
         log.exception("No se pudo recalcular la prioridad tras la observación %s", obs)
-    despacho = solicitar_despacho(caso_id, sumidero_id_final, urgente or caso_es_urgente)
+    despacho = solicitar_despacho(obs, caso_id, sumidero_id_final)
 
     meta = principal.meta() if principal else {}
     respuesta = {

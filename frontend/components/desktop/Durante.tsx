@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CELDA, ESCURRIMIENTO, MAP_BOUNDS, PUNTOS, RAYOS, type LngLat } from "@/lib/data";
 import { useStore } from "@/lib/store";
+import { useExpuestos, useRecorridos, type Expuestos } from "@/lib/transporte";
 import DrenaMap, { type MapLabel, type MapPin } from "../map/DrenaMap";
 import { Button, Check, EstadoChip, Kicker, PrioChip, Toast } from "../ui";
+import Transporte, { capasTransporte } from "./Transporte";
 
 export function SensorCard() {
   const { s, set, dispararReporte } = useStore();
@@ -121,8 +123,33 @@ function Cadena() {
   );
 }
 
-function DuranteMap() {
+/** Encuadre del paradero elegido y sus alternativos; sin selección, el de siempre. */
+function boundsTransporte(d: Expuestos | null, activo: string | null): [LngLat, LngLat] {
+  const p = activo ? [...(d?.expuestos ?? []), ...(d?.en_riesgo ?? [])].find((x) => x.id === activo) : null;
+  if (!p) return MAP_BOUNDS;
+  const pts: LngLat[] = [[p.lon, p.lat]];
+  if (p.nivel === "expuesto") p.servicios.forEach((s) => s.alternativo && pts.push([s.alternativo.lon, s.alternativo.lat]));
+  const m = 0.004; // ~400 m de margen
+  const xs = pts.map((c) => c[0]);
+  const ys = pts.map((c) => c[1]);
+  return [[Math.min(...xs) - m, Math.min(...ys) - m], [Math.max(...xs) + m, Math.max(...ys) + m]];
+}
+
+interface TransporteMapa {
+  datos: Expuestos | null;
+  activo: string | null;
+  onSelect: (id: string | null) => void;
+}
+
+function DuranteMap({ tp }: { tp: TransporteMapa }) {
   const { s, ranking, cadena, toggleLayer, flood } = useStore();
+  const recorridos = useRecorridos(s.layers.transporte);
+  const capas = useMemo(
+    () => (s.layers.transporte ? capasTransporte(tp.datos, recorridos, tp.activo, (id) => tp.onSelect(tp.activo === id ? null : id)) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [s.layers.transporte, tp.datos, recorridos, tp.activo],
+  );
+  const bounds = useMemo(() => boundsTransporte(s.layers.transporte ? tp.datos : null, tp.activo), [s.layers.transporte, tp.datos, tp.activo]);
   const L = s.layers;
   const an = s.anegado ? PUNTOS[s.anegado] : null;
   const chainIds = cadena.map((p) => p.id);
@@ -158,14 +185,17 @@ function DuranteMap() {
   return (
     <DrenaMap
       className="map--durante"
-      bounds={MAP_BOUNDS}
+      bounds={bounds}
       padding={{ top: 40, bottom: 40, left: 40, right: 40 }}
+      paraderos={capas?.paraderos}
+      recorridos={capas?.recorridos}
+      caminatas={capas?.caminatas}
       pins={L.prioridad ? pins : pins.filter((p) => p.id === "flood")}
       labels={[...labels, ...celdaLabel]}
       lines={lines}
       chain={chain}
       celda={celda}
-      attribution={`Base: Esri, HERE, Garmin, © OpenStreetMap${L.rayos ? " · rayos: NOAA GOES-19 GLM (ilustrativo)" : ""} · ubicaciones aproximadas`}
+      attribution={`Base: Esri, HERE, Garmin, © OpenStreetMap${L.rayos ? " · rayos: NOAA GOES-19 GLM (ilustrativo)" : ""} · ubicaciones aproximadas${s.layers.transporte ? " · paraderos y recorridos: GTFS de DTPM" : ""}`}
     >
       {s.markMode && <div className="marking-hint">Toca el punto anegado en el mapa</div>}
       {an && L.feed && <Toast className="map-toast" text={`Anegamiento registrado · ${an.nombre}`} />}
@@ -175,21 +205,31 @@ function DuranteMap() {
         <Check on={L.cadena && !!an} label="Cadena aguas abajo" onClick={() => toggleLayer("cadena")} />
         <Check on={L.rayos} label="Rayos GOES-19 (ilustrativos)" onClick={() => toggleLayer("rayos")} />
         <Check on={L.feed} label="Reportes del feed" onClick={() => toggleLayer("feed")} />
+        <Check on={L.transporte} label="Paraderos expuestos" onClick={() => toggleLayer("transporte")} />
       </div>
     </DrenaMap>
   );
 }
 
 export default function Durante() {
+  const { s, fuente } = useStore();
+  // Con datos de ejemplo el escenario no existe en el servidor: el agua observada se cruza igual con "base"
+  const escenario = fuente === "api" ? s.scenario : "base";
+  const { datos, calculadoAt, estado } = useExpuestos(escenario, s.layers.transporte);
+  const [elegido, setElegido] = useState<string | null>(null);
+  // Si el paradero elegido deja de estar en la respuesta, se suelta la selección
+  const activo = elegido && datos && [...datos.expuestos, ...datos.en_riesgo].some((p) => p.id === elegido) ? elegido : null;
+  const tp = { datos, activo, onSelect: setElegido };
   return (
     <main className="bento">
       <div className="col col--l is-narrow">
         <SensorCard />
         <Feed />
         <Cadena />
+        {s.layers.transporte && <Transporte datos={datos} calculadoAt={calculadoAt} estado={estado} activo={activo} onSelect={setElegido} />}
       </div>
       <div className="col col--r">
-        <DuranteMap />
+        <DuranteMap tp={tp} />
       </div>
     </main>
   );

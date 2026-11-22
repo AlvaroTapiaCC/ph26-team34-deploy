@@ -11,7 +11,7 @@ from PIL import Image
 
 from app.main import app
 from app.routers import observations as router
-from app.schemas.claude import ClasificacionRejilla, LecturaTexto
+from app.schemas.claude import ClasificacionCamara, ClasificacionRejilla, LecturaTexto
 from app.services import observations as svc
 from app.services.claude_common import ResultadoClaude
 from app.services.claude_vision import ImagenInvalida
@@ -50,6 +50,8 @@ class Mundo:
         self.claude_cae = False
         self.storage_cae = False
         self.recalculo_cae = False
+        self.despachos = []
+        self.despacho_cae = False
 
 
 @pytest.fixture
@@ -142,6 +144,15 @@ def mundo(monkeypatch):
         return ruta
 
     monkeypatch.setattr(router.storage, "subir", subir)
+
+    def despachar(motivo, observation_id=None, sumidero_id=None, caso_id=None):
+        m.despachos.append((motivo, observation_id, sumidero_id, caso_id))
+        if m.despacho_cae:
+            return {"despachado": False, "motivo": "error_despacho", "error": "RuntimeError"}
+        return {"despachado": True, "crew_id": "sim-c4", "en_plan": True, "ruta_version": 2,
+                "siguiente_antes": {"sumidero_id": "C"}, "siguiente_despues": {"sumidero_id": sumidero_id}}
+
+    monkeypatch.setattr(router.dispatch, "replanificar_seguro", despachar)
     return m
 
 
@@ -301,6 +312,32 @@ def test_imagen_ilegible_es_422(mundo):
 
 
 # --- compatibilidad con /reportar (PR #82) y reintentos ------------------------------------
+def test_camara_fija_clasifica_agua_y_recalcula_el_tramo(mundo, monkeypatch):
+    cuadro = ClasificacionCamara(
+        evaluable=True, hojas_calzada="pocas", basura_calzada="poca", agua_visible=True,
+        nivel_agua="cuneta", confianza="alta", nota="Agua en la cuneta",
+    )
+    monkeypatch.setattr(router, "clasificar_camara",
+                        lambda foto: ResultadoClaude(cuadro, "claude-test", "camara-v1", "k", 10))
+    datos = {"tipo": "agua", "fuente": "camara_fija", "lat": S_C["lat"], "lon": S_C["lon"]}
+    r = client.post("/observations", data={"datos": json.dumps(datos)},
+                    files={"foto": ("camara.jpg", _foto(), "image/jpeg")})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    observacion = mundo.observaciones[d["id"]]
+    assert observacion["fuente"] == mundo.eventos[-1][1]["fuente"] == "camara"
+    assert observacion["tipo"] == "foto_agua"
+    assert d["sumidero_id"] == "C" and d["caso_id"]
+    assert d["clasificacion"]["nivel_agua"] == "cuneta"
+    assert d["recalculado"] and mundo.recalculos == 1
+
+
+@pytest.mark.parametrize("tipo, ubicacion", [("rejilla", {"lat": -33.46, "lon": -70.61}), ("agua", {})])
+def test_camara_fija_requiere_cuadro_de_agua_ubicado(mundo, tipo, ubicacion):
+    r = _enviar(tipo, fuente="camara_fija", **ubicacion)
+    assert r.status_code == 422 and not mundo.observaciones
+
+
 def test_acepta_el_formato_datos_de_reportar_y_modo_campo(mundo):
     datos = {"id": "no-es-uuid-123", "tipo": "rejilla", "lat": -33.456, "lon": -70.6, "precision_m": 8,
              "sin_gps": False, "hora": datetime.now(timezone.utc).isoformat(), "clasificacion": {"x": 1},
@@ -339,11 +376,6 @@ def test_hora_futura_se_acota_a_ahora(mundo):
     assert mundo.observaciones[d["id"]]["ts"] <= datetime.now(timezone.utc) + timedelta(seconds=5)
 
 
-def test_despacho_pendiente_de_80(mundo):
-    d = _enviar(lat=-33.46003, lon=-70.61001).json()
-    assert d["despacho"] == {"despachado": False, "motivo": "pendiente_dispatch_32"}
-
-
 # --- GET ------------------------------------------------------------------------------------
 def test_get_lista_con_desde(monkeypatch):
     @contextmanager
@@ -358,3 +390,25 @@ def test_get_lista_con_desde(monkeypatch):
     assert visto["desde"] == datetime(2026, 11, 21, 10, 0, tzinfo=timezone(timedelta(hours=-3))) and visto["limite"] == 5
     assert client.get("/observations", params={"desde": "ayer"}).status_code == 422
     assert client.get("/observations", params={"limit": 0}).status_code == 422
+
+
+# --- despacho (#32) ---------------------------------------------------------------------
+def test_la_foto_dispara_el_despacho_y_devuelve_la_siguiente_parada(mundo):
+    r = _enviar(lat=-33.46003, lon=-70.61001)
+    d = r.json()
+    assert r.status_code == 200
+    assert mundo.despachos == [("observacion", d["id"], "C", d["caso_id"])]
+    assert d["despacho"]["despachado"] and d["despacho"]["siguiente_despues"] == {"sumidero_id": "C"}
+
+
+def test_si_el_despacho_falla_el_reporte_queda_guardado(mundo):
+    mundo.despacho_cae = True
+    r = _enviar(lat=-33.46003, lon=-70.61001)
+    assert r.status_code == 200 and r.json()["despacho"]["despachado"] is False
+    assert r.json()["id"] in mundo.observaciones
+
+
+def test_texto_sin_ubicacion_no_replanifica(mundo):
+    r = _enviar(tipo="texto", texto="hay mucha basura en la calle")
+    assert r.status_code == 200 and r.json()["despacho"]["motivo"] == "sin_ubicacion"
+    assert mundo.despachos == []

@@ -71,7 +71,22 @@ def test_disparar_no_altera_el_timeline():
     assert s.status()["eventos_aplicados"] == 0
 
 
+def _sin_base(monkeypatch):
+    """/sim/reset también reinicia los datos de la demo (#97): aquí se reemplaza por un doble."""
+    from contextlib import contextmanager
+
+    from app.routers import sim as router_sim
+
+    @contextmanager
+    def conn_falsa():
+        yield None
+
+    monkeypatch.setattr(router_sim, "get_conn", conn_falsa)
+    monkeypatch.setattr(router_sim.reinicio, "reiniciar", lambda conn, desde=None: {"reiniciado": True})
+
+
 def test_endpoints(monkeypatch):
+    _sin_base(monkeypatch)
     reloj = Reloj()
     monkeypatch.setattr(sim, "_instancia", Simulador(cargar_timeline(), reloj))
     c = TestClient(app)
@@ -122,6 +137,7 @@ def test_validacion_del_reporte_en_vivo(monkeypatch):
 def test_controles_exigen_admin_y_trigger_sim_token(monkeypatch):
     from app.config import Settings
 
+    _sin_base(monkeypatch)
     monkeypatch.setattr(sim, "_instancia", Simulador(cargar_timeline(), Reloj()))
     monkeypatch.setattr("app.routers.sim.get_settings", lambda: Settings(admin_token="admin", sim_token="demo"))
     c = TestClient(app)
@@ -156,7 +172,7 @@ def test_fin_fijo_y_start_reinicia_en_la_misma_llamada():
 
 
 def test_arranca_solo_con_backend(tmp_path):
-    from app.services.sim import TIMELINE_PATH
     from app.config import BACKEND_DIR
+    from app.services.sim import TIMELINE_PATH
 
     assert TIMELINE_PATH.is_relative_to(BACKEND_DIR) and TIMELINE_PATH.exists()
