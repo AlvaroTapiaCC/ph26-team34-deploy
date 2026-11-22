@@ -514,7 +514,7 @@ function notaPublica(o: ObservacionPublica) {
 }
 
 function QueCambio({ nuevo }: { nuevo: boolean }) {
-  const { observaciones, durante } = useSala();
+  const { observaciones, durante, cuadrilla } = useSala();
   const o = observaciones.datos[0] ?? null;
   if (!o)
     return (
@@ -537,6 +537,7 @@ function QueCambio({ nuevo }: { nuevo: boolean }) {
   const punto = durante.filas.find((r) => r.sumidero_id === o.sumidero_id);
   const ant = o.prioridad?.antes?.prioridad;
   const des = o.prioridad?.despues?.prioridad;
+  const despacho = o.despachos?.find((d) => d.crew_id === cuadrilla?.id);
   return (
     <section className={`${s.tarjeta} ${nuevo ? s.tarjetaNueva : ""}`} aria-live="polite">
       <p className={s.tarjetaT}>
@@ -559,14 +560,14 @@ function QueCambio({ nuevo }: { nuevo: boolean }) {
             <s>{puntaje(ant)}</s> <i aria-hidden>→</i> <b>{puntaje(des)}</b>
           </p>
         </div>
-        {(o.despachos ?? []).slice(0, 1).map((d) => (
-          <div key={d.crew_id}>
-            <span>Siguiente parada</span>
+        {despacho && (
+          <div>
+            <span>Siguiente parada · {despacho.cuadrilla}</span>
             <p>
-              <s>{d.siguiente_antes ?? "Sin parada"}</s> <i aria-hidden>→</i> <b>{d.siguiente_despues ?? "Sin parada"}</b>
+              <s>{despacho.siguiente_antes ?? "Sin parada"}</s> <i aria-hidden>→</i> <b>{despacho.siguiente_despues ?? "Sin parada"}</b>
             </p>
           </div>
-        ))}
+        )}
       </div>
     </section>
   );
